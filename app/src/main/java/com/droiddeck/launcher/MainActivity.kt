@@ -833,6 +833,23 @@ class MainActivity : ComponentActivity() {
             SessionArtifacts.scrubOlder(this)
             SessionArtifacts.prune(this)
         }, "finish-abandoned").start()
+        // 汉化声明弹窗：每次启动显示一次，点击任意区域关闭
+        showZhDisclaimer()
+    }
+
+    private fun showZhDisclaimer() {
+        Handler(Looper.getMainLooper()).post {
+            try {
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("汉化声明")
+                    .setMessage("汉化：mihsian77\n\n仅供学习交流使用，请勿用于商业用途。\n点击任意区域关闭。")
+                    .setCancelable(true)
+                    .create().apply {
+                        setCanceledOnTouchOutside(true)
+                        show()
+                    }
+            } catch (_: Exception) {}
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

@@ -28,13 +28,17 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onPlaced
@@ -62,6 +66,7 @@ private const val WALL_MIN_GAMES = 4
  */
 @Composable
 internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier) {
+    val context = LocalContext.current
     // A fixed order, ties included: the wall places each game by its position, so an order that
     // came out differently from one read of the library to the next moved every capsule.
     val games = remember(s.steamGames) { s.steamGames.sortedWith(compareByDescending<Library.SteamGame> { it.lastPlayed }.thenBy { it.gameId }) }
@@ -93,6 +98,13 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
                 // Enabled without a runtime: the session's loading screen installs it first.
                 PrimaryButton(stringResource(R.string.games_play_steam), enabled = !s.busy, main = true, large = true, icon = Icons.Filled.PlayArrow, onClick = a.onPlay)
                 Cog(size = 54.dp, onClick = a.onSteamSettings)
+                // 退出 Steam 登录：创建标志文件，下次启动 Steam 时清除所有登录凭证
+                IconButton(onClick = {
+                    val logoutFile = java.io.File(context.filesDir, ".droiddeck-steam-logout")
+                    logoutFile.writeText("logout")
+                }) {
+                    Icon(Icons.Filled.Logout, contentDescription = "退出 Steam 登录", tint = colors.onSurface)
+                }
             }
         }
     }
