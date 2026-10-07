@@ -321,56 +321,61 @@ public final class LinuxRuntimeInstaller {
      */
     private static boolean unpackAndInstall(Context context, Release release, File archive,
                                             ProgressListener listener, boolean deleteOnSuccess) {
-        if (listener != null) listener.onProgress(Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1);
-        String actual = Hashes.sha256(archive);
-        if (!release.sha256.equalsIgnoreCase(actual)) {
-            Log.w(TAG, "checksum mismatch: wanted " + release.sha256 + ", got " + actual);
-            archive.delete();
-            return false;
-        }
-        // Unpack beside the live rootfs and swap, so a failure here cannot leave a half
-        // runtime that isInstalled() would happily launch.
-        File root = LinuxRuntime.rootDir(context);
-        File staging = new File(root.getParentFile(), LinuxRuntime.DIR + ".new");
-        File old = new File(root.getParentFile(), LinuxRuntime.DIR + ".old");
         try {
-            recoverInterruptedSwap(root, staging, old);
-        } catch (IOException e) {
-            Log.w(TAG, "recover swap", e);
-        }
-        RuntimeFileTree.delete(staging, null);
-        if (!staging.mkdirs()) return false;
-        if (listener != null) listener.onProgress(context.getString(R.string.rtinst_extracting), -1);
-        if (!extract(context, archive, staging, listener)) {
+            if (listener != null) listener.onProgress(Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1);
+            String actual = Hashes.sha256(archive);
+            if (!release.sha256.equalsIgnoreCase(actual)) {
+                Log.w(TAG, "checksum mismatch: wanted " + release.sha256 + ", got " + actual);
+                archive.delete();
+                return false;
+            }
+            // Unpack beside the live rootfs and swap, so a failure here cannot leave a half
+            // runtime that isInstalled() would happily launch.
+            File root = LinuxRuntime.rootDir(context);
+            File staging = new File(root.getParentFile(), LinuxRuntime.DIR + ".new");
+            File old = new File(root.getParentFile(), LinuxRuntime.DIR + ".old");
+            try {
+                recoverInterruptedSwap(root, staging, old);
+            } catch (IOException e) {
+                Log.w(TAG, "recover swap", e);
+            }
             RuntimeFileTree.delete(staging, null);
-            return false;
-        }
-        FileUtils.writeString(new File(staging, VERSION_FILE), release.version);
+            if (!staging.mkdirs()) return false;
+            if (listener != null) listener.onProgress(context.getString(R.string.rtinst_extracting), -1);
+            if (!extract(context, archive, staging, listener)) {
+                RuntimeFileTree.delete(staging, null);
+                return false;
+            }
+            FileUtils.writeString(new File(staging, VERSION_FILE), release.version);
 
-        RuntimeFileTree.delete(old, null);
-        if (root.isDirectory() && !root.renameTo(old)) {
-            RuntimeFileTree.delete(staging, null);
+            RuntimeFileTree.delete(old, null);
+            if (root.isDirectory() && !root.renameTo(old)) {
+                RuntimeFileTree.delete(staging, null);
+                return false;
+            }
+            // Carry the user's home over before the new rootfs takes the name.
+            try {
+                RuntimeFileTree.carryHome(old, staging);
+            } catch (IOException e) {
+                Log.w(TAG, "could not carry root across the update; rolling back", e);
+                old.renameTo(root);
+                try { RuntimeFileTree.delete(staging, null); }
+                catch (IOException cleanup) { Log.w(TAG, "could not clear the failed staging tree", cleanup); }
+                return false;
+            }
+            if (!staging.renameTo(root)) {
+                File keptTo = new File(staging, USER_DATA);
+                if (keptTo.isDirectory() && old.isDirectory()) keptTo.renameTo(new File(old, USER_DATA));
+                if (old.isDirectory()) old.renameTo(root);
+                return false;
+            }
+            RuntimeFileTree.delete(old, null);
+            if (deleteOnSuccess) archive.delete();
+            return LinuxRuntime.isInstalled(context);
+        } catch (Exception e) {
+            Log.e(TAG, "unpackAndInstall", e);
             return false;
         }
-        // Carry the user's home over before the new rootfs takes the name.
-        try {
-            RuntimeFileTree.carryHome(old, staging);
-        } catch (IOException e) {
-            Log.w(TAG, "could not carry root across the update; rolling back", e);
-            old.renameTo(root);
-            try { RuntimeFileTree.delete(staging, null); }
-            catch (IOException cleanup) { Log.w(TAG, "could not clear the failed staging tree", cleanup); }
-            return false;
-        }
-        if (!staging.renameTo(root)) {
-            File keptTo = new File(staging, USER_DATA);
-            if (keptTo.isDirectory() && old.isDirectory()) keptTo.renameTo(new File(old, USER_DATA));
-            if (old.isDirectory()) old.renameTo(root);
-            return false;
-        }
-        RuntimeFileTree.delete(old, null);
-        if (deleteOnSuccess) archive.delete();
-        return LinuxRuntime.isInstalled(context);
     }
 
     static void recoverInterruptedSwap(File root, File staging, File old) throws IOException {
