@@ -238,7 +238,7 @@ public final class LinuxRuntimeInstaller {
                 }
             });
             if (!ok) {
-                Log.w(TAG, "download failed");
+                Log.w(TAG, "download failed; keeping partial archive for resume");
                 return false;
             }
 
@@ -246,6 +246,8 @@ public final class LinuxRuntimeInstaller {
             String actual = Hashes.sha256(archive);
             if (!release.sha256.equalsIgnoreCase(actual)) {
                 Log.w(TAG, "checksum mismatch: wanted " + release.sha256 + ", got " + actual);
+                // A corrupted archive cannot be resumed - delete it so the next try starts clean.
+                archive.delete();
                 return false;
             }
 
@@ -293,13 +295,15 @@ public final class LinuxRuntimeInstaller {
                 return false;
             }
             RuntimeFileTree.delete(old, null);
+            // Archive verified and unpacked - safe to delete.
+            archive.delete();
             return LinuxRuntime.isInstalled(context);
         } catch (Exception e) {
             Log.e(TAG, "install", e);
             return false;
-        } finally {
-            archive.delete();
         }
+        // Note: archive is NOT deleted on download failure so the next attempt can resume.
+        // It IS deleted on checksum mismatch (corrupted) and after successful unpack.
     }
 
     static void recoverInterruptedSwap(File root, File staging, File old) throws IOException {
