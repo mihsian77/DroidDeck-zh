@@ -638,6 +638,8 @@ jobs:
           signer=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
           version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
           versionCode=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' app/build.gradle)
+          # Give the Releases API a moment to index the release we just created.
+          sleep 5
           # Build catalog from this repo's releases: latest non-prerelease = stable,
           # latest prerelease = preview. Tests are left empty (no PR test builds yet).
           python3 - "$GITHUB_REPOSITORY" "$version" "$versionCode" "$signer" << 'PY'
@@ -653,6 +655,8 @@ jobs:
               except Exception:
                   return 0
           releases = json.loads(gh(f"repos/{repo}/releases?per_page=100"))
+          # Sort by published_at descending so the newest is always picked, regardless of API order.
+          releases.sort(key=lambda r: to_ms(r.get("published_at","")), reverse=True)
           stable = next((r for r in releases if not r["prerelease"] and not r["draft"]), None)
           preview = next((r for r in releases if r["prerelease"] and not r["draft"]), None)
           def mk_release(r):
