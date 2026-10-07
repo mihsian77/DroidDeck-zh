@@ -566,6 +566,8 @@ jobs:
     env:
       KEEP: 10
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           name: droiddeck-apk
