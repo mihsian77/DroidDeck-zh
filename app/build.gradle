@@ -182,7 +182,8 @@ android {
 // A stale local bundle can omit a newly required helper on a fresh runtime install.
 def stageSessionScripts = tasks.register('stageSessionScripts', Copy) {
     from(rootProject.file('tools/linuxfs/overlay')) {
-        include 'usr/local/bin/droiddeck-*', 'usr/local/bin/steam-compatibility', 'usr/bin/**'
+        include 'usr/local/bin/droiddeck-*', 'usr/local/bin/steam-compatibility', 'usr/bin/**',
+                'usr/share/fonts/**', 'etc/fonts/**', 'usr/lib/locale/**'
     }
     into(layout.projectDirectory.dir('src/main/assets/linuxfs'))
 }

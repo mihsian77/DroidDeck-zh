@@ -30,9 +30,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +77,7 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
     val colors = MaterialTheme.colorScheme
     // Where the words and buttons sit, for the empty library's wandering mark to keep off.
     var words by remember { mutableStateOf<Rect?>(null) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
     Box(modifier = modifier.fillMaxSize().clipToBounds()) {
         when {
             games.isEmpty() -> EmptyLibrary(avoid = words) { WallFade() }
@@ -98,14 +102,30 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
                 // Enabled without a runtime: the session's loading screen installs it first.
                 PrimaryButton(stringResource(R.string.games_play_steam), enabled = !s.busy, main = true, large = true, icon = Icons.Filled.PlayArrow, onClick = a.onPlay)
                 Cog(size = 54.dp, onClick = a.onSteamSettings)
-                // 退出 Steam 登录：创建标志文件，下次启动 Steam 时清除所有登录凭证
-                IconButton(onClick = {
-                    val logoutFile = java.io.File(context.filesDir, ".droiddeck-steam-logout")
-                    logoutFile.writeText("logout")
-                }) {
+                // Log out of Steam on the next session: drop a flag the session script acts on.
+                IconButton(onClick = { showLogoutDialog = true }) {
                     Icon(Icons.Filled.Logout, contentDescription = "退出 Steam 登录", tint = colors.onSurface)
                 }
             }
+        }
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text("退出 Steam 登录") },
+                text = { Text("将在下次启动 Steam 时清除登录状态，需要重新输入账号密码。确定退出吗？") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showLogoutDialog = false
+                        Thread {
+                            java.io.File(context.filesDir, ".droiddeck-steam-logout").writeText("logout")
+                        }.start()
+                        android.widget.Toast.makeText(context, "下次启动 Steam 时将退出登录", android.widget.Toast.LENGTH_SHORT).show()
+                    }) { Text("退出登录") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogoutDialog = false }) { Text("取消") }
+                },
+            )
         }
     }
 }

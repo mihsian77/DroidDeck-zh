@@ -81,6 +81,9 @@ object SessionFiles {
             "usr/bin/steamos-polkit-helpers/steamos-select-branch" to "usr/bin/steamos-polkit-helpers/steamos-select-branch",
             "usr/bin/steamos-polkit-helpers/jupiter-biosupdate" to "usr/bin/steamos-polkit-helpers/jupiter-biosupdate",
             "usr/bin/steamos-polkit-helpers/jupiter-dock-updater" to "usr/bin/steamos-polkit-helpers/jupiter-dock-updater",
+            // CJK fallback font and fontconfig, so Steam in Chinese never renders tofu boxes.
+            "usr/share/fonts/truetype/wqy/wqy-microhei.ttc" to "usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "etc/fonts/conf.d/99-zh-fallback.conf" to "etc/fonts/conf.d/99-zh-fallback.conf",
         )
         // The desktop's launcher and labwc defaults, only where the desktop package is installed:
         // staging them into a runtime without it would make the desktop look present when it is not.

@@ -839,6 +839,7 @@ class MainActivity : ComponentActivity() {
 
     private fun showZhDisclaimer() {
         Handler(Looper.getMainLooper()).post {
+            if (isFinishing || isDestroyed) return@post
             try {
                 android.app.AlertDialog.Builder(this)
                     .setTitle("汉化声明")

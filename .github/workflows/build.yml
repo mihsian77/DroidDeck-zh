@@ -173,7 +173,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: app/src/main/assets/linuxfs
-          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/wlroots/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**') }}
+          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/overlay/usr/share/fonts/**', 'tools/linuxfs/overlay/etc/fonts/**', 'tools/linuxfs/overlay/usr/lib/locale/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/wlroots/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**') }}
 
       - name: Build libfakeinput.so and libblsession.so (glibc aarch64)
         if: steps.preloads.outputs.cache-hit != 'true'
@@ -207,6 +207,10 @@ jobs:
           done
           for f in tools/linuxfs/overlay/usr/bin/* tools/linuxfs/overlay/usr/bin/steamos-polkit-helpers/*; do
             [ -f "$f" ] && install -Dm644 "$f" "$D/${f#tools/linuxfs/overlay/}"
+          done
+          # CJK font, fontconfig fallback and locale data (zh overlay)
+          for f in $(cd tools/linuxfs/overlay && find usr/share/fonts etc/fonts usr/lib/locale -type f 2>/dev/null); do
+            install -Dm644 "tools/linuxfs/overlay/$f" "$D/$f"
           done
           if [ -f tools/gamescope/release.env ]; then
             . tools/gamescope/release.env

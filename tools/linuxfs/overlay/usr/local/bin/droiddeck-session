@@ -156,14 +156,15 @@ if [ -z "${BL_INSIDE:-}" ]; then
       echo "== fontconfig: indexed $(ls "$device_fonts" | wc -l) device fonts, zh falls back to $(fc-match -f '%{family[0]}' ':lang=zh-cn' 2>/dev/null)"
     fi
   fi
-  # 中文字体注入：文泉驿微米黑作为兜底，确保 Steam 中文不显示口口口
+  # CJK fallback font (WenQuanYi Micro Hei), staged from the apk at every launch. Rebuild the
+  # fontconfig cache when the font is new or changed, so Chinese never renders as tofu boxes.
   zh_font=/usr/share/fonts/truetype/wqy/wqy-microhei.ttc
   if [ -f "$zh_font" ] && command -v fc-cache >/dev/null 2>&1; then
-    zh_fonts_dir=/usr/local/share/fonts/zh
-    mkdir -p "$zh_fonts_dir"
-    if [ ! -f "$zh_fonts_dir/wqy-microhei.ttc" ]; then
-      cp "$zh_font" "$zh_fonts_dir/" 2>/dev/null && fc-cache -f "$zh_fonts_dir" >/dev/null 2>&1
-      echo "== zh font: injected WenQuanYi Micro Hei, zh falls back to $(fc-match -f '%{family[0]}' ':lang=zh-cn' 2>/dev/null)"
+    zh_stamp=/var/cache/fontconfig/.droiddeck-zh-font
+    zh_seen=$(ls -lL "$zh_font" 2>/dev/null | md5sum)
+    if [ "$zh_seen" != "$(cat "$zh_stamp" 2>/dev/null)" ]; then
+      fc-cache -f /usr/share/fonts >/dev/null 2>&1 && printf '%s\n' "$zh_seen" > "$zh_stamp"
+      echo "== zh font: indexed WenQuanYi Micro Hei, zh falls back to $(fc-match -f '%{family[0]}' ':lang=zh-cn' 2>/dev/null)"
     fi
   fi
   # The compositor may still be starting, and a socket left by an earlier session is not
@@ -337,22 +338,24 @@ case $mode in
     droiddeck-steam-install || exit $?
     step "Steam client ready"
     steam_root=$XDG_DATA_HOME/Steam
-    # 退出 Steam 登录：检测标志文件，清除所有登录凭证
+    # Log out of Steam when the front end asked for it: drop the credentials that identify an
+    # account, but keep config.vdf (download region, client settings) intact.
     logout_flag=/data/data/com.droiddeck.launcher/files/.droiddeck-steam-logout
     if [ -f "$logout_flag" ]; then
       rm -f "$logout_flag"
       echo "== steam: logout requested, clearing credentials"
       rm -f "$steam_root/config/loginusers.vdf" 2>/dev/null
-      rm -f "$steam_root/config/config.vdf" 2>/dev/null
       rm -rf "$steam_root/config/htmlcache" 2>/dev/null
-      rm -f "$steam_root/ssfn"* 2>/dev/null
-      rm -rf "$steam_root/userdata"/*/config 2>/dev/null
-      echo "== steam: credentials cleared"
+      rm -f "$steam_root"/ssfn* 2>/dev/null
+      # localconfig.vdf holds the saved login token; remove it for every account.
+      find "$steam_root/userdata" -maxdepth 3 -name localconfig.vdf -delete 2>/dev/null
+      echo "== steam: credentials cleared (settings kept)"
     fi
-    # 预设国内 Steam 下载服务器，加速客户端和游戏更新
+    # On a first run with no config.vdf, preselect the China download region for faster updates.
+    # Never rewrite an existing config.vdf - that carries the user's real settings.
     steam_config="$steam_root/config/config.vdf"
     mkdir -p "$steam_root/config"
-    if [ ! -f "$steam_config" ] || ! grep -q '"DownloadRegion"' "$steam_config" 2>/dev/null; then
+    if [ ! -f "$steam_config" ]; then
       cat > "$steam_config" << 'STEAMCFG'
 "InstallConfigStore"
 {
@@ -369,7 +372,7 @@ case $mode in
 	}
 }
 STEAMCFG
-      echo "== steam: China download region preset"
+      echo "== steam: China download region preset (first run)"
     fi
     # Register the card library (bound at /mnt/droiddeck-sd) with the client - internal storage is
     # its main library already - and the ARM64 Proton that lets it launch the Windows ones.
