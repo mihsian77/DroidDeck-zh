@@ -219,7 +219,13 @@ internal fun SetupPanel(
                                     else -> stringResource(R.string.setup_runtime_current, s.installed ?: stringResource(R.string.setup_installed))
                                 },
                                 divider = !s.busy,
-                            ) { SecondaryButton(runtime, enabled = !s.busy && !s.runtimeActionsBlocked && !s.sessionRunning, compact = true, onClick = a.onRuntime) }
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    SecondaryButton(runtime, enabled = !s.busy && !s.runtimeActionsBlocked && !s.sessionRunning, compact = true, onClick = a.onRuntime)
+                                    Spacer(Modifier.width(6.dp))
+                                    SecondaryButton(stringResource(R.string.setup_runtime_import), enabled = !s.busy && !s.runtimeActionsBlocked && !s.sessionRunning, compact = true, onClick = a.onImportRuntime)
+                                }
+                            }
                             if (s.busy) {
                                 Column(modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 10.dp)) {
                                     Text(

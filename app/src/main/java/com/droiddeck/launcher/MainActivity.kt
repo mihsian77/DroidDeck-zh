@@ -212,6 +212,18 @@ class MainActivity : ComponentActivity() {
         val then = onSavePicked.also { onSavePicked = null } ?: return@registerForActivityResult
         if (r.resultCode == RESULT_OK) InAppFilePicker.pickedFile(r.data)?.let(then)
     }
+    private val pickRuntimeArchive = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        if (r.resultCode == RESULT_OK) InAppFilePicker.pickedFile(r.data)?.let { importRuntime(it) }
+    }
+
+    private fun importRuntime(file: File) {
+        if (runtimeChangesBlocked()) return
+        val release = available ?: run {
+            android.widget.Toast.makeText(this, R.string.setup_runtime_catalog_unavailable, android.widget.Toast.LENGTH_LONG).show()
+            return
+        }
+        followRuntimeOperation { listener -> LinuxRuntimeInstaller.installFromFile(this, file, release, listener) }
+    }
 
     private fun refreshWifiDiscovery() {
         wifiDiscoveryPermission = WifiDiscovery.permissionGranted(this)
@@ -624,6 +636,7 @@ class MainActivity : ComponentActivity() {
                         onInstallPackage = { id -> installPackage(id) },
                         onRemovePackage = { id -> removePackage(id) },
                         onRuntime = { onRuntimeButton() },
+                        onImportRuntime = { pickRuntimeArchive.launch(InAppFilePicker.buildIntent(this, listOf("zst", "tar"), getString(R.string.setup_runtime_import))) },
                         onFrameGenPick = { mode ->
                             FrameGen.set(this, mode)
                             frameGenLabel = FrameGen.label(this)

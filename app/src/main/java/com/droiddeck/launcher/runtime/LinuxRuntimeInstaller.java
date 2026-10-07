@@ -241,69 +241,136 @@ public final class LinuxRuntimeInstaller {
                 Log.w(TAG, "download failed; keeping partial archive for resume");
                 return false;
             }
-
-            if (listener != null) listener.onProgress(Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1);
-            String actual = Hashes.sha256(archive);
-            if (!release.sha256.equalsIgnoreCase(actual)) {
-                Log.w(TAG, "checksum mismatch: wanted " + release.sha256 + ", got " + actual);
-                // A corrupted archive cannot be resumed - delete it so the next try starts clean.
-                archive.delete();
-                return false;
-            }
-
-            // Unpack beside the live rootfs and swap, so a failure here cannot leave a half
-            // runtime that isInstalled() would happily launch.
-            File root = LinuxRuntime.rootDir(context);
-            File staging = new File(root.getParentFile(), LinuxRuntime.DIR + ".new");
-            File old = new File(root.getParentFile(), LinuxRuntime.DIR + ".old");
-            recoverInterruptedSwap(root, staging, old);
-            RuntimeFileTree.delete(staging, null);
-            if (!staging.mkdirs()) return false;
-            if (listener != null) listener.onProgress(context.getString(R.string.rtinst_extracting), -1);
-            if (!extract(context, archive, staging, listener)) {
-                RuntimeFileTree.delete(staging, null);
-                return false;
-            }
-            FileUtils.writeString(new File(staging, VERSION_FILE), release.version);
-
-            RuntimeFileTree.delete(old, null);
-            if (root.isDirectory() && !root.renameTo(old)) {
-                RuntimeFileTree.delete(staging, null);
-                return false;
-            }
-
-            // Carry the user's home over before the new rootfs takes the name. A rename inside the
-            // same filesystem, so a 30 GB library costs nothing and cannot half-copy; the tarball's
-            // own empty /root is dropped first so the rename has somewhere to land. If this fails
-            // the update is abandoned and the previous runtime is put back untouched - shipping a
-            // working system with the user's games gone is the worse outcome.
-            try {
-                RuntimeFileTree.carryHome(old, staging);
-            } catch (IOException e) {
-                Log.w(TAG, "could not carry root across the update; rolling back", e);
-                // Restore the live name even if cleaning the failed staging tree is denied.
-                old.renameTo(root);
-                try { RuntimeFileTree.delete(staging, null); }
-                catch (IOException cleanup) { Log.w(TAG, "could not clear the failed staging tree", cleanup); }
-                return false;
-            }
-
-            if (!staging.renameTo(root)) {
-                File keptTo = new File(staging, USER_DATA);
-                if (keptTo.isDirectory() && old.isDirectory()) keptTo.renameTo(new File(old, USER_DATA));
-                if (old.isDirectory()) old.renameTo(root);
-                return false;
-            }
-            RuntimeFileTree.delete(old, null);
-            // Archive verified and unpacked - safe to delete.
-            archive.delete();
-            return LinuxRuntime.isInstalled(context);
+            return unpackAndInstall(context, release, archive, listener, true);
         } catch (Exception e) {
             Log.e(TAG, "install", e);
             return false;
         }
         // Note: archive is NOT deleted on download failure so the next attempt can resume.
         // It IS deleted on checksum mismatch (corrupted) and after successful unpack.
+    }
+
+    /**
+     * Installs from a local file instead of downloading. The file is copied into the cache
+     * directory, verified against {@code release.sha256}, then unpacked. Used by the "import
+     * local package" entry so users who already fetched the tarball on another device don't
+     * have to re-download it over a flaky connection.
+     */
+    public static boolean installFromFile(Context context, File source, Release release, ProgressListener listener) {
+        Job job;
+        boolean owner;
+        synchronized (JOB_LOCK) {
+            if (running != null && running.removal) return false;
+            owner = running == null;
+            if (owner) { running = new Job(false, context.getString(R.string.user_apps_starting)); removalError = null; }
+            job = running;
+            if (listener != null) job.listeners.add(listener);
+        }
+        if (!owner) return join(job, listener);
+        try {
+            job.ok = installFromFileOnce(context.getApplicationContext(), source, release, new ProgressListener() {
+                @Override public void onProgress(String stage, int percent) { onProgress(Step.OTHER, stage, percent); }
+                @Override public void onProgress(Step step, String stage, int percent) {
+                    job.step = step; job.stage = stage; job.percent = percent;
+                    for (ProgressListener l : job.listeners) l.onProgress(step, stage, percent);
+                }
+            });
+            return job.ok;
+        } finally {
+            synchronized (JOB_LOCK) { running = null; }
+            job.done.countDown();
+        }
+    }
+
+    private static boolean installFromFileOnce(Context context, File source, Release release, ProgressListener listener) {
+        File archive = new File(context.getCacheDir(), "linuxfs.tar.zst");
+        try {
+            File pendingRemoval = removalDirectory(LinuxRuntime.rootDir(context));
+            if (pendingRemoval.exists() && listener != null) listener.onProgress(context.getString(R.string.rtinst_removing_leftovers), -1);
+            RuntimeFileTree.delete(pendingRemoval, null);
+            if (listener != null) listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_copying), 0);
+            // Copy the picked file into our cache dir so the unpacker always reads from the same place.
+            try (InputStream in = new FileInputStream(source);
+                 OutputStream out = new FileOutputStream(archive)) {
+                byte[] buf = new byte[1 << 16];
+                long total = source.length();
+                long copied = 0;
+                int read;
+                long lastReport = 0;
+                while ((read = in.read(buf)) > 0) {
+                    out.write(buf, 0, read);
+                    copied += read;
+                    if (listener != null && total > 0 && copied - lastReport > (1 << 20)) {
+                        lastReport = copied;
+                        listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_copying),
+                                Math.round(copied * 100f / total));
+                    }
+                }
+            }
+            return unpackAndInstall(context, release, archive, listener, false);
+        } catch (Exception e) {
+            Log.e(TAG, "installFromFile", e);
+            return false;
+        }
+    }
+
+    /**
+     * Shared verify + unpack + swap logic. When {@code deleteOnSuccess} is true the archive is
+     * deleted after a successful install (download path); when false it is left alone (import
+     * path, where the file lives in the cache and may be reused).
+     */
+    private static boolean unpackAndInstall(Context context, Release release, File archive,
+                                            ProgressListener listener, boolean deleteOnSuccess) {
+        if (listener != null) listener.onProgress(Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1);
+        String actual = Hashes.sha256(archive);
+        if (!release.sha256.equalsIgnoreCase(actual)) {
+            Log.w(TAG, "checksum mismatch: wanted " + release.sha256 + ", got " + actual);
+            archive.delete();
+            return false;
+        }
+        // Unpack beside the live rootfs and swap, so a failure here cannot leave a half
+        // runtime that isInstalled() would happily launch.
+        File root = LinuxRuntime.rootDir(context);
+        File staging = new File(root.getParentFile(), LinuxRuntime.DIR + ".new");
+        File old = new File(root.getParentFile(), LinuxRuntime.DIR + ".old");
+        try {
+            recoverInterruptedSwap(root, staging, old);
+        } catch (IOException e) {
+            Log.w(TAG, "recover swap", e);
+        }
+        RuntimeFileTree.delete(staging, null);
+        if (!staging.mkdirs()) return false;
+        if (listener != null) listener.onProgress(context.getString(R.string.rtinst_extracting), -1);
+        if (!extract(context, archive, staging, listener)) {
+            RuntimeFileTree.delete(staging, null);
+            return false;
+        }
+        FileUtils.writeString(new File(staging, VERSION_FILE), release.version);
+
+        RuntimeFileTree.delete(old, null);
+        if (root.isDirectory() && !root.renameTo(old)) {
+            RuntimeFileTree.delete(staging, null);
+            return false;
+        }
+        // Carry the user's home over before the new rootfs takes the name.
+        try {
+            RuntimeFileTree.carryHome(old, staging);
+        } catch (IOException e) {
+            Log.w(TAG, "could not carry root across the update; rolling back", e);
+            old.renameTo(root);
+            try { RuntimeFileTree.delete(staging, null); }
+            catch (IOException cleanup) { Log.w(TAG, "could not clear the failed staging tree", cleanup); }
+            return false;
+        }
+        if (!staging.renameTo(root)) {
+            File keptTo = new File(staging, USER_DATA);
+            if (keptTo.isDirectory() && old.isDirectory()) keptTo.renameTo(new File(old, USER_DATA));
+            if (old.isDirectory()) old.renameTo(root);
+            return false;
+        }
+        RuntimeFileTree.delete(old, null);
+        if (deleteOnSuccess) archive.delete();
+        return LinuxRuntime.isInstalled(context);
     }
 
     static void recoverInterruptedSwap(File root, File staging, File old) throws IOException {

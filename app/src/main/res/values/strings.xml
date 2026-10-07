@@ -592,6 +592,8 @@
     <string name="setup_installed">Installed</string>
     <string name="setup_runtime_update">%1$s · update available</string>
     <string name="setup_runtime_current">%1$s · up to date</string>
+    <string name="setup_runtime_import">Import</string>
+    <string name="setup_runtime_catalog_unavailable">Cannot reach the runtime catalog - check your connection and retry</string>
     <string name="setup_limit">Child-process limit</string>
     <string name="setup_limit_on">On · Android may close Steam. Turning it off takes a minute.</string>
     <string name="setup_limit_unset">Not set · Android may close Steam. Turning it off takes a minute.</string>
@@ -1545,6 +1547,7 @@
     <string name="rtinst_removal_failed">Could not finish removing the Linux runtime. Retry removal in Setup.</string>
     <string name="rtinst_removing_leftovers">Removing runtime leftovers</string>
     <string name="rtinst_downloading">Downloading</string>
+    <string name="rtinst_copying">Copying</string>
     <string name="rtinst_verifying">Verifying</string>
     <string name="rtinst_extracting">Extracting</string>
     <string name="rtinst_channel_description">Shows while the Linux runtime is installed or removed</string>
