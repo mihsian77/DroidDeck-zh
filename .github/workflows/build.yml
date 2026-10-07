@@ -577,33 +577,38 @@ jobs:
           name: droiddeck-apk
           path: signed
 
-      - name: Describe the change
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
-          echo "**Pushed to main** - $subject" > notes-head.md
-          cat notes-head.md
-
       - name: Publish prerelease
         id: publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          tag=main-${GITHUB_SHA::7}
+          version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
+          sha7=${GITHUB_SHA::7}
+          tag="${version}-${sha7}"
+          subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
           cd signed
           sha256sum *.apk > SHA256SUMS.txt
           cd ..
-          notes="$(cat notes-head.md)
+          notes="## ${version} (${sha7})
 
-          DroidDeck 中文优化版 - 基于上游源码编译
-          Commit: $GITHUB_SHA
-          VersionCode: $(sed -n 's/^ *versionCode \([0-9][0-9]*\)$/\1/p' app/build.gradle)
+          ${subject}
 
-          独家功能：竖屏适配 / 汉化声明弹窗 / 退出Steam登录 / 中文字体注入 / 国内下载服务器
-          签名：上游公开testkey，与原版签名一致，支持就地更新。
+          基于上游 DroidDeck 源码编译的中文优化版。
+
+          ### 本次变更
+          - 详见 commit: \`${sha7}\`
+
+          ### 独家功能
+          - 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）
+          - 中文字体注入（文泉驿微米黑兜底，Steam 中文不显示口口口）
+          - 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）
+          - 国内 Steam 下载区域预设（首次启动自动设置）
+          - 汉化声明弹窗
+
+          ### 注意
+          - 签名使用上游公开 testkey，与原版签名一致，支持就地更新
+          - 此为预发布版，仅供测试验证
 
           SHA-256:
           \`\`\`
@@ -611,10 +616,10 @@ jobs:
           \`\`\`"
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$tag" --target main --prerelease \
-            --title "main ${GITHUB_SHA::7}" --notes "$notes" signed/*
-          # Keep newest 10 main builds
-          gh release list -L 200 --json tagName,publishedAt \
-            --jq '[.[] | select(.tagName | startswith("main-"))] | sort_by(.publishedAt) | reverse | .['"$KEEP"':][] | .tagName' |
+            --title "${version} 预发布 (${sha7})" --notes "$notes" signed/*
+          # Keep newest 5 prereleases
+          gh release list -L 200 --json tagName,publishedAt,isPrerelease \
+            --jq '[.[] | select(.isPrerelease)] | sort_by(.publishedAt) | reverse | .['"$KEEP"':][] | .tagName' |
             while IFS= read -r old; do
               [ "$old" = "$tag" ] && continue
               gh release delete "$old" --yes --cleanup-tag 2>/dev/null || true
