@@ -13,16 +13,16 @@ import java.net.URL
 import java.security.MessageDigest
 
 /**
- * DroidDeck's published builds. CI turns GitHub Releases into one static catalog in DroidDeck-CI;
- * the app consumes that contract instead of inferring channels from tags and release-note prose.
+ * DroidDeck-zh published builds. CI turns GitHub Releases into one static catalog on the catalog
+ * branch; the app consumes that contract instead of inferring channels from tags and release-note prose.
  *
  * [Channel.NIGHTLY] is intentionally kept as the internal enum/pref value for upgrades from older
  * DroidDeck versions. The channel is presented to users as Preview.
  */
 object AppUpdates {
-    private const val REPO = "Droid-Deck/DroidDeck"
-    private const val CI_REPO = "Droid-Deck/DroidDeck-CI"
-    private const val CATALOG_URL = "https://raw.githubusercontent.com/$CI_REPO/main/catalog.json"
+    private const val REPO = "mihsian77/DroidDeck-zh"
+    private const val CI_REPO = "mihsian77/DroidDeck-zh"
+    private const val CATALOG_URL = "https://raw.githubusercontent.com/$REPO/catalog/catalog.json"
     private const val PREFS = "app_updates"
     private const val KEY_CATALOG = "catalog"
     private const val KEY_CHANNEL = "channel"
@@ -339,7 +339,6 @@ object AppUpdates {
         }
         val allowed = listOf(
             "https://github.com/$REPO/releases/download/",
-            "https://github.com/$CI_REPO/releases/download/",
         )
         if (allowed.none { url.startsWith(it) }) {
             throw IOException("The update catalog has an unexpected download URL")

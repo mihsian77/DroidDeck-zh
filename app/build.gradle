@@ -183,7 +183,7 @@ android {
 def stageSessionScripts = tasks.register('stageSessionScripts', Copy) {
     from(rootProject.file('tools/linuxfs/overlay')) {
         include 'usr/local/bin/droiddeck-*', 'usr/local/bin/steam-compatibility', 'usr/bin/**',
-                'usr/share/fonts/**', 'etc/fonts/**', 'usr/lib/locale/**'
+                'usr/share/fonts/**', 'etc/fonts/**'
     }
     into(layout.projectDirectory.dir('src/main/assets/linuxfs'))
 }

@@ -173,7 +173,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: app/src/main/assets/linuxfs
-          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/overlay/usr/share/fonts/**', 'tools/linuxfs/overlay/etc/fonts/**', 'tools/linuxfs/overlay/usr/lib/locale/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/wlroots/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**') }}
+          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/overlay/usr/share/fonts/**', 'tools/linuxfs/overlay/etc/fonts/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/wlroots/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**') }}
 
       - name: Build libfakeinput.so and libblsession.so (glibc aarch64)
         if: steps.preloads.outputs.cache-hit != 'true'
@@ -208,8 +208,8 @@ jobs:
           for f in tools/linuxfs/overlay/usr/bin/* tools/linuxfs/overlay/usr/bin/steamos-polkit-helpers/*; do
             [ -f "$f" ] && install -Dm644 "$f" "$D/${f#tools/linuxfs/overlay/}"
           done
-          # CJK font, fontconfig fallback and locale data (zh overlay)
-          for f in $(cd tools/linuxfs/overlay && find usr/share/fonts etc/fonts usr/lib/locale -type f 2>/dev/null); do
+          # CJK font and fontconfig fallback (zh overlay)
+          for f in $(cd tools/linuxfs/overlay && find usr/share/fonts etc/fonts -type f 2>/dev/null); do
             install -Dm644 "tools/linuxfs/overlay/$f" "$D/$f"
           done
           if [ -f tools/gamescope/release.env ]; then
@@ -629,3 +629,96 @@ jobs:
           echo "release=$url" >> "$GITHUB_OUTPUT"
           echo "apk=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$tag/$apk" >> "$GITHUB_OUTPUT"
           echo "Published $url"
+
+      - name: Update catalog.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          signer=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
+          version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
+          versionCode=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' app/build.gradle)
+          # Build catalog from this repo's releases: latest non-prerelease = stable,
+          # latest prerelease = preview. Tests are left empty (no PR test builds yet).
+          python3 - "$GITHUB_REPOSITORY" "$version" "$versionCode" "$signer" << 'PY'
+          import json, subprocess, sys, os
+          from datetime import datetime, timezone
+          repo, version, versionCode, signer = sys.argv[1:5]
+          def gh(args):
+              return subprocess.run(["gh","api",args], capture_output=True, text=True, check=True).stdout
+          def to_ms(iso_str):
+              try:
+                  dt = datetime.fromisoformat(iso_str.replace("Z","+00:00"))
+                  return int(dt.timestamp() * 1000)
+              except Exception:
+                  return 0
+          releases = json.loads(gh(f"repos/{repo}/releases?per_page=100"))
+          stable = next((r for r in releases if not r["prerelease"] and not r["draft"]), None)
+          preview = next((r for r in releases if r["prerelease"] and not r["draft"]), None)
+          def mk_release(r):
+              if not r: return None
+              asset = next((a for a in r["assets"] if a["name"].endswith(".apk")), None)
+              apks = {}
+              if asset:
+                  apks["com.droiddeck.launcher"] = {
+                      "name": asset["name"],
+                      "url": asset["browser_download_url"],
+                      "size": asset["size"],
+                      "sha256": "",  # filled from SHA256SUMS if present
+                      "packageName": "com.droiddeck.launcher",
+                      "versionCode": int(versionCode),
+                      "signerSha256": signer,
+                  }
+                  # Try to read sha256 from SHA256SUMS.txt asset
+                  sha_asset = next((a for a in r["assets"] if a["name"] == "SHA256SUMS.txt"), None)
+                  if sha_asset:
+                      import urllib.request
+                      try:
+                          txt = urllib.request.urlopen(sha_asset["browser_download_url"]).read().decode()
+                          for line in txt.strip().splitlines():
+                              parts = line.split()
+                              if len(parts) >= 2 and parts[1] == asset["name"]:
+                                  apks["com.droiddeck.launcher"]["sha256"] = parts[0].lower()
+                      except Exception:
+                          pass
+              tag = r["tag_name"]
+              commit = ""
+              try:
+                  commit = json.loads(gh(f"repos/{repo}/releases/tags/{tag}"))["target_commitish"]
+              except Exception:
+                  pass
+              return {
+                  "tag": tag,
+                  "title": r.get("name") or tag,
+                  "summary": (r.get("body") or "")[:500],
+                  "commit": commit or "0"*40,
+                  "pr": 0,
+                  "version": version if r["prerelease"] else tag.lstrip("v"),
+                  "versionCode": int(versionCode),
+                  "publishedAt": to_ms(r["published_at"]),
+                  "url": r["html_url"],
+                  "apks": apks,
+              }
+          catalog = {
+              "schema": 1,
+              "sourceRepo": repo,
+              "ciRepo": repo,
+              "stable": mk_release(stable),
+              "preview": mk_release(preview),
+              "tests": [],
+              "recentPreviews": [],
+          }
+          os.makedirs("/tmp/catalog", exist_ok=True)
+          with open("/tmp/catalog/catalog.json","w") as f:
+              json.dump(catalog, f, indent=2, ensure_ascii=False)
+          print(f"catalog: stable={catalog['stable']['tag'] if catalog['stable'] else None}, preview={catalog['preview']['tag'] if catalog['preview'] else None}")
+          PY
+          # Push catalog.json to catalog branch
+          cd /tmp/catalog
+          git init -q
+          git config user.email "mihsian77@users.noreply.github.com"
+          git config user.name "mihsian77"
+          git add catalog.json
+          git commit -q -m "catalog: update channels"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:catalog
+          echo "catalog.json pushed to catalog branch"
