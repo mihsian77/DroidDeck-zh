@@ -57,7 +57,6 @@ class AppUpdatesTest {
     private val catalog = AppUpdates.Catalog(
         stable = stable,
         preview = release("bbbbbbb"),
-        tests = listOf(release("ccccccc2222222222222222222222222222222", pr = 93)),
         checkedAt = 0L,
     )
 
@@ -103,14 +102,6 @@ class AppUpdatesTest {
     }
 
     @Test
-    fun testBuildsUpdateWithinTheirPrAndSwitchOtherwise() {
-        assertEquals(Offer.UPDATE, AppUpdates.offer(catalog, Follow(Channel.TEST, 93), me("fffffff000", pr = 93)))
-        assertEquals(Offer.SWITCH, AppUpdates.offer(catalog, Follow(Channel.TEST, 93), me(stable.commit)))
-        assertEquals(Offer.SWITCH, AppUpdates.offer(catalog, Follow(Channel.NIGHTLY), me("ccccccc2", pr = 93)))
-        assertEquals(Offer.GONE, AppUpdates.offer(catalog, Follow(Channel.TEST, 12), me("ccccccc2", pr = 12)))
-    }
-
-    @Test
     fun aTestBuildIsNeverThePreviewBuildOfTheSameCommit() {
         assertEquals(Offer.SWITCH, AppUpdates.offer(catalog, Follow(Channel.NIGHTLY), me("bbbbbbb", pr = 5)))
     }
@@ -137,7 +128,7 @@ class AppUpdatesTest {
 
     @Test
     fun previewHistoryCountsOnlyAnUnambiguousPublishedPreviewCommit() {
-        val withHistory = AppUpdates.Catalog(stable, release("1111111"), emptyList(), 0L, recentPreview)
+        val withHistory = AppUpdates.Catalog(stable, release("1111111"), 0L, recentPreview)
         val result = AppUpdates.previewHistory(withHistory, me("2".repeat(40), version = "0.3.0"))!!
         assertEquals(PreviewHistoryKind.BEHIND, result.kind)
         assertEquals(1, result.buildsBehind)
@@ -146,7 +137,7 @@ class AppUpdatesTest {
 
     @Test
     fun currentPreviewHasNoRedundantChangeRows() {
-        val withHistory = AppUpdates.Catalog(stable, release("1111111"), emptyList(), 0L, recentPreview)
+        val withHistory = AppUpdates.Catalog(stable, release("1111111"), 0L, recentPreview)
         val result = AppUpdates.previewHistory(withHistory, me("1".repeat(40), version = "0.3.0"))!!
         assertEquals(PreviewHistoryKind.CURRENT, result.kind)
         assertTrue(result.changes.isEmpty())
@@ -154,7 +145,7 @@ class AppUpdatesTest {
 
     @Test
     fun missingOrAmbiguousPreviewCommitsUseNeutralRecentHistory() {
-        val withHistory = AppUpdates.Catalog(stable, release("1111111"), emptyList(), 0L, recentPreview)
+        val withHistory = AppUpdates.Catalog(stable, release("1111111"), 0L, recentPreview)
         assertEquals(
             PreviewHistoryKind.RECENT,
             AppUpdates.previewHistory(withHistory, me("9".repeat(40), version = "0.3.0"))!!.kind,
@@ -164,7 +155,7 @@ class AppUpdatesTest {
             change("abcdef0" + "1".repeat(33), "First", 300L),
             change("abcdef0" + "2".repeat(33), "Second", 200L),
         )
-        val ambiguousCatalog = AppUpdates.Catalog(stable, release("abcdef0"), emptyList(), 0L, ambiguous)
+        val ambiguousCatalog = AppUpdates.Catalog(stable, release("abcdef0"), 0L, ambiguous)
         val result = AppUpdates.previewHistory(ambiguousCatalog, me("abcdef0", version = "0.3.0"))!!
         assertEquals(PreviewHistoryKind.RECENT, result.kind)
         assertEquals(2, result.changes.size)
@@ -172,7 +163,7 @@ class AppUpdatesTest {
 
     @Test
     fun prStableAndLocalBuildsDoNotGetPreviewDistance() {
-        val withHistory = AppUpdates.Catalog(stable, release("1111111"), emptyList(), 0L, recentPreview)
+        val withHistory = AppUpdates.Catalog(stable, release("1111111"), 0L, recentPreview)
         assertEquals(
             PreviewHistoryKind.RECENT,
             AppUpdates.previewHistory(withHistory, me("2".repeat(40), pr = 93, version = "0.3.0"))!!.kind,
@@ -190,7 +181,7 @@ class AppUpdatesTest {
 
     @Test
     fun cachedPreviewHistorySurvivesRoundTrip() {
-        val withHistory = AppUpdates.Catalog(stable, release("1111111"), emptyList(), 123L, recentPreview)
+        val withHistory = AppUpdates.Catalog(stable, release("1111111"), 123L, recentPreview)
         val cached = AppUpdates.readCachedCatalog(AppUpdates.writeCatalog(withHistory))
         assertEquals(123L, cached.checkedAt)
         assertEquals(3, cached.recentPreviews.size)
