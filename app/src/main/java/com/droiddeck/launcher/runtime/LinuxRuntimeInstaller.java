@@ -9,6 +9,7 @@ import com.droiddeck.launcher.core.ArchivePaths;
 import com.droiddeck.launcher.core.Downloader;
 import com.droiddeck.launcher.core.Hashes;
 import com.droiddeck.launcher.core.FileUtils;
+import com.droiddeck.launcher.core.MirrorHub;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
