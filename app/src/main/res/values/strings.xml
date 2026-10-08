@@ -598,6 +598,7 @@
     <string name="setup_runtime_current">%1$s · up to date</string>
     <string name="setup_runtime_import">Import</string>
     <string name="setup_runtime_catalog_unavailable">Cannot reach the runtime catalog - check your connection and retry</string>
+    <string name="mirrorhub_attribution">Download acceleration by MirrorHub</string>
     <string name="setup_limit">Child-process limit</string>
     <string name="setup_limit_on">On · Android may close Steam. Turning it off takes a minute.</string>
     <string name="setup_limit_unset">Not set · Android may close Steam. Turning it off takes a minute.</string>

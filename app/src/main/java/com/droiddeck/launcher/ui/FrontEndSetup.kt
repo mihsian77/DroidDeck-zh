@@ -238,6 +238,24 @@ internal fun SetupPanel(
                                 }
                                 Box(Modifier.fillMaxWidth().height(1.dp).background(pal.line))
                             }
+                            if (!s.busy) {
+                                Text(
+                                    stringResource(R.string.mirrorhub_attribution),
+                                    fontSize = 11.sp,
+                                    color = colors.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 6.dp)
+                                        .clickable {
+                                            try {
+                                                ctx.startActivity(android.content.Intent(
+                                                    android.content.Intent.ACTION_VIEW,
+                                                    android.net.Uri.parse("https://github.com/mihsian77/MirrorHub")
+                                                ))
+                                            } catch (_: Exception) {}
+                                        },
+                                )
+                            }
                             CheckRow(
                                 if (limitBlocks) CheckState.WARN else CheckState.OK,
                                 stringResource(R.string.setup_limit),
