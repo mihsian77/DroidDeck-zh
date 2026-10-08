@@ -74,14 +74,14 @@ object ProtonExtras {
     fun importArchive(context: Context, tool: Tool, file: File, onProgress: (String, Int) -> Unit): String? {
         if (installInProgress) return context.getString(R.string.pextra_busy)
         installInProgress = true
-        return try {
-            if (SessionState.running) return@try context.getString(R.string.pextra_stop_session)
-            if (!LinuxRuntime.isInstalled(context)) return@try context.getString(R.string.user_apps_runtime_required)
+        try {
+            if (SessionState.running) return context.getString(R.string.pextra_stop_session)
+            if (!LinuxRuntime.isInstalled(context)) return context.getString(R.string.user_apps_runtime_required)
             val downloads = File(context.filesDir, "proton-downloads").apply { mkdirs() }
             val archive = File(downloads, "${tool.id}-local${file.name.substringBeforeLast('.')}.tar.gz")
             onProgress(context.getString(R.string.pextra_copying, tool.name), 0)
             file.copyTo(archive, overwrite = true)
-            installArchive(context, tool, archive, onProgress)
+            return installArchive(context, tool, archive, onProgress)
         } finally {
             installInProgress = false
         }
