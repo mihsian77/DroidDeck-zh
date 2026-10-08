@@ -81,10 +81,6 @@ object DesktopCatalog {
 
     /** Downloads, verifies and installs one package. Returns null on success, else a message. */
     fun install(context: Context, entry: Entry, listener: LinuxRuntimeInstaller.ProgressListener?): String? {
-        val root = LinuxRuntime.rootDir(context)
-        if (!root.isDirectory) return context.getString(R.string.deskpkg_runtime_missing)
-        // Every catalog row carries a sha256; one without is refused rather than trusted.
-        if (entry.sha256.isEmpty()) return context.getString(R.string.deskpkg_no_checksum, entry.name)
         val download = File(context.cacheDir, "pkg-${entry.id}.download")
         try {
             val downloading = context.getString(R.string.user_apps_downloading, entry.name)
@@ -93,17 +89,37 @@ object DesktopCatalog {
                 listener?.onProgress(LinuxRuntimeInstaller.Step.DOWNLOADING, downloading, if (f < 0) -1 else Math.round(f * 100f))
             }
             if (!ok) return context.getString(R.string.user_apps_download_failed)
+            return installFromFile(context, entry, download, listener)
+        } catch (e: Exception) {
+            Log.e(TAG, "install ${entry.id}", e)
+            return e.message ?: context.getString(R.string.deskpkg_install_failed)
+        } finally {
+            download.delete()
+        }
+    }
+
+    /**
+     * Installs one package from an already-fetched file (the bundle import path). Verifies the
+     * checksum, then places a tar over the rootfs or an AppImage under /opt/appimages. Returns
+     * null on success, else a message. The file is left in place - the caller owns its lifetime.
+     */
+    fun installFromFile(context: Context, entry: Entry, file: File,
+                        listener: LinuxRuntimeInstaller.ProgressListener?): String? {
+        val root = LinuxRuntime.rootDir(context)
+        if (!root.isDirectory) return context.getString(R.string.deskpkg_runtime_missing)
+        // Every catalog row carries a sha256; one without is refused rather than trusted.
+        if (entry.sha256.isEmpty()) return context.getString(R.string.deskpkg_no_checksum, entry.name)
+        try {
             listener?.onProgress(LinuxRuntimeInstaller.Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1)
-            val actual = Hashes.sha256(download)
+            val actual = Hashes.sha256(file)
             if (!entry.sha256.equals(actual, ignoreCase = true)) return context.getString(R.string.deskpkg_checksum_mismatch)
             listener?.onProgress(context.getString(R.string.deskpkg_installing, entry.name), -1)
             when (entry.kind) {
                 "appimage" -> {
                     val dir = File(root, "opt/appimages").apply { mkdirs() }
                     val target = File(dir, "${entry.id}.AppImage")
-                    // Some projects zip the AppImage (melonDS); the one file inside is what we want.
-                    val placed = if (entry.url.endsWith(".zip", ignoreCase = true)) unzipAppImage(download, target)
-                                 else download.renameTo(target)
+                    val placed = if (file.name.endsWith(".zip", ignoreCase = true)) unzipAppImage(file, target)
+                                 else { file.copyTo(target, overwrite = true); true }
                     if (!placed) return context.getString(R.string.deskpkg_place_failed)
                     target.setExecutable(true, false)
                     FileUtils.writeString(File(root, "usr/share/applications/droiddeck-${entry.id}.desktop"),
@@ -111,15 +127,13 @@ object DesktopCatalog {
                         "Exec=env APPIMAGE_EXTRACT_AND_RUN=1 /opt/appimages/${entry.id}.AppImage\n" +
                         "Icon=${entry.icon}\nTerminal=false\nCategories=${entry.category};\n")
                 }
-                else -> if (!LinuxRuntimeInstaller.extract(context, download, root, listener)) return context.getString(R.string.deskpkg_extract_failed)
+                else -> if (!LinuxRuntimeInstaller.extract(context, file, root, listener)) return context.getString(R.string.deskpkg_extract_failed)
             }
             FileUtils.writeString(marker(context, entry.id), entry.version)
             return null
         } catch (e: Exception) {
-            Log.e(TAG, "install ${entry.id}", e)
+            Log.e(TAG, "installFromFile ${entry.id}", e)
             return e.message ?: context.getString(R.string.deskpkg_install_failed)
-        } finally {
-            download.delete()
         }
     }
 

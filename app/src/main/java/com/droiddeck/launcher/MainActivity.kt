@@ -228,6 +228,13 @@ class MainActivity : ComponentActivity() {
 
     private fun importRuntime(file: File) {
         if (runtimeChangesBlocked()) return
+        // The all-in-one bundle is a zip of linuxfs + desktop; everything else is a single archive.
+        if (file.name.endsWith(".zip", ignoreCase = true)) {
+            followRuntimeOperation { listener ->
+                LinuxRuntimeInstaller.importBundle(this, file, listener)
+            }
+            return
+        }
         val release = available ?: run {
             android.widget.Toast.makeText(this, R.string.setup_runtime_catalog_unavailable, android.widget.Toast.LENGTH_LONG).show()
             return
@@ -647,7 +654,7 @@ class MainActivity : ComponentActivity() {
                         onInstallPackage = { id -> installPackage(id) },
                         onRemovePackage = { id -> removePackage(id) },
                         onRuntime = { onRuntimeButton() },
-                        onImportRuntime = { pickRuntimeArchive.launch(InAppFilePicker.buildIntent(this, listOf("zst", "tar"), getString(R.string.setup_runtime_import))) },
+                        onImportRuntime = { pickRuntimeArchive.launch(InAppFilePicker.buildIntent(this, listOf("zst", "tar", "zip"), getString(R.string.setup_runtime_import))) },
                         onFrameGenPick = { mode ->
                             FrameGen.set(this, mode)
                             frameGenLabel = FrameGen.label(this)

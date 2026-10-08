@@ -323,6 +323,114 @@ public final class LinuxRuntimeInstaller {
     }
 
     /**
+     * Installs the all-in-one bundle (linuxfs + desktop) from a single zip picked by the user.
+     * The bundle layout is fixed by the sync-data-packages workflow:
+     * <pre>
+     *   manifest.json      { "format": "droiddeck-bundle", "linuxfs": {...}, "desktop": {...} }
+     *   linuxfs.tar.zst
+     *   desktop.tar.zst
+     * </pre>
+     * The zip is unpacked into the cache directory, then each payload is installed in order:
+     * linuxfs first (the rootfs the desktop tar needs to exist under), then the desktop build.
+     * A failure in either leaves the other already-applied; the user can re-import to retry.
+     */
+    public static boolean importBundle(Context context, File bundle, ProgressListener listener) {
+        Job job;
+        boolean owner;
+        synchronized (JOB_LOCK) {
+            if (running != null && running.removal) return false;
+            owner = running == null;
+            if (owner) { running = new Job(false, context.getString(R.string.user_apps_starting)); removalError = null; }
+            job = running;
+            if (listener != null) job.listeners.add(listener);
+        }
+        if (!owner) return join(job, listener);
+        try {
+            job.ok = importBundleOnce(context.getApplicationContext(), bundle, new ProgressListener() {
+                @Override public void onProgress(String stage, int percent) { onProgress(Step.OTHER, stage, percent); }
+                @Override public void onProgress(Step step, String stage, int percent) {
+                    job.step = step; job.stage = stage; job.percent = percent;
+                    for (ProgressListener l : job.listeners) l.onProgress(step, stage, percent);
+                }
+            });
+            return job.ok;
+        } finally {
+            synchronized (JOB_LOCK) { running = null; }
+            job.done.countDown();
+        }
+    }
+
+    private static boolean importBundleOnce(Context context, File bundle, ProgressListener listener) {
+        File work = new File(context.getCacheDir(), "bundle");
+        try {
+            RuntimeFileTree.delete(work, null);
+            if (!work.mkdirs()) return false;
+            if (listener != null) listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_copying), 0);
+            // Unzip in place; zip entries are streamed so a 1.2 GB bundle never sits in RAM.
+            try (java.util.zip.ZipInputStream zin = new java.util.zip.ZipInputStream(new BufferedInputStream(new FileInputStream(bundle), 1 << 16))) {
+                java.util.zip.ZipEntry entry;
+                byte[] buf = new byte[1 << 16];
+                while ((entry = zin.getNextEntry()) != null) {
+                    if (entry.isDirectory()) continue;
+                    File out = new File(work, entry.getName());
+                    File parent = out.getParentFile();
+                    if (parent != null && !parent.isDirectory() && !parent.mkdirs()) return false;
+                    try (OutputStream os = new FileOutputStream(out)) {
+                        for (int read = zin.read(buf); read > 0; read = zin.read(buf)) os.write(buf, 0, read);
+                    }
+                }
+            }
+            // Manifest drives everything; refuse a bundle that does not look like ours.
+            File manifestFile = new File(work, "manifest.json");
+            String manifestText = FileUtils.readString(manifestFile);
+            JSONObject manifest = manifestText != null ? new JSONObject(manifestText) : null;
+            if (manifest == null || !"droiddeck-bundle".equals(manifest.optString("format"))) {
+                Log.w(TAG, "importBundle: not a droiddeck bundle");
+                return false;
+            }
+            // linuxfs first: the desktop tar unpacks over the rootfs it provides.
+            JSONObject lf = manifest.optJSONObject("linuxfs");
+            File linuxArchive = new File(work, "linuxfs.tar.zst");
+            if (lf != null && linuxArchive.isFile()) {
+                Release release = new Release(
+                        lf.optString("version", "bundle"),
+                        "local://bundle/linuxfs.tar.zst",
+                        lf.optString("sha256", ""),
+                        lf.optLong("size", linuxArchive.length()));
+                if (listener != null) listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_title_installing), -1);
+                if (!unpackAndInstall(context, release, linuxArchive, listener, false)) {
+                    Log.w(TAG, "importBundle: linuxfs step failed");
+                    return false;
+                }
+            } else {
+                Log.w(TAG, "importBundle: no linuxfs in manifest");
+                return false;
+            }
+            // Desktop over the fresh rootfs; its catalog row carries the same checksum.
+            JSONObject dt = manifest.optJSONObject("desktop");
+            File desktopArchive = new File(work, "desktop.tar.zst");
+            if (dt != null && desktopArchive.isFile()) {
+                DesktopCatalog.Entry entry = new DesktopCatalog.Entry(
+                        "desktop", dt.optString("name", "Desktop"), 1, dt.optString("version", "bundle"),
+                        "tar", "local://bundle/desktop.tar.zst", dt.optString("sha256", ""),
+                        dt.optLong("size", desktopArchive.length()), "", "applications-games", "Game");
+                String problem = DesktopCatalog.installFromFile(context, entry, desktopArchive, listener);
+                if (problem != null) {
+                    Log.w(TAG, "importBundle: desktop step failed: " + problem);
+                    return false;
+                }
+            }
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "importBundle", e);
+            return false;
+        } finally {
+            // The payload files may be re-imported; leave the cache tidy.
+            RuntimeFileTree.delete(work, null);
+        }
+    }
+
+    /**
      * Shared verify + unpack + swap logic. When {@code deleteOnSuccess} is true the archive is
      * deleted after a successful install (download path); when false it is left alone (import
      * path, where the file lives in the cache and may be reused).

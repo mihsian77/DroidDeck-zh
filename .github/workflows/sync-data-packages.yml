@@ -15,22 +15,53 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
-      - name: Fetch upstream linuxfs.json
+      - name: Fetch upstream catalogs
         id: upstream
         run: |
           set -euo pipefail
           curl -sL "https://raw.githubusercontent.com/The412Banner/winlator-contents/main/linuxfs.json" -o /tmp/linuxfs.json
-          VERSION=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['version'])")
-          URL=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['url'])")
-          SHA256=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['sha256'])")
-          SIZE=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['size'])")
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
-          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
-          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
-          echo "Upstream linuxfs version: $VERSION ($(numfmt --to=iec $SIZE))"
+          curl -sL "https://raw.githubusercontent.com/The412Banner/winlator-contents/main/desktop.json" -o /tmp/desktop.json
+          LF_VERSION=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['version'])")
+          LF_URL=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['url'])")
+          LF_SHA256=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['sha256'])")
+          LF_SIZE=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['size'])")
+          echo "linuxfs_version=$LF_VERSION" >> "$GITHUB_OUTPUT"
+          echo "linuxfs_url=$LF_URL" >> "$GITHUB_OUTPUT"
+          echo "linuxfs_sha256=$LF_SHA256" >> "$GITHUB_OUTPUT"
+          echo "linuxfs_size=$LF_SIZE" >> "$GITHUB_OUTPUT"
+          # The desktop entry: tier-1 tar over the rootfs (LXQt on labwc). Nothing else joins
+          # the bundle: emulators and appimages stay per-package, Steam/Proton are Valve's own.
+          DT_VERSION=$(python3 -c "
+import json
+d=json.load(open('/tmp/desktop.json'))
+p=next(x for x in d['packages'] if x['id']=='desktop')
+print(p.get('version',''))
+")
+          DT_URL=$(python3 -c "
+import json
+d=json.load(open('/tmp/desktop.json'))
+p=next(x for x in d['packages'] if x['id']=='desktop')
+print(p['url'])
+")
+          DT_SHA256=$(python3 -c "
+import json
+d=json.load(open('/tmp/desktop.json'))
+p=next(x for x in d['packages'] if x['id']=='desktop')
+print(p.get('sha256',''))
+")
+          DT_SIZE=$(python3 -c "
+import json
+d=json.load(open('/tmp/desktop.json'))
+p=next(x for x in d['packages'] if x['id']=='desktop')
+print(p.get('size',0))
+")
+          echo "desktop_version=$DT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "desktop_url=$DT_URL" >> "$GITHUB_OUTPUT"
+          echo "desktop_sha256=$DT_SHA256" >> "$GITHUB_OUTPUT"
+          echo "desktop_size=$DT_SIZE" >> "$GITHUB_OUTPUT"
+          echo "Upstream linuxfs $LF_VERSION, desktop $DT_VERSION"
 
       - name: Check current data-packages release
         id: current
@@ -50,56 +81,104 @@ jobs:
           fi
 
       - name: Skip if up to date
-        if: steps.current.outputs.exists == 'true' && steps.current.outputs.current_version == steps.upstream.outputs.version
-        run: echo "Already at version ${{ steps.upstream.outputs.version }}. Nothing to do."
+        if: steps.current.outputs.exists == 'true' && steps.current.outputs.current_version == steps.upstream.outputs.linuxfs_version
+        run: echo "Already at linuxfs ${{ steps.upstream.outputs.linuxfs_version }}. Nothing to do."
 
       - name: Download linuxfs archive
-        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.version
+        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.linuxfs_version
         run: |
           set -euo pipefail
-          echo "Downloading linuxfs ${{ steps.upstream.outputs.version }}..."
-          curl -sL --retry 3 --retry-delay 5 -o /tmp/linuxfs.tar.zst "${{ steps.upstream.outputs.url }}"
+          echo "Downloading linuxfs ${{ steps.upstream.outputs.linuxfs_version }}..."
+          curl -sL --retry 3 --retry-delay 5 -o /tmp/linuxfs.tar.zst "${{ steps.upstream.outputs.linuxfs_url }}"
           echo "Verifying sha256..."
-          echo "${{ steps.upstream.outputs.sha256 }}  /tmp/linuxfs.tar.zst" | sha256sum -c -
+          echo "${{ steps.upstream.outputs.linuxfs_sha256 }}  /tmp/linuxfs.tar.zst" | sha256sum -c -
           ls -lh /tmp/linuxfs.tar.zst
 
+      - name: Download desktop archive
+        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.linuxfs_version
+        run: |
+          set -euo pipefail
+          echo "Downloading desktop ${{ steps.upstream.outputs.desktop_version }}..."
+          curl -sL --retry 3 --retry-delay 5 -o /tmp/desktop.tar.zst "${{ steps.upstream.outputs.desktop_url }}"
+          echo "Verifying sha256..."
+          echo "${{ steps.upstream.outputs.desktop_sha256 }}  /tmp/desktop.tar.zst" | sha256sum -c -
+          ls -lh /tmp/desktop.tar.zst
+
+      - name: Build all-in-one bundle
+        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.linuxfs_version
+        run: |
+          set -euo pipefail
+          cat > /tmp/manifest.json <<EOF
+          {
+            "format": "droiddeck-bundle",
+            "linuxfs": {
+              "version": "${{ steps.upstream.outputs.linuxfs_version }}",
+              "sha256": "${{ steps.upstream.outputs.linuxfs_sha256 }}",
+              "size": ${{ steps.upstream.outputs.linuxfs_size }}
+            },
+            "desktop": {
+              "version": "${{ steps.upstream.outputs.desktop_version }}",
+              "name": "Desktop (LXQt on labwc)",
+              "sha256": "${{ steps.upstream.outputs.desktop_sha256 }}",
+              "size": ${{ steps.upstream.outputs.desktop_size }}
+            }
+          }
+          EOF
+          python3 - <<'PYEOF'
+          import zipfile, os
+          with zipfile.ZipFile('/tmp/droiddeck-bundle.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+              z.write('/tmp/manifest.json', 'manifest.json')
+              z.write('/tmp/linuxfs.tar.zst', 'linuxfs.tar.zst')
+              z.write('/tmp/desktop.tar.zst', 'desktop.tar.zst')
+          PYEOF
+          ls -lh /tmp/droiddeck-bundle.zip
+
       - name: Create or update data-packages release
-        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.version
+        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.linuxfs_version
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.upstream.outputs.version }}"
-          SHA256="${{ steps.upstream.outputs.sha256 }}"
-          SIZE="${{ steps.upstream.outputs.size }}"
-          SIZE_HUMAN=$(numfmt --to=iec "$SIZE")
+          LF_VERSION="${{ steps.upstream.outputs.linuxfs_version }}"
+          DT_VERSION="${{ steps.upstream.outputs.desktop_version }}"
+          LF_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.linuxfs_size }}")
+          DT_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.desktop_size }}")
           cat > /tmp/release-notes.md <<EOF
-          ## Linux 运行时数据包
+          ## 数据包（Linux 运行时 + 桌面）
 
-          用于 DroidDeck 中文优化版的本地导入功能。在 App 配置页点击「导入」选择此文件即可安装，无需在 App 内下载。
+          用于 DroidDeck 中文优化版的本地导入功能。两种导入方式：
 
-          - **linuxfs version:** $VERSION
-          - **大小:** $SIZE_HUMAN
-          - **来源:** The412Banner/winlator-contents
-          - **sha256:** \`$SHA256\`
+          ### 方式一：全能合包（推荐）
+          下载 \`droiddeck-bundle.zip\`（linuxfs + desktop 二合一），App 内配置页点「导入」选择该 zip，自动依次安装 Linux 运行时和 Linux 桌面。
+
+          ### 方式二：单独安装 Linux 运行时
+          下载 \`linuxfs.tar.zst\`，App 内配置页点「导入」选择该文件即可。
+
+          - **linuxfs version:** $LF_VERSION（$LF_SIZE_HUMAN）
+          - **desktop version:** $DT_VERSION（$DT_SIZE_HUMAN）
+          - **来源:** The412Banner/winlator-contents（linuxfs 与 desktop 均源自上游，仅做镜像分发）
+          - **linuxfs sha256:** \`${{ steps.upstream.outputs.linuxfs_sha256 }}\`
+          - **desktop sha256:** \`${{ steps.upstream.outputs.desktop_sha256 }}\`
 
           ### 使用方法
-          1. 下载下方 \`linuxfs.tar.zst\`
+          1. 下载合包 zip（或单独 linuxfs）
           2. 传到手机存储
           3. 打开 DroidDeck → 配置 → Linux 运行时 → 导入
           4. 选择文件，自动校验并安装
 
           > 本 release 由 sync-data-packages workflow 自动同步上游版本。
+          > Steam 客户端与 Proton 不属于本数据包：前者由 Valve 在首次会话时自行下载，后者在 Steam 账户体系内获取。
           EOF
 
           if [ "${{ steps.current.outputs.exists }}" = "false" ]; then
             gh release create data-packages \
               --repo "$GITHUB_REPOSITORY" \
-              --title "数据包（Linux 运行时）" \
+              --title "数据包（Linux 运行时 + 桌面）" \
               --notes-file /tmp/release-notes.md \
-              /tmp/linuxfs.tar.zst
+              /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst
           else
+            gh release delete-asset data-packages droiddeck-bundle.zip --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
             gh release delete-asset data-packages linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-            gh release upload data-packages /tmp/linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --clobber
+            gh release upload data-packages /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --clobber
             gh release edit data-packages --repo "$GITHUB_REPOSITORY" --notes-file /tmp/release-notes.md
           fi
