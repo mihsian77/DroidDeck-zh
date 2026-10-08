@@ -1,0 +1,103 @@
+name: Sync data packages
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-data-packages
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Fetch upstream linuxfs.json
+        id: upstream
+        run: |
+          set -euo pipefail
+          curl -sL "https://raw.githubusercontent.com/The412Banner/winlator-contents/main/linuxfs.json" -o /tmp/linuxfs.json
+          VERSION=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['version'])")
+          URL=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['url'])")
+          SHA256=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['sha256'])")
+          SIZE=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['size'])")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "Upstream linuxfs version: $VERSION ($(numfmt --to=iec $SIZE))"
+
+      - name: Check current data-packages release
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE=$(gh release view data-packages --repo "$GITHUB_REPOSITORY" --json tagName,body 2>/dev/null || echo "NOT_FOUND")
+          if [ "$RELEASE" = "NOT_FOUND" ]; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "current_version=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            CURRENT=$(echo "$RELEASE" | python3 -c "import json,sys; b=json.load(sys.stdin).get('body',''); import re; m=re.search(r'linuxfs version:\s*(\S+)', b); print(m.group(1) if m else 'unknown')")
+            echo "current_version=$CURRENT" >> "$GITHUB_OUTPUT"
+            echo "Current data-packages version: $CURRENT"
+          fi
+
+      - name: Skip if up to date
+        if: steps.current.outputs.exists == 'true' && steps.current.outputs.current_version == steps.upstream.outputs.version
+        run: echo "Already at version ${{ steps.upstream.outputs.version }}. Nothing to do."
+
+      - name: Download linuxfs archive
+        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.version
+        run: |
+          set -euo pipefail
+          echo "Downloading linuxfs ${{ steps.upstream.outputs.version }}..."
+          curl -sL --retry 3 --retry-delay 5 -o /tmp/linuxfs.tar.zst "${{ steps.upstream.outputs.url }}"
+          echo "Verifying sha256..."
+          echo "${{ steps.upstream.outputs.sha256 }}  /tmp/linuxfs.tar.zst" | sha256sum -c -
+          ls -lh /tmp/linuxfs.tar.zst
+
+      - name: Create or update data-packages release
+        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.upstream.outputs.version }}"
+          SHA256="${{ steps.upstream.outputs.sha256 }}"
+          SIZE="${{ steps.upstream.outputs.size }}"
+          BODY="## Linux 运行时数据包
+
+用于 DroidDeck 中文优化版的本地导入功能。在 App 配置页点击「导入」选择此文件即可安装，无需在 App 内下载。
+
+- **linuxfs version:** $VERSION
+- **大小:** $(numfmt --to=iec $SIZE)
+- **来源:** The412Banner/winlator-contents
+- **sha256:** \`$SHA256\`
+
+### 使用方法
+1. 下载下方 \`linuxfs.tar.zst\`
+2. 传到手机存储
+3. 打开 DroidDeck → 配置 → Linux 运行时 → 导入
+4. 选择文件，自动校验并安装
+
+> 本 release 由 sync-data-packages workflow 自动同步上游版本。"
+
+          if [ "${{ steps.current.outputs.exists }}" = "false" ]; then
+            gh release create data-packages \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "数据包（Linux 运行时）" \
+              --notes "$BODY" \
+              /tmp/linuxfs.tar.zst
+          else
+            # Remove old asset, upload new
+            gh release delete-asset data-packages linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+            gh release upload data-packages /tmp/linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit data-packages --repo "$GITHUB_REPOSITORY" --notes "$BODY"
+          fi
