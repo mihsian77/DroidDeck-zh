@@ -340,9 +340,24 @@ case $mode in
     steam_root=$XDG_DATA_HOME/Steam
     # Log out of Steam when the front end asked for it: drop the credentials that identify an
     # account, but keep config.vdf (download region, client settings) intact.
-    logout_flag=/data/data/com.droiddeck.launcher/files/.droiddeck-steam-logout
-    if [ -f "$logout_flag" ]; then
+    # The app writes the flag at context.filesDir, which is /data/user/0/<pkg>/files on
+    # Android 9+. /data/data is only a symlink on the host; proot binds the real path, so the
+    # container sees /data/user/0/... but not /data/data/... Check both to cover every layout.
+    logout_flag=""
+    for _candidate in \
+        /data/user/0/com.droiddeck.launcher/files/.droiddeck-steam-logout \
+        /data/data/com.droiddeck.launcher/files/.droiddeck-steam-logout
+    do
+      if [ -f "$_candidate" ]; then
+        logout_flag="$_candidate"
+        break
+      fi
+    done
+    if [ -n "$logout_flag" ]; then
       rm -f "$logout_flag"
+      # A flag written under either path must not linger for the next session.
+      rm -f /data/user/0/com.droiddeck.launcher/files/.droiddeck-steam-logout 2>/dev/null
+      rm -f /data/data/com.droiddeck.launcher/files/.droiddeck-steam-logout 2>/dev/null
       echo "== steam: logout requested, clearing credentials"
       rm -f "$steam_root/config/loginusers.vdf" 2>/dev/null
       rm -rf "$steam_root/config/htmlcache" 2>/dev/null
