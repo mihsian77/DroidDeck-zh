@@ -414,7 +414,7 @@ public final class LinuxRuntimeInstaller {
                         "desktop", dt.optString("name", "Desktop"), 1, dt.optString("version", "bundle"),
                         "tar", "local://bundle/desktop.tar.zst", dt.optString("sha256", ""),
                         dt.optLong("size", desktopArchive.length()), "", "applications-games", "Game");
-                String problem = DesktopCatalog.installFromFile(context, entry, desktopArchive, listener);
+                String problem = DesktopCatalog.INSTANCE.installFromFile(context, entry, desktopArchive, listener);
                 if (problem != null) {
                     Log.w(TAG, "importBundle: desktop step failed: " + problem);
                     return false;
