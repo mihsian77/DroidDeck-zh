@@ -133,6 +133,7 @@ internal fun SetupPanel(
 ) {
     val host = rememberMenuHost()
     val ctx = LocalContext.current
+    var speedTestOpen by rememberSaveable { mutableStateOf(false) }
     var processLimitBusy by remember { mutableStateOf(false) }
     var processLimitMessage by remember { mutableStateOf<String?>(null) }
     val setProcessLimit: (Boolean) -> Unit = { enabled ->
@@ -189,7 +190,11 @@ internal fun SetupPanel(
             PageHeader(stringResource(R.string.setup_title)) {
                 TabStrip(tabs, tab, pick, Modifier.weight(1f), tabFocus)
             }
-            Column(modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+            if (speedTestOpen) {
+                // The speed test covers the whole panel (its own scroll + Back), like the ADB page.
+                SpeedTestPage(onBack = { speedTestOpen = false })
+            } else {
+                Column(modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
                 when (tab) {
                     0 -> {
                         SectionTitle(stringResource(R.string.setup_system_check), null)
@@ -390,8 +395,15 @@ internal fun SetupPanel(
                                 else stringResource(R.string.setup_store_off),
                                 s.storeEnabled,
                             ) { a.onStoreEnabled(it) }
+                            ActionRow(
+                                stringResource(R.string.setup_speed_test),
+                                stringResource(R.string.setup_speed_test_hint),
+                                stringResource(R.string.speed_test_start),
+                                { speedTestOpen = true },
+                            )
                         }
                     }
+                }
                 }
             }
         }

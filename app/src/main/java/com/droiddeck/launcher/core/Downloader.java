@@ -20,13 +20,50 @@ import java.nio.charset.StandardCharsets;
 public final class Downloader {
     private static final String TAG = "Downloader";
     private static final int TIMEOUT_MS = 30_000;
+    /** Set once from the Application class; lets every fetch fall through to MirrorHub nodes. */
+    private static volatile android.content.Context appContext;
 
     private Downloader() {}
 
+    /** Set once from the Application class; enables MirrorHub multi-source for every download. */
+    public static void init(android.content.Context context) {
+        appContext = context.getApplicationContext();
+    }
+
+    /** True when MirrorHub multi-source is available for this fetch. */
+    private static boolean mirrorHubReady() {
+        return appContext != null && MirrorHub.refresh(appContext);
+    }
+
+    /**
+     * Fetches a URL with MirrorHub fallback: tries the original URL first with a short timeout,
+     * then the cached nodes in latency order. Small JSON fetches skip the latency probe - a
+     * blocked raw.githubusercontent.com fails in seconds instead of stalling the UI.
+     */
     public static String downloadString(String url) {
+        if (mirrorHubReady() && MirrorHub.isGitHubUrl(url)) {
+            java.util.List<String> sources = MirrorHub.buildFallbackSources(appContext, url);
+            for (int i = 0; i < sources.size(); i++) {
+                String candidate = sources.get(i);
+                String body = downloadStringSingle(candidate, i == 0 ? 6_000 : TIMEOUT_MS);
+                if (body != null) {
+                    if (i > 0) Log.i(TAG, "GET via mirror (" + (i + 1) + "/" + sources.size() + "): " + candidate);
+                    return body;
+                }
+                Log.w(TAG, "string source " + (i + 1) + "/" + sources.size() + " failed, trying next");
+            }
+            return null;
+        }
+        return downloadStringSingle(url, TIMEOUT_MS);
+    }
+
+    private static String downloadStringSingle(String url, int timeoutMs) {
         HttpURLConnection connection = null;
         try {
             connection = open(url);
+            // Both connect and read get the same budget: a blocked GitHub is dead weight for the UI.
+            connection.setConnectTimeout(timeoutMs);
+            connection.setReadTimeout(timeoutMs);
             if (connection.getResponseCode() / 100 != 2) {
                 Log.w(TAG, url + " -> HTTP " + connection.getResponseCode());
                 return null;
@@ -47,11 +84,18 @@ public final class Downloader {
     /**
      * Downloads to {@code destination}, reporting a 0..1 fraction (or -1 when the server sends no
      * length). {@code resume} continues a partial file with a Range request, which is what makes a
-     * 790 MB download survive a dropped connection instead of starting over.
+     * 790 MB download survive a dropped connection instead of starting over. GitHub URLs are
+     * automatically expanded to the MirrorHub multi-source list.
      */
     public static boolean downloadFile(String url, File destination, boolean resume,
                                        java.util.function.Consumer<Float> progress) {
-        return downloadFileWithSources(java.util.Collections.singletonList(url), destination, resume, progress);
+        java.util.List<String> sources;
+        if (mirrorHubReady() && MirrorHub.isGitHubUrl(url)) {
+            sources = MirrorHub.buildSourceList(appContext, url);
+        } else {
+            sources = java.util.Collections.singletonList(url);
+        }
+        return downloadFileWithSources(sources, destination, resume, progress);
     }
 
     /**

@@ -235,7 +235,7 @@ public final class LinuxRuntimeInstaller {
             // Build candidate source list: fastest probed source first, then direct, then other nodes.
             // MirrorHub.refresh() is cached 6h; selectFastestSource probes direct + top 3 nodes.
             MirrorHub.refresh(context);
-            java.util.List<String> sources = buildSourceList(context, release.url);
+            java.util.List<String> sources = MirrorHub.buildSourceList(context, release.url);
             Log.i(TAG, "downloading from " + sources.size() + " candidate sources");
 
             // Downloader reports a 0..1 fraction, or -1 while the total size is unknown.
@@ -256,24 +256,6 @@ public final class LinuxRuntimeInstaller {
         }
         // Note: archive is NOT deleted on download failure so the next attempt can resume.
         // It IS deleted on checksum mismatch (corrupted) and after successful unpack.
-    }
-
-    /**
-     * Builds an ordered list of download URLs: the fastest probed source first, then direct
-     * GitHub, then remaining MirrorHub nodes as fallbacks. All serve the same file so resume
-     * works across switches.
-     */
-    private static java.util.List<String> buildSourceList(Context context, String githubUrl) {
-        java.util.List<String> sources = new java.util.ArrayList<>();
-        String fastest = MirrorHub.selectFastestSource(context, githubUrl);
-        sources.add(fastest);
-        if (!fastest.equals(githubUrl)) sources.add(githubUrl);
-        for (MirrorHub.Node node : MirrorHub.getNodes(context)) {
-            String mirrored = "https://" + node.domain + "/" + githubUrl;
-            if (!sources.contains(mirrored)) sources.add(mirrored);
-            if (sources.size() >= 5) break;
-        }
-        return sources;
     }
 
     /**
