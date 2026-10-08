@@ -81,12 +81,12 @@
     <string name="game_env_no_fsync">设为 1 可让此游戏禁用 droiddeck-fsync；存在对应包时使用 droiddeck-esync，否则使用 droiddeck-ntsync。</string>
     <string name="game_env_fsync_first">设为 1 可让此游戏使用 droiddeck-fsync；设为 0 则在有匹配其 Proton 的包时优先使用 droiddeck-esync。</string>
     <string name="game_env_xalia">设为 0 可为此游戏禁用 Proton 的手柄导航助手。</string>
-    <string name="game_env_hud">针对 D3D9–11 的 DXVK 覆盖层。fps 显示帧率；不设置则隐藏。</string>
+    <string name="game_env_hud">适用于 D3D9–11 的 DXVK 覆盖层。fps 显示帧率；不设置则隐藏。</string>
     <string name="game_env_dxvk_config">以英文分号（;）分隔的 DXVK 设置。新版本使用 dxvk.maxFrameRate 限制帧率；日常游戏建议优先使用会话帧率限制。</string>
     <string name="game_env_vkd3d_limit">D3D12 帧率限制。0 表示不限制。</string>
     <string name="game_env_glthread">Mesa OpenGL 多线程。true 可能有助于受 CPU 限制的 OpenGL 游戏；请逐个游戏测试。</string>
     <string name="sync_backend_title">Wine 同步</string>
-    <string name="sync_backend_hint">游戏保持线程同步的方式。将在下次会话生效。</string>
+    <string name="sync_backend_hint">控制游戏线程同步的方式。将在下次会话生效。</string>
     <string name="sync_backend_esync">esync</string>
     <string name="sync_backend_ntsync">ntsync</string>
     <string name="sync_backend_fsync">fsync</string>
@@ -208,7 +208,7 @@
     <string name="add_app_runtime_required">请先在“配置”中安装 Linux 运行时。</string>
     <string name="add_app_busy">请等待 %1$s 完成。</string>
     <string name="steam_compat_label">兼容</string>
-    <string name="proton_compatible_note">在 Steam 兼容性菜单中标记为“%1$s”的构建带有 DroidDeck 的前缀修复，可在此设备启动游戏。默认为 Proton Experimental ARM64（%1$s），安装更新构建后则为 Proton 11.0 ARM64（%1$s）。未带标记的 Valve 官方 Proton 条目无法在此设备启动游戏。</string>
+    <string name="proton_compatible_note">在 Steam 兼容性菜单中标记为“%1$s”的构建包含 DroidDeck 前缀修复，可在此设备启动游戏。默认为 Proton Experimental ARM64（%1$s），安装更新版本后则为 Proton 11.0 ARM64（%1$s）。未带标记的 Valve 官方 Proton 条目无法在此设备启动游戏。</string>
     <string name="proton_installed_compatible">已安装 %1$s · %2$s</string>
     <string name="common_cancel">取消</string>
     <string name="common_auto">自动</string>
@@ -364,7 +364,7 @@
     <string name="mode_second_library">第二个库</string>
     <string name="mode_storage_note">从 SD 卡或共享存储流式读取资源的游戏可能出现卡顿。</string>
     <string name="mode_storage_diagnostics">存储诊断</string>
-    <string name="mode_storage_diagnostics_hint">在分享日志中记录分配结果和存储采样耗时。启用期间可能减慢安装。将在下次会话生效。</string>
+    <string name="mode_storage_diagnostics_hint">在分享日志中记录文件分配结果和存储耗时采样。启用期间可能拖慢安装。将在下次会话生效。</string>
     <string name="mode_choose_folder">选择文件夹…</string>
     <string name="mode_renderer">渲染器</string>
     <string name="mode_desktop_renderer">桌面渲染器</string>
@@ -539,7 +539,7 @@
     <string name="drawer_texture_hint">DirectX 9–11 游戏，下次启动时生效。</string>
     <string name="drawer_anisotropy">各向异性过滤</string>
     <string name="drawer_texture_sharpness">纹理锐度</string>
-    <string name="drawer_texture_sharpness_note">负 mipmap 偏移：纹理更锐利，可能有轻微闪烁。自动模式会匹配会话放大到屏幕的程度。</string>
+    <string name="drawer_texture_sharpness_note">负 mip LOD 偏置：纹理更锐利，可能有轻微闪烁。自动模式根据会话放大到屏幕的比例匹配。</string>
     <string name="drawer_touch_auto">自动（%1$s）</string>
     <string name="drawer_keyboard">键盘</string>
     <string name="drawer_pc_keyboard">PC 键盘</string>
@@ -599,8 +599,8 @@
     <string name="setup_runtime_catalog_unavailable">无法获取运行时版本信息，请检查网络后重试</string>
     <string name="mirrorhub_attribution">下载加速节点由 MirrorHub 提供</string>
     <string name="setup_limit">子进程限制</string>
-    <string name="setup_limit_on">已开启 · Android 可能会关闭 Steam。关闭该限制约需一分钟。</string>
-    <string name="setup_limit_unset">未设置 · Android 可能会关闭 Steam。关闭该限制约需一分钟。</string>
+    <string name="setup_limit_on">已开启 · Android 可能会关闭 Steam。关闭此限制约需一分钟。</string>
+    <string name="setup_limit_unset">未设置 · Android 可能会关闭 Steam。关闭此限制约需一分钟。</string>
     <string name="setup_limit_unknown">无法检查 · 关闭该限制约需一分钟。</string>
     <string name="setup_fix_it">修复</string>
     <string name="setup_details">详情</string>
