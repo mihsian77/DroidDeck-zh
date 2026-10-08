@@ -426,7 +426,8 @@ public final class LinuxRuntimeInstaller {
             return false;
         } finally {
             // The payload files may be re-imported; leave the cache tidy.
-            RuntimeFileTree.delete(work, null);
+            try { RuntimeFileTree.delete(work, null); }
+            catch (IOException e) { Log.w(TAG, "bundle cleanup", e); }
         }
     }
 
