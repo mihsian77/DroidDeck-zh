@@ -225,6 +225,12 @@ class MainActivity : ComponentActivity() {
     private val pickRuntimeArchive = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         if (r.resultCode == RESULT_OK) InAppFilePicker.pickedFile(r.data)?.let { importRuntime(it) }
     }
+    /** The Proton build a pick is for; set before launching the picker, cleared on return. */
+    private var pendingProtonImport: String? = null
+    private val pickProtonArchive = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        val id = pendingProtonImport.also { pendingProtonImport = null } ?: return@registerForActivityResult
+        if (r.resultCode == RESULT_OK) InAppFilePicker.pickedFile(r.data)?.let { protons.importProton(id, it) }
+    }
 
     private fun importRuntime(file: File) {
         if (runtimeChangesBlocked()) return
@@ -1160,6 +1166,10 @@ class MainActivity : ComponentActivity() {
             runtimeReady = ready && !busy,
             sessionRunning = SessionState.running,
             onInstall = { id -> protons.installProton(id) },
+            onImport = { id ->
+                pendingProtonImport = id
+                pickProtonArchive.launch(InAppFilePicker.buildIntent(this, listOf("tar.gz", "tar.xz", "tar.zst", "zip", "tgz"), getString(R.string.store_import)))
+            },
             onCancel = { id -> ProtonExtras.tools.firstOrNull { it.id == id }?.let { ProtonExtras.unqueue(this, it) }; protons.refreshProtons() },
             onRemove = { id -> protons.removeProton(id) },
             onBack = { showProtons = false },

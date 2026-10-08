@@ -713,6 +713,7 @@
     <string name="store_press_again">Press again to remove</string>
     <string name="store_installing">Installing…</string>
     <string name="store_install">Install</string>
+    <string name="store_import">Import</string>
     <string name="store_setup_first">Set up Flatpak first</string>
     <string name="store_download_size">%1$s download</string>
     <string name="store_installed_chip">● Installed</string>
@@ -1752,6 +1753,7 @@
     <string name="pextra_too_big">Download exceeded the release size and was deleted</string>
     <string name="pextra_incomplete">Download was incomplete; the partial file is kept for a resumable retry</string>
     <string name="pextra_verifying">Verifying download</string>
+    <string name="pextra_copying">Copying %1$s</string>
     <string name="pextra_checksum_unreadable">Could not read the release checksum; try again</string>
     <string name="pextra_no_checksum">%1$s %2$s publishes no checksum; nothing was installed</string>
     <string name="pextra_checksum_mismatch">Checksum mismatch; the download was deleted</string>

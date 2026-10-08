@@ -65,6 +65,28 @@ object ProtonExtras {
         return try { installNow(context, tool, onProgress) } finally { installInProgress = false }
     }
 
+    /**
+     * Installs a local Proton archive the user picked (import path). The file is copied into the
+     * download directory so the install logic always reads from the same place, then verified and
+     * registered exactly like a downloaded build. The caller owns the picked file's lifetime.
+     */
+    @Synchronized
+    fun importArchive(context: Context, tool: Tool, file: File, onProgress: (String, Int) -> Unit): String? {
+        if (installInProgress) return context.getString(R.string.pextra_busy)
+        installInProgress = true
+        return try {
+            if (SessionState.running) return@try context.getString(R.string.pextra_stop_session)
+            if (!LinuxRuntime.isInstalled(context)) return@try context.getString(R.string.user_apps_runtime_required)
+            val downloads = File(context.filesDir, "proton-downloads").apply { mkdirs() }
+            val archive = File(downloads, "${tool.id}-local${file.name.substringBeforeLast('.')}.tar.gz")
+            onProgress(context.getString(R.string.pextra_copying, tool.name), 0)
+            file.copyTo(archive, overwrite = true)
+            installArchive(context, tool, archive, onProgress)
+        } finally {
+            installInProgress = false
+        }
+    }
+
     private fun installNow(context: Context, tool: Tool, onProgress: (String, Int) -> Unit): String? {
         if (SessionState.running) return context.getString(R.string.pextra_stop_session)
         if (!LinuxRuntime.isInstalled(context)) return context.getString(R.string.user_apps_runtime_required)
@@ -122,7 +144,17 @@ object ProtonExtras {
             archive.delete()
             return context.getString(R.string.pextra_checksum_mismatch)
         }
+        return installArchive(context, tool, archive, onProgress)
+    }
 
+    /**
+     * Verifies (where possible) and registers one Proton archive: stage the session files, then
+     * ask the runtime's droiddeck-proton-extra shim to unpack it into compatibilitytools.d. The
+     * archive is deleted on success; on a checksum failure it is deleted before install too.
+     * Imported archives arrive here unverified (no release to vouch for them) and are installed
+     * as-is - the shim refuses an archive that does not look like a Proton build.
+     */
+    private fun installArchive(context: Context, tool: Tool, archive: File, onProgress: (String, Int) -> Unit): String? {
         if (SessionState.running) return context.getString(R.string.pextra_session_started)
         val installing = context.getString(R.string.pextra_installing, tool.name)
         onProgress(installing, -1)

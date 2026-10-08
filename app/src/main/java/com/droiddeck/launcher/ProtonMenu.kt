@@ -40,6 +40,27 @@ internal class ProtonMenu(private val activity: android.app.Activity, private va
         }, "install-proton-$id").start()
     }
 
+    /** Installs a Proton build from a local archive the user picked, bypassing the network. */
+    fun importProton(id: String, file: java.io.File) {
+        val tool = ProtonExtras.tools.firstOrNull { it.id == id } ?: return
+        if (protonBusyId != null || SessionState.running) return
+        protonBusyId = id
+        protonStage = activity.getString(R.string.store_starting)
+        protonPercent = -1
+        Thread({
+            val problem = ProtonExtras.importArchive(activity, tool, file) { label, value ->
+                ui.post { protonStage = label; protonPercent = value }
+            }
+            ui.post {
+                protonBusyId = null
+                protonStage = null
+                protonPercent = -1
+                refreshProtons()
+                if (problem != null) android.widget.Toast.makeText(activity, problem, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }, "import-proton-$id").start()
+    }
+
     fun removeProton(id: String) {
         val tool = ProtonExtras.tools.firstOrNull { it.id == id } ?: return
         if (protonBusyId != null || SessionState.running) return

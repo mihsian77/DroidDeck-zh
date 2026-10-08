@@ -712,6 +712,7 @@
     <string name="store_press_again">再次点按以移除</string>
     <string name="store_installing">安装中…</string>
     <string name="store_install">安装</string>
+    <string name="store_import">导入</string>
     <string name="store_setup_first">请先配置 Flatpak</string>
     <string name="store_download_size">需下载 %1$s</string>
     <string name="store_installed_chip">● 已安装</string>
@@ -1829,6 +1830,7 @@
     <string name="pextra_too_big">下载内容超出发布版本的大小，已删除</string>
     <string name="pextra_incomplete">下载不完整；已保留部分下载的文件，重试时可继续下载</string>
     <string name="pextra_verifying">正在校验下载</string>
+    <string name="pextra_copying">正在复制 %1$s</string>
     <string name="pextra_checksum_unreadable">无法读取发布版本的校验和；请重试</string>
     <string name="pextra_no_checksum">%1$s %2$s 未发布校验和；未安装任何内容</string>
     <string name="pextra_checksum_mismatch">校验和不匹配；已删除下载的文件</string>

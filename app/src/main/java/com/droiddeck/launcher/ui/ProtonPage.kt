@@ -27,6 +27,7 @@ fun ProtonPage(
     runtimeReady: Boolean,
     sessionRunning: Boolean,
     onInstall: (String) -> Unit,
+    onImport: (String) -> Unit,
     onCancel: (String) -> Unit,
     onRemove: (String) -> Unit,
     onBack: () -> Unit,
@@ -67,7 +68,10 @@ fun ProtonPage(
                         when {
                             row.installed != null -> SecondaryButton(stringResource(R.string.store_remove), enabled = busyId == null && runtimeReady && !sessionRunning) { onRemove(row.id) }
                             busyId != null -> SecondaryButton(if (busyId == row.id) stringResource(R.string.store_installing) else stringResource(R.string.store_install), enabled = false) {}
-                            else -> SecondaryButton(stringResource(R.string.proton_install_now), enabled = runtimeReady && !sessionRunning) { onInstall(row.id) }
+                            else -> {
+                                SecondaryButton(stringResource(R.string.proton_install_now), enabled = runtimeReady && !sessionRunning) { onInstall(row.id) }
+                                SecondaryButton(stringResource(R.string.store_import), enabled = runtimeReady && !sessionRunning) { onImport(row.id) }
+                            }
                         }
                         if (row.queued && row.installed == null && busyId == null) {
                             SecondaryButton(stringResource(R.string.proton_cancel_queued), enabled = !sessionRunning) { onCancel(row.id) }
