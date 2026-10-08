@@ -289,11 +289,14 @@ def main_commit(release: dict) -> str | None:
 
 def stable_app_release(releases: list[dict]) -> dict | None:
     """The newest published app release. The repo also publishes gamescope and wlroots
-    releases that GitHub may mark latest, so an app release is one shipping DroidDeck-<tag>.apk."""
+    releases that GitHub may mark latest, so an app release is one shipping DroidDeck-<tag>.apk.
+    The data-packages tag ships only a linuxfs archive and must never be treated as an app."""
+    DATA_PACKAGE_TAGS = {"data-packages"}
     apps = [
         r for r in releases
         if not r.get("draft") and not r.get("prerelease")
-        and any(a.get("name") == f"DroidDeck-{r.get('tag_name')}.apk" for a in r.get("assets") or [])
+        and r.get("tag_name") not in DATA_PACKAGE_TAGS
+        and any(a.get("name", "").endswith(".apk") for a in r.get("assets") or [])
     ]
     return max(apps, key=lambda r: r.get("published_at") or r.get("created_at") or "", default=None)
 

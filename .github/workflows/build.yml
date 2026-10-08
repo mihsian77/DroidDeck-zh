@@ -657,7 +657,12 @@ jobs:
           releases = json.loads(gh(f"repos/{repo}/releases?per_page=100"))
           # Sort by published_at descending so the newest is always picked, regardless of API order.
           releases.sort(key=lambda r: to_ms(r.get("published_at","")), reverse=True)
-          stable = next((r for r in releases if not r["prerelease"] and not r["draft"]), None)
+          # stable = newest non-prerelease release that ships an APK (data-packages only
+          # has a linuxfs archive and must never be treated as an app update).
+          stable = next((r for r in releases
+                         if not r["prerelease"] and not r["draft"]
+                         and r["tag_name"] != "data-packages"
+                         and any(a["name"].endswith(".apk") for a in r.get("assets", []))), None)
           preview = next((r for r in releases if r["prerelease"] and not r["draft"]), None)
           def mk_release(r):
               if not r: return None
