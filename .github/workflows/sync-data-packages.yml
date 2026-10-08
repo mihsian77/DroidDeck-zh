@@ -72,32 +72,34 @@ jobs:
           VERSION="${{ steps.upstream.outputs.version }}"
           SHA256="${{ steps.upstream.outputs.sha256 }}"
           SIZE="${{ steps.upstream.outputs.size }}"
-          BODY="## Linux 运行时数据包
+          SIZE_HUMAN=$(numfmt --to=iec "$SIZE")
+          cat > /tmp/release-notes.md <<EOF
+          ## Linux 运行时数据包
 
-用于 DroidDeck 中文优化版的本地导入功能。在 App 配置页点击「导入」选择此文件即可安装，无需在 App 内下载。
+          用于 DroidDeck 中文优化版的本地导入功能。在 App 配置页点击「导入」选择此文件即可安装，无需在 App 内下载。
 
-- **linuxfs version:** $VERSION
-- **大小:** $(numfmt --to=iec $SIZE)
-- **来源:** The412Banner/winlator-contents
-- **sha256:** \`$SHA256\`
+          - **linuxfs version:** $VERSION
+          - **大小:** $SIZE_HUMAN
+          - **来源:** The412Banner/winlator-contents
+          - **sha256:** \`$SHA256\`
 
-### 使用方法
-1. 下载下方 \`linuxfs.tar.zst\`
-2. 传到手机存储
-3. 打开 DroidDeck → 配置 → Linux 运行时 → 导入
-4. 选择文件，自动校验并安装
+          ### 使用方法
+          1. 下载下方 \`linuxfs.tar.zst\`
+          2. 传到手机存储
+          3. 打开 DroidDeck → 配置 → Linux 运行时 → 导入
+          4. 选择文件，自动校验并安装
 
-> 本 release 由 sync-data-packages workflow 自动同步上游版本。"
+          > 本 release 由 sync-data-packages workflow 自动同步上游版本。
+          EOF
 
           if [ "${{ steps.current.outputs.exists }}" = "false" ]; then
             gh release create data-packages \
               --repo "$GITHUB_REPOSITORY" \
               --title "数据包（Linux 运行时）" \
-              --notes "$BODY" \
+              --notes-file /tmp/release-notes.md \
               /tmp/linuxfs.tar.zst
           else
-            # Remove old asset, upload new
             gh release delete-asset data-packages linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
             gh release upload data-packages /tmp/linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --clobber
-            gh release edit data-packages --repo "$GITHUB_REPOSITORY" --notes "$BODY"
+            gh release edit data-packages --repo "$GITHUB_REPOSITORY" --notes-file /tmp/release-notes.md
           fi
