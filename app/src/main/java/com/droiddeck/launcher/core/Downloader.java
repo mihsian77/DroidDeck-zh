@@ -51,6 +51,29 @@ public final class Downloader {
      */
     public static boolean downloadFile(String url, File destination, boolean resume,
                                        java.util.function.Consumer<Float> progress) {
+        return downloadFileWithSources(java.util.Collections.singletonList(url), destination, resume, progress);
+    }
+
+    /**
+     * Downloads from multiple candidate URLs, trying the next one when the current fails.
+     * Resume works across source switches because all sources serve the same file and the partial
+     * archive is kept between attempts. Returns true when any source completes the download.
+     */
+    public static boolean downloadFileWithSources(java.util.List<String> urls, File destination,
+                                                  boolean resume,
+                                                  java.util.function.Consumer<Float> progress) {
+        if (urls == null || urls.isEmpty()) return false;
+        for (int i = 0; i < urls.size(); i++) {
+            String url = urls.get(i);
+            boolean ok = downloadFileSingle(url, destination, resume, progress);
+            if (ok) return true;
+            Log.w(TAG, "source " + (i + 1) + "/" + urls.size() + " failed, trying next");
+        }
+        return false;
+    }
+
+    private static boolean downloadFileSingle(String url, File destination, boolean resume,
+                                              java.util.function.Consumer<Float> progress) {
         HttpURLConnection connection = null;
         long have = resume && destination.isFile() ? destination.length() : 0;
         try {
@@ -64,7 +87,7 @@ public final class Downloader {
                     connection.disconnect();
                     //noinspection ResultOfMethodCallIgnored
                     destination.delete();
-                    return downloadFile(url, destination, false, progress);
+                    return downloadFileSingle(url, destination, false, progress);
                 }
                 Log.w(TAG, url + " -> HTTP " + code);
                 return false;
