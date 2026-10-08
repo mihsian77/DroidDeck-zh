@@ -23,6 +23,7 @@ jobs:
           set -euo pipefail
           curl -sL "https://raw.githubusercontent.com/The412Banner/winlator-contents/main/linuxfs.json" -o /tmp/linuxfs.json
           curl -sL "https://raw.githubusercontent.com/The412Banner/winlator-contents/main/desktop.json" -o /tmp/desktop.json
+          curl -sL "https://raw.githubusercontent.com/The412Banner/winlator-contents/main/steam-seed.json" -o /tmp/steam-seed.json
           LF_VERSION=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['version'])")
           LF_URL=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['url'])")
           LF_SHA256=$(python3 -c "import json; print(json.load(open('/tmp/linuxfs.json'))['sha256'])")
@@ -41,7 +42,18 @@ jobs:
           echo "desktop_url=$DT_URL" >> "$GITHUB_OUTPUT"
           echo "desktop_sha256=$DT_SHA256" >> "$GITHUB_OUTPUT"
           echo "desktop_size=$DT_SIZE" >> "$GITHUB_OUTPUT"
-          echo "Upstream linuxfs $LF_VERSION, desktop $DT_VERSION"
+          # The Proton seed: Valve's Experimental ARM64 build, mirrored by winlator-contents.
+          # It is a standalone asset (not part of the bundle zip) - Proton is a Steam-account
+          # component and users import it from the Proton page when the download is slow.
+          PR_VERSION=$(python3 -c "import json; d=json.load(open('/tmp/steam-seed.json')); p=next(x for x in d['packages'] if x['id']=='proton-arm64'); print(p.get('version',''))")
+          PR_URL=$(python3 -c "import json; d=json.load(open('/tmp/steam-seed.json')); p=next(x for x in d['packages'] if x['id']=='proton-arm64'); print(p['url'])")
+          PR_SHA256=$(python3 -c "import json; d=json.load(open('/tmp/steam-seed.json')); p=next(x for x in d['packages'] if x['id']=='proton-arm64'); print(p.get('sha256',''))")
+          PR_SIZE=$(python3 -c "import json; d=json.load(open('/tmp/steam-seed.json')); p=next(x for x in d['packages'] if x['id']=='proton-arm64'); print(p.get('size',0))")
+          echo "proton_version=$PR_VERSION" >> "$GITHUB_OUTPUT"
+          echo "proton_url=$PR_URL" >> "$GITHUB_OUTPUT"
+          echo "proton_sha256=$PR_SHA256" >> "$GITHUB_OUTPUT"
+          echo "proton_size=$PR_SIZE" >> "$GITHUB_OUTPUT"
+          echo "Upstream linuxfs $LF_VERSION, desktop $DT_VERSION, proton $PR_VERSION"
 
       - name: Check current data-packages release
         id: current
@@ -84,6 +96,16 @@ jobs:
           echo "${{ steps.upstream.outputs.desktop_sha256 }}  /tmp/desktop.tar.zst" | sha256sum -c -
           ls -lh /tmp/desktop.tar.zst
 
+      - name: Download proton archive
+        if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.linuxfs_version
+        run: |
+          set -euo pipefail
+          echo "Downloading proton ${{ steps.upstream.outputs.proton_version }}..."
+          curl -sL --retry 3 --retry-delay 5 -o /tmp/proton.tar.zst "${{ steps.upstream.outputs.proton_url }}"
+          echo "Verifying sha256..."
+          echo "${{ steps.upstream.outputs.proton_sha256 }}  /tmp/proton.tar.zst" | sha256sum -c -
+          ls -lh /tmp/proton.tar.zst
+
       - name: Build all-in-one bundle
         if: steps.current.outputs.exists == 'false' || steps.current.outputs.current_version != steps.upstream.outputs.linuxfs_version
         run: |
@@ -121,12 +143,14 @@ jobs:
           set -euo pipefail
           LF_VERSION="${{ steps.upstream.outputs.linuxfs_version }}"
           DT_VERSION="${{ steps.upstream.outputs.desktop_version }}"
+          PR_VERSION="${{ steps.upstream.outputs.proton_version }}"
           LF_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.linuxfs_size }}")
           DT_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.desktop_size }}")
+          PR_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.proton_size }}")
           cat > /tmp/release-notes.md <<EOF
-          ## 数据包（Linux 运行时 + 桌面）
+          ## 数据包（Linux 运行时 + 桌面 + Proton）
 
-          用于 DroidDeck 中文优化版的本地导入功能。两种导入方式：
+          用于 DroidDeck 中文优化版的本地导入功能。
 
           ### 方式一：全能合包（推荐）
           下载 \`droiddeck-bundle.zip\`（linuxfs + desktop 二合一），App 内配置页点「导入」选择该 zip，自动依次安装 Linux 运行时和 Linux 桌面。
@@ -134,31 +158,37 @@ jobs:
           ### 方式二：单独安装 Linux 运行时
           下载 \`linuxfs.tar.zst\`，App 内配置页点「导入」选择该文件即可。
 
+          ### 方式三：导入 Proton 兼容层
+          下载 \`proton.tar.zst\`，打开 DroidDeck → Proton 版本 → 对应构建点「导入」选择该文件。网络慢或梯子限速时推荐此方式。
+
           - **linuxfs version:** $LF_VERSION（$LF_SIZE_HUMAN）
           - **desktop version:** $DT_VERSION（$DT_SIZE_HUMAN）
-          - **来源:** The412Banner/winlator-contents（linuxfs 与 desktop 均源自上游，仅做镜像分发）
+          - **proton version:** $PR_VERSION（$PR_SIZE_HUMAN）
+          - **来源:** The412Banner/winlator-contents（linuxfs / desktop / proton 均源自上游，仅做镜像分发）
           - **linuxfs sha256:** \`${{ steps.upstream.outputs.linuxfs_sha256 }}\`
           - **desktop sha256:** \`${{ steps.upstream.outputs.desktop_sha256 }}\`
+          - **proton sha256:** \`${{ steps.upstream.outputs.proton_sha256 }}\`
 
           ### 使用方法
-          1. 下载合包 zip（或单独 linuxfs）
+          1. 下载合包 zip（或单独 linuxfs / proton）
           2. 传到手机存储
-          3. 打开 DroidDeck → 配置 → Linux 运行时 → 导入
+          3. 打开 DroidDeck → 配置 → Linux 运行时 → 导入（合包或 linuxfs）；Proton 版本 → 导入（proton）
           4. 选择文件，自动校验并安装
 
           > 本 release 由 sync-data-packages workflow 自动同步上游版本。
-          > Steam 客户端与 Proton 不属于本数据包：前者由 Valve 在首次会话时自行下载，后者在 Steam 账户体系内获取。
+          > Steam 客户端不属于本数据包：它由 Valve 在首次会话时自行下载（闭源产物，无法再分发）。
           EOF
 
           if [ "${{ steps.current.outputs.exists }}" = "false" ]; then
             gh release create data-packages \
               --repo "$GITHUB_REPOSITORY" \
-              --title "数据包（Linux 运行时 + 桌面）" \
+              --title "数据包（Linux 运行时 + 桌面 + Proton）" \
               --notes-file /tmp/release-notes.md \
-              /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst
+              /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/proton.tar.zst
           else
             gh release delete-asset data-packages droiddeck-bundle.zip --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
             gh release delete-asset data-packages linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-            gh release upload data-packages /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --clobber
+            gh release delete-asset data-packages proton.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+            gh release upload data-packages /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/proton.tar.zst --repo "$GITHUB_REPOSITORY" --clobber
             gh release edit data-packages --repo "$GITHUB_REPOSITORY" --notes-file /tmp/release-notes.md
           fi
