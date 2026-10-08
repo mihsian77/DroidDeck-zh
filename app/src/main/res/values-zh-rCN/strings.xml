@@ -760,7 +760,6 @@
     <string name="upd_more">展开</string>
     <string name="upd_new_stable">DroidDeck %1$s</string>
     <string name="upd_new_preview">新的预览版构建</string>
-    <string name="upd_new_test">PR #%1$d 测试构建</string>
     <string name="upd_mb">%1$d MB</string>
     <string name="upd_channel">更新通道</string>
     <string name="upd_stable">稳定版</string>
@@ -769,18 +768,9 @@
     <string name="upd_preview">预览版</string>
     <string name="upd_preview_hint">包含最新修复，先于稳定版发布</string>
     <string name="upd_preview_current">已是最新</string>
-    <string name="upd_tests">测试构建</string>
-    <string name="upd_tests_hint">在修复正式发布前先试用</string>
-    <string name="upd_tests_none">当前没有</string>
-    <string name="upd_pr">PR #%1$d</string>
-    <string name="upd_not_built">未为此 DroidDeck 副本构建</string>
     <string name="upd_updated">已于 %1$s 更新</string>
-    <string name="upd_test_name">PR #%1$d 测试</string>
     <string name="upd_while_ago">前段时间</string>
     <string name="upd_just_now">刚刚</string>
-    <plurals name="upd_tests_count">
-        <item quantity="other">%1$d 个可试用</item>
-    </plurals>
     <plurals name="upd_preview_behind">
         <item quantity="other">自你构建以来的更改 · 落后 %1$d 个构建</item>
     </plurals>

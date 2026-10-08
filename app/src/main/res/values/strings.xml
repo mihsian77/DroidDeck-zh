@@ -761,7 +761,6 @@
     <string name="upd_more">More</string>
     <string name="upd_new_stable">DroidDeck %1$s</string>
     <string name="upd_new_preview">New Preview build</string>
-    <string name="upd_new_test">PR #%1$d test build</string>
     <string name="upd_mb">%1$d MB</string>
     <string name="upd_channel">UPDATE CHANNEL</string>
     <string name="upd_stable">Stable</string>
@@ -770,19 +769,9 @@
     <string name="upd_preview">Preview</string>
     <string name="upd_preview_hint">Newest fixes, before Stable</string>
     <string name="upd_preview_current">Up to date</string>
-    <string name="upd_tests">Test builds</string>
-    <string name="upd_tests_hint">Try a fix before it\'s released</string>
-    <string name="upd_tests_none">None right now</string>
-    <string name="upd_pr">PR #%1$d</string>
-    <string name="upd_not_built">Not built for this copy of DroidDeck</string>
     <string name="upd_updated">Updated %1$s</string>
-    <string name="upd_test_name">the PR #%1$d test</string>
     <string name="upd_while_ago">a while ago</string>
     <string name="upd_just_now">just now</string>
-    <plurals name="upd_tests_count">
-        <item quantity="one">%1$d to try</item>
-        <item quantity="other">%1$d to try</item>
-    </plurals>
     <plurals name="upd_preview_behind">
         <item quantity="one">Changes since your build · %1$d build behind</item>
         <item quantity="other">Changes since your build · %1$d builds behind</item>

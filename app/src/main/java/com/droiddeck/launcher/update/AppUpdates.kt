@@ -8,8 +8,6 @@ import com.droiddeck.launcher.R
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.security.MessageDigest
 
 /**
@@ -28,7 +26,7 @@ object AppUpdates {
     private const val KEY_CHANNEL = "channel"
     private const val CATALOG_SCHEMA = 1
 
-    enum class Channel { STABLE, NIGHTLY, TEST }
+    enum class Channel { STABLE, NIGHTLY }
 
     data class Follow(val channel: Channel, val pr: Int = 0)
 
@@ -65,7 +63,6 @@ object AppUpdates {
     class Catalog(
         val stable: Release?,
         val preview: Release?,
-        val tests: List<Release>,
         val checkedAt: Long,
         val recentPreviews: List<PreviewChange> = emptyList(),
     )
@@ -134,7 +131,6 @@ object AppUpdates {
     fun release(catalog: Catalog, follow: Follow): Release? = when (follow.channel) {
         Channel.STABLE -> catalog.stable
         Channel.NIGHTLY -> catalog.preview
-        Channel.TEST -> catalog.tests.firstOrNull { it.pr == follow.pr }
     }
 
     fun offer(catalog: Catalog, follow: Follow, me: Installed = installed()): Offer {
@@ -147,7 +143,6 @@ object AppUpdates {
                 else -> Offer.AHEAD
             }
             Channel.NIGHTLY -> if (me.pr != 0) Offer.SWITCH else Offer.UPDATE
-            Channel.TEST -> if (me.pr == r.pr) Offer.UPDATE else Offer.SWITCH
         }
     }
 
@@ -211,7 +206,7 @@ object AppUpdates {
         stored(context)?.let { return it }
         val me = installed()
         val inferred = when {
-            me.pr != 0 -> Follow(Channel.TEST, me.pr)
+            me.pr != 0 -> Follow(Channel.NIGHTLY)
             catalog == null -> return Follow(Channel.STABLE)
             catalog.stable != null && isRunning(catalog.stable, me) -> Follow(Channel.STABLE)
             me.updatable -> Follow(Channel.NIGHTLY)
@@ -223,8 +218,7 @@ object AppUpdates {
 
     fun setFollow(context: Context, follow: Follow) {
         // Keep "nightly" on disk so an older DroidDeck still understands the preference after rollback.
-        val value = if (follow.channel == Channel.TEST) "test:${follow.pr}"
-        else follow.channel.name.lowercase()
+        val value = follow.channel.name.lowercase()
         prefs(context).edit().putString(KEY_CHANNEL, value).apply()
     }
 
@@ -233,9 +227,8 @@ object AppUpdates {
         return when {
             v == "stable" -> Follow(Channel.STABLE)
             v == "nightly" || v == "preview" -> Follow(Channel.NIGHTLY)
-            v.startsWith("test:") -> v.removePrefix("test:").toIntOrNull()?.let {
-                Follow(Channel.TEST, it)
-            }
+            // Old builds stored "test:<pr>"; there is no test channel anymore, preview is closest.
+            v.startsWith("test:") -> Follow(Channel.NIGHTLY)
             else -> null
         }
     }
@@ -272,15 +265,10 @@ object AppUpdates {
                 "The update catalog has an unsupported format (schema $schema, source $sourceRepo, CI $ciRepo)",
             )
         }
-        val tests = root.optJSONArray("tests") ?: JSONArray()
         val recentPreviews = root.optJSONArray("recentPreviews") ?: JSONArray()
         return Catalog(
             root.optJSONObject("stable")?.let { readPublishedRelease(it, packageName) },
             root.optJSONObject("preview")?.let { readPublishedRelease(it, packageName) },
-            (0 until tests.length())
-                .map { readPublishedRelease(tests.getJSONObject(it), packageName) }
-                .filter { it.pr > 0 }
-                .sortedByDescending { it.publishedAt },
             checkedAt,
             (0 until recentPreviews.length())
                 .mapNotNull { recentPreviews.optJSONObject(it)?.let(::readPublishedPreviewChange) }
@@ -365,19 +353,11 @@ object AppUpdates {
     }
 
     private fun get(context: Context, url: String): String {
-        val c = URL(url).openConnection() as HttpURLConnection
-        c.connectTimeout = 15_000
-        c.readTimeout = 20_000
-        c.setRequestProperty("Accept", "application/json")
-        c.setRequestProperty("User-Agent", "DroidDeck-app")
-        c.setRequestProperty("Cache-Control", "no-cache")
-        try {
-            val code = c.responseCode
-            if (code != 200) throw IOException(context.getString(R.string.appupd_http, code))
-            return c.inputStream.bufferedReader().use { it.readText() }
-        } finally {
-            c.disconnect()
-        }
+        // Goes through Downloader so MirrorHub nodes are tried when direct GitHub is blocked
+        // (a raw.githubusercontent.com timeout is what "can't check for updates" used to mean).
+        val body = com.droiddeck.launcher.core.Downloader.downloadString(url)
+            ?: throw IOException(context.getString(R.string.appupd_http, "timeout"))
+        return body
     }
 
     private fun writeApk(a: Apk): JSONObject = JSONObject()
@@ -427,7 +407,6 @@ object AppUpdates {
     internal fun writeCatalog(c: Catalog): JSONObject = JSONObject()
         .put("stable", c.stable?.let(::writeRelease))
         .put("preview", c.preview?.let(::writeRelease))
-        .put("tests", JSONArray().apply { c.tests.forEach { put(writeRelease(it)) } })
         .put("recentPreviews", JSONArray().apply { c.recentPreviews.forEach { put(writePreviewChange(it)) } })
         .put("checkedAt", c.checkedAt)
 
@@ -438,13 +417,11 @@ object AppUpdates {
         .put("publishedAt", c.publishedAt)
 
     internal fun readCachedCatalog(o: JSONObject): Catalog {
-        val tests = o.optJSONArray("tests") ?: JSONArray()
         val preview = o.optJSONObject("preview") ?: o.optJSONObject("nightly")
         val recentPreviews = o.optJSONArray("recentPreviews") ?: JSONArray()
         return Catalog(
             o.optJSONObject("stable")?.let(::readCachedRelease),
             preview?.let(::readCachedRelease),
-            (0 until tests.length()).map { readCachedRelease(tests.getJSONObject(it)) },
             o.optLong("checkedAt"),
             (0 until recentPreviews.length())
                 .mapNotNull { recentPreviews.optJSONObject(it)?.let(::readCachedPreviewChange) }

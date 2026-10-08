@@ -3,11 +3,6 @@ package com.droiddeck.launcher.ui
 import com.droiddeck.launcher.R
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,7 +30,6 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material.icons.outlined.Sync
 import androidx.compose.material.icons.outlined.Verified
@@ -251,7 +245,6 @@ private fun ReleaseNotes(title: String, notes: String, key: String) {
 private fun newBuild(f: Follow, r: Release) = when (f.channel) {
     Channel.STABLE -> stringResource(R.string.upd_new_stable, r.version ?: r.tag)
     Channel.NIGHTLY -> stringResource(R.string.upd_new_preview)
-    Channel.TEST -> stringResource(R.string.upd_new_test, r.pr)
 }
 
 /** A PR title as a sentence: "fix(steam): keep the client alive" -> "Keep the client alive". */
@@ -274,7 +267,6 @@ private fun ChannelLabel() {
 private fun ChannelPicker(u: UpdatesState, ua: UpdatesActions) {
     val colors = MaterialTheme.colorScheme
     val catalog = u.catalog
-    val tests = catalog?.tests.orEmpty()
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         ChannelCard(
             Icons.Outlined.Verified, stringResource(R.string.upd_stable), stringResource(R.string.upd_stable_hint),
@@ -284,16 +276,6 @@ private fun ChannelPicker(u: UpdatesState, ua: UpdatesActions) {
             Icons.Outlined.Bolt, stringResource(R.string.upd_preview), stringResource(R.string.upd_preview_hint),
             catalog?.preview?.let { ago(it.publishedAt) }, u.follow.channel == Channel.NIGHTLY,
         ) { ua.onFollow(Follow(Channel.NIGHTLY)) }
-        ChannelCard(
-            Icons.Outlined.Science, stringResource(R.string.upd_tests), stringResource(R.string.upd_tests_hint),
-            if (tests.isEmpty()) stringResource(R.string.upd_tests_none) else pluralStringResource(R.plurals.upd_tests_count, tests.size, tests.size),
-            u.follow.channel == Channel.TEST, enabled = tests.isNotEmpty() || u.follow.channel == Channel.TEST,
-        ) { tests.firstOrNull()?.let { ua.onFollow(Follow(Channel.TEST, it.pr)) } }
-        AnimatedVisibility(u.follow.channel == Channel.TEST && tests.isNotEmpty(), enter = expandVertically(Motion.sp(1f)) + fadeIn(Motion.sp(1f)), exit = shrinkVertically(Motion.sp(1f)) + fadeOut(Motion.sp(1f))) {
-            Column(Modifier.padding(start = 18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                tests.forEach { t -> TestRow(t, u.follow.pr == t.pr) { ua.onFollow(Follow(Channel.TEST, t.pr)) } }
-            }
-        }
     }
 }
 
@@ -400,40 +382,10 @@ private fun RadioDot(selected: Boolean, size: androidx.compose.ui.unit.Dp = 22.d
     }
 }
 
-/** One test build under Test builds: its PR, what it fixes, and how fresh it is. */
-@Composable
-private fun TestRow(t: Release, selected: Boolean, onClick: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val pal = LocalPalette.current
-    val src = remember { MutableInteractionSource() }
-    val hot = rememberHot(src)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = Modifier.fillMaxWidth().paneItem("test:${t.pr}")
-            .heightIn(min = 52.dp)
-            .clip(Shape12)
-            .background(colors.surface).background(if (hot) pal.signal.copy(alpha = 0.14f) else Color.Transparent)
-            .glideBorder(hot, Shape12, pal.signal, pal.line)
-            .hoverable(src)
-            .clickable(interactionSource = src, indication = null, role = Role.RadioButton, onClick = onClick)
-            .controllerConfirm(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-    ) {
-        Text("#${t.pr}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (selected) pal.signal else colors.onSurfaceVariant)
-        Column(Modifier.weight(1f)) {
-            Text(t.title.ifBlank { stringResource(R.string.upd_pr, t.pr) }, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(if (t.apk == null) stringResource(R.string.upd_not_built) else stringResource(R.string.upd_updated, ago(t.publishedAt)), fontSize = 12.sp, color = colors.onSurfaceVariant)
-        }
-        RadioDot(selected, 20.dp)
-    }
-}
-
 @Composable
 private fun channelName(f: Follow) = when (f.channel) {
     Channel.STABLE -> stringResource(R.string.upd_stable)
     Channel.NIGHTLY -> stringResource(R.string.upd_preview)
-    Channel.TEST -> stringResource(R.string.upd_test_name, f.pr)
 }
 
 @Composable
