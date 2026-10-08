@@ -637,7 +637,7 @@ jobs:
           # Build catalog from this repo's releases: latest non-prerelease = stable,
           # latest prerelease = preview. Tests are left empty (no PR test builds yet).
           python3 - "$GITHUB_REPOSITORY" "$version" "$versionCode" "$signer" << 'PY'
-          import json, subprocess, sys, os
+          import json, subprocess, sys, os, re
           from datetime import datetime, timezone
           repo, version, versionCode, signer = sys.argv[1:5]
           def gh(args):
@@ -687,7 +687,12 @@ jobs:
               tag = r["tag_name"]
               commit = ""
               try:
-                  commit = json.loads(gh(f"repos/{repo}/releases/tags/{tag}"))["target_commitish"]
+                  commitish = json.loads(gh(f"repos/{repo}/releases/tags/{tag}"))["target_commitish"]
+                  # target_commitish may be a branch name; resolve it to a real SHA.
+                  if re.fullmatch(r"[0-9a-fA-F]{40}", commitish or ""):
+                      commit = commitish
+                  else:
+                      commit = json.loads(gh(f"repos/{repo}/commits/{commitish}"))["sha"]
               except Exception:
                   pass
               return {

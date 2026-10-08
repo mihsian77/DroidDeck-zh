@@ -648,6 +648,7 @@
     <string name="setup_store">Flathub Store</string>
     <string name="setup_store_on">In the menu. Some apps may not start; logs are in Download/DroidDeck.</string>
     <string name="setup_store_off">Install Linux apps and games from Flathub</string>
+    <string name="setup_network">Network</string>
     <string name="setup_speed_test">Network speed test</string>
     <string name="setup_speed_test_hint">Measure download speed from GitHub and MirrorHub nodes to pick the fastest source</string>
     <string name="speed_test_title">Network speed test</string>

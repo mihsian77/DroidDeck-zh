@@ -311,6 +311,15 @@ internal fun SetupPanel(
                                 divider = false,
                             )
                         }
+                        SectionTitle(stringResource(R.string.setup_network), null)
+                        SettingsGroup(stringResource(R.string.setup_network)) {
+                            ActionRow(
+                                stringResource(R.string.setup_speed_test),
+                                stringResource(R.string.setup_speed_test_hint),
+                                stringResource(R.string.speed_test_start),
+                                { speedTestOpen = true },
+                            )
+                        }
                         SectionTitle(stringResource(R.string.setup_tools), null)
                         ToolGrid(s, a)
                     }
