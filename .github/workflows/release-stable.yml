@@ -1,0 +1,187 @@
+name: Release Stable APK
+run-name: release stable ${{ inputs.label }} from ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: Optional release label, e.g. 0.3.1-zh1. Defaults to versionName from app/build.gradle.
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-stable
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Stable releases are built from the newest green main build: download its signed APK
+      # (signed with the public testkey inside build.yml, same key as the original app).
+      - name: Find newest successful main build
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh run list --workflow build.yml --branch main --status success \
+            --json databaseId --jq '.[0].databaseId' -L 20)
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "::error::no successful main build found to promote"
+            exit 1
+          fi
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "Promoting build $run_id"
+
+      - name: Download signed APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ steps.find.outputs.run_id }}
+        run: gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n droiddeck-apk -D apk
+
+      - name: Verify signature is the AOSP testkey
+        run: |
+          set -euo pipefail
+          TOOLS=$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -n1)
+          APK=$(ls apk/*.apk)
+          "$TOOLS/apksigner" verify --print-certs "$APK" > /tmp/sig.txt
+          grep -q "SHA-256 digest: a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc" /tmp/sig.txt \
+            || { echo "::error::APK is not signed with the AOSP testkey"; cat /tmp/sig.txt; exit 1; }
+          echo "Signature verified (AOSP testkey)"
+
+      - name: Publish stable release
+        id: publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
+          tag=${version:-${{ inputs.label }}}
+          [ -n "$tag" ] || { echo "::error::no versionName and no label given"; exit 1; }
+          sha7=${GITHUB_SHA::7}
+          subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
+          cd apk
+          sha256sum *.apk > SHA256SUMS.txt
+          cd ..
+          notes="## ${tag} (stable)
+
+          ${subject}
+
+          基于上游 DroidDeck 源码编译的中文优化版，已确认稳定可用。
+
+          ### 独家功能
+          - 全量中文精翻（Linux/Wine/Steam 术语）
+          - 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）
+          - 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）
+          - 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）
+          - 国内 Steam 下载区域预设（首次启动自动设置）
+          - MirrorHub 智能加速（Linux 运行时下载自动选最快节点）
+          - 汉化声明弹窗
+
+          ### 注意
+          - 签名使用上游公开 testkey，与原版签名一致，支持就地更新
+          - 此为稳定版，安装前建议先备份旧版本
+
+          SHA-256:
+          \`\`\`
+          $(cat apk/SHA256SUMS.txt)
+          \`\`\`"
+          # Remove an older stable with the same tag if any, then publish as non-prerelease.
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" --target main --title "$tag (stable)" --notes "$notes" apk/*
+          url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag"
+          echo "release=$url" >> "$GITHUB_OUTPUT"
+          echo "Published $url"
+
+      - name: Update catalog.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Reuse the same inline generator as build.yml so channels stay consistent.
+          signer=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
+          version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
+          versionCode=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' app/build.gradle)
+          sleep 5
+          python3 - "$GITHUB_REPOSITORY" "$version" "$versionCode" "$signer" << 'PY'
+          import json, os, subprocess, sys
+          from datetime import datetime, timezone
+          repo, version, versionCode, signer = sys.argv[1:5]
+          def gh(args):
+              return subprocess.run(["gh","api",args], capture_output=True, text=True, check=True).stdout
+          def to_ms(iso_str):
+              try:
+                  dt = datetime.fromisoformat(iso_str.replace("Z","+00:00"))
+                  return int(dt.timestamp() * 1000)
+              except Exception:
+                  return 0
+          releases = json.loads(gh(f"repos/{repo}/releases?per_page=100"))
+          releases.sort(key=lambda r: to_ms(r.get("published_at","")), reverse=True)
+          stable = next((r for r in releases
+                         if not r["prerelease"] and not r["draft"]
+                         and r["tag_name"] != "data-packages"
+                         and any(a["name"].endswith(".apk") for a in r.get("assets", []))), None)
+          preview = next((r for r in releases if r["prerelease"] and not r["draft"]), None)
+          def mk_release(r):
+              if not r: return None
+              asset = next((a for a in r["assets"] if a["name"].endswith(".apk")), None)
+              apks = {}
+              if asset:
+                  apks["com.droiddeck.launcher"] = {
+                      "name": asset["name"], "url": asset["browser_download_url"],
+                      "size": asset["size"], "sha256": "",
+                      "packageName": "com.droiddeck.launcher",
+                      "versionCode": int(versionCode), "signerSha256": signer,
+                  }
+                  sha_asset = next((a for a in r["assets"] if a["name"] == "SHA256SUMS.txt"), None)
+                  if sha_asset:
+                      import urllib.request
+                      try:
+                          txt = urllib.request.urlopen(sha_asset["browser_download_url"]).read().decode()
+                          for line in txt.strip().splitlines():
+                              parts = line.split()
+                              if len(parts) >= 2 and parts[1] == asset["name"]:
+                                  apks["com.droiddeck.launcher"]["sha256"] = parts[0].lower()
+                      except Exception:
+                          pass
+              tag = r["tag_name"]
+              commit = ""
+              try:
+                  commit = json.loads(gh(f"repos/{repo}/releases/tags/{tag}"))["target_commitish"]
+              except Exception:
+                  pass
+              return {
+                  "tag": tag, "title": r.get("name") or tag,
+                  "summary": (r.get("body") or "")[:500],
+                  "commit": commit or "0"*40, "pr": 0,
+                  "version": version if r["prerelease"] else tag.lstrip("v"),
+                  "versionCode": int(versionCode),
+                  "publishedAt": to_ms(r["published_at"]),
+                  "url": r["html_url"], "apks": apks,
+              }
+          catalog = {
+              "schema": 1, "sourceRepo": repo, "ciRepo": repo,
+              "stable": mk_release(stable), "preview": mk_release(preview),
+              "tests": [], "recentPreviews": [],
+          }
+          os.makedirs("/tmp/catalog", exist_ok=True)
+          with open("/tmp/catalog/catalog.json","w") as f:
+              json.dump(catalog, f, indent=2, ensure_ascii=False)
+          print(f"catalog: stable={catalog['stable']['tag'] if catalog['stable'] else None}, preview={catalog['preview']['tag'] if catalog['preview'] else None}")
+          PY
+          cd /tmp/catalog
+          git init -q
+          git config user.email "mihsian77@users.noreply.github.com"
+          git config user.name "mihsian77"
+          git add catalog.json
+          git commit -q -m "catalog: promote ${tag} to stable"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:catalog
+          echo "catalog.json pushed to catalog branch"

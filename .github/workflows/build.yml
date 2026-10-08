@@ -492,7 +492,6 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
-          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           set -uo pipefail
           MARK="<!-- droiddeck-pr-build -->"
@@ -508,13 +507,8 @@ jobs:
                 echo
                 echo "The \`droiddeck-apk\` artifact is [on this run]($RUN_URL), signed with the public test key."
                 echo
-                if [ "$SAME_REPO" = true ]; then
-                  echo "A release-signed tester build that installs over Stable or Preview is being published now and will appear in DroidDeck's **Test builds** list. Label the PR \`no-test-build\` to skip that."
-                else
-                  echo "**Maintainer:** add the \`publish-test\` label to publish a release-signed tester build that installs over Stable or Preview and appears in DroidDeck's **Test builds** list. The label is removed automatically after publishing."
-                fi
+                echo "Preview builds are published automatically from main. This PR's APK is on the run above."
                 echo
-                echo "Fallback: [open **PR Release Publish**]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/pr-release-publish.yml) on \`main\` and enter PR \`$PR\`."
                 ;;
               failure)
                 echo "### ERROR: Build failed"
@@ -568,7 +562,7 @@ jobs:
       contents: write
       pull-requests: read
     env:
-      KEEP: 10
+      KEEP: 3
     steps:
       - uses: actions/checkout@v4
 
