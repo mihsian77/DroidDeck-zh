@@ -740,7 +740,6 @@
     <string name="upd_more">もっと見る</string>
     <string name="upd_new_stable">DroidDeck %1$s</string>
     <string name="upd_new_preview">新しいプレビュー版ビルド</string>
-    <string name="upd_new_test">PR #%1$d テストビルド</string>
     <string name="upd_mb">%1$d MB</string>
     <string name="upd_channel">アップデートチャンネル</string>
     <string name="upd_stable">安定版</string>
@@ -749,18 +748,9 @@
     <string name="upd_preview">プレビュー版</string>
     <string name="upd_preview_hint">安定版より先に最新の修正</string>
     <string name="upd_preview_current">最新です</string>
-    <string name="upd_tests">テストビルド</string>
-    <string name="upd_tests_hint">正式リリース前に特定の修正を試す</string>
-    <string name="upd_tests_none">現在ありません</string>
-    <string name="upd_pr">PR #%1$d</string>
-    <string name="upd_not_built">このDroidDeckコピー用にはビルドされていません</string>
     <string name="upd_updated">%1$sを更新しました</string>
-    <string name="upd_test_name">PR #%1$d テスト版</string>
     <string name="upd_while_ago">少し前</string>
     <string name="upd_just_now">たった今</string>
-    <plurals name="upd_tests_count">
-        <item quantity="other">%1$d個試せます</item>
-    </plurals>
     <plurals name="upd_preview_behind">
         <item quantity="other">お使いのビルド以降の変更 · %1$dビルド遅れています</item>
     </plurals>

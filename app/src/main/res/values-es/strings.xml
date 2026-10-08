@@ -742,7 +742,6 @@
     <string name="upd_more">Más</string>
     <string name="upd_new_stable">DroidDeck %1$s</string>
     <string name="upd_new_preview">Nueva versión de Vista previa</string>
-    <string name="upd_new_test">Versión de prueba del PR #%1$d</string>
     <string name="upd_mb">%1$d MB</string>
     <string name="upd_channel">CANAL DE ACTUALIZACIÓN</string>
     <string name="upd_stable">Estable</string>
@@ -751,20 +750,9 @@
     <string name="upd_preview">Vista previa</string>
     <string name="upd_preview_hint">Las correcciones más recientes, antes que Estable</string>
     <string name="upd_preview_current">Al día</string>
-    <string name="upd_tests">Versiones de prueba</string>
-    <string name="upd_tests_hint">Prueba una corrección antes de su publicación</string>
-    <string name="upd_tests_none">Ninguna por ahora</string>
-    <string name="upd_pr">PR #%1$d</string>
-    <string name="upd_not_built">No compilada para esta copia de DroidDeck</string>
     <string name="upd_updated">Actualizada %1$s</string>
-    <string name="upd_test_name">la prueba del PR #%1$d</string>
     <string name="upd_while_ago">hace un tiempo</string>
     <string name="upd_just_now">ahora mismo</string>
-    <plurals name="upd_tests_count">
-        <item quantity="one">%1$d para probar</item>
-        <item quantity="many">%1$d para probar</item>
-        <item quantity="other">%1$d para probar</item>
-    </plurals>
     <plurals name="upd_preview_behind">
         <item quantity="one">Cambios desde tu versión · %1$d versión atrás</item>
         <item quantity="many">Cambios desde tu versión · %1$d versiones atrás</item>

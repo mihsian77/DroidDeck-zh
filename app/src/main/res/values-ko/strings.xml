@@ -740,7 +740,6 @@
     <string name="upd_more">더보기</string>
     <string name="upd_new_stable">DroidDeck %1$s</string>
     <string name="upd_new_preview">새 미리보기 빌드</string>
-    <string name="upd_new_test">PR #%1$d 테스트 빌드</string>
     <string name="upd_mb">%1$d MB</string>
     <string name="upd_channel">업데이트 채널</string>
     <string name="upd_stable">안정판</string>
@@ -749,18 +748,9 @@
     <string name="upd_preview">미리보기</string>
     <string name="upd_preview_hint">안정판보다 먼저 받는 최신 수정 사항</string>
     <string name="upd_preview_current">최신 버전</string>
-    <string name="upd_tests">테스트 빌드</string>
-    <string name="upd_tests_hint">정식 출시 전에 특정 수정 사항을 시험해 보기</string>
-    <string name="upd_tests_none">현재 없음</string>
-    <string name="upd_pr">PR #%1$d</string>
-    <string name="upd_not_built">이 DroidDeck 복사본용으로 빌드되지 않음</string>
     <string name="upd_updated">%1$s 업데이트됨</string>
-    <string name="upd_test_name">PR #%1$d 테스트 버전</string>
     <string name="upd_while_ago">얼마 전</string>
     <string name="upd_just_now">방금 전</string>
-    <plurals name="upd_tests_count">
-        <item quantity="other">%1$d개 시도 가능</item>
-    </plurals>
     <plurals name="upd_preview_behind">
         <item quantity="other">빌드 이후 변경 사항 · %1$d개 빌드 뒤처짐</item>
     </plurals>

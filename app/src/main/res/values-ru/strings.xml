@@ -638,7 +638,6 @@
     <string name="upd_more">Еще</string>
     <string name="upd_new_stable">DroidDeck %1$s</string>
     <string name="upd_new_preview">Новая сборка Preview</string>
-    <string name="upd_new_test">Тестовая сборка PR #%1$d</string>
     <string name="upd_mb">%1$d МБ</string>
     <string name="upd_channel">Канал обновлений</string>
     <string name="upd_stable">Stable</string>
@@ -647,21 +646,9 @@
     <string name="upd_preview">Preview</string>
     <string name="upd_preview_hint">Последние исправления перед Stable</string>
     <string name="upd_preview_current">Актуально</string>
-    <string name="upd_tests">Тестовые сборки</string>
-    <string name="upd_tests_hint">Попробовать исправление до официального выпуска</string>
-    <string name="upd_tests_none">Сейчас нет</string>
-    <string name="upd_pr">PR #%1$d</string>
-    <string name="upd_not_built">Не собрано для этой копии DroidDeck</string>
     <string name="upd_updated">%1$s обновлено</string>
-    <string name="upd_test_name">Тестовая версия PR #%1$d</string>
     <string name="upd_while_ago">Недавно</string>
     <string name="upd_just_now">Только что</string>
-    <plurals name="upd_tests_count">
-        <item quantity="one">%1$d доступный тест</item>
-        <item quantity="few">%1$d доступных теста</item>
-        <item quantity="many">%1$d доступных тестов</item>
-        <item quantity="other">%1$d доступных тестов</item>
-    </plurals>
     <plurals name="upd_preview_behind">
         <item quantity="one">Изменения с момента вашей сборки · Отставание на %1$d сборку</item>
         <item quantity="few">Изменения с момента вашей сборки · Отставание на %1$d сборки</item>
