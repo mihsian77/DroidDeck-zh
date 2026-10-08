@@ -33,30 +33,10 @@ jobs:
           echo "linuxfs_size=$LF_SIZE" >> "$GITHUB_OUTPUT"
           # The desktop entry: tier-1 tar over the rootfs (LXQt on labwc). Nothing else joins
           # the bundle: emulators and appimages stay per-package, Steam/Proton are Valve's own.
-          DT_VERSION=$(python3 -c "
-import json
-d=json.load(open('/tmp/desktop.json'))
-p=next(x for x in d['packages'] if x['id']=='desktop')
-print(p.get('version',''))
-")
-          DT_URL=$(python3 -c "
-import json
-d=json.load(open('/tmp/desktop.json'))
-p=next(x for x in d['packages'] if x['id']=='desktop')
-print(p['url'])
-")
-          DT_SHA256=$(python3 -c "
-import json
-d=json.load(open('/tmp/desktop.json'))
-p=next(x for x in d['packages'] if x['id']=='desktop')
-print(p.get('sha256',''))
-")
-          DT_SIZE=$(python3 -c "
-import json
-d=json.load(open('/tmp/desktop.json'))
-p=next(x for x in d['packages'] if x['id']=='desktop')
-print(p.get('size',0))
-")
+          DT_VERSION=$(python3 -c "import json; d=json.load(open('/tmp/desktop.json')); p=next(x for x in d['packages'] if x['id']=='desktop'); print(p.get('version',''))")
+          DT_URL=$(python3 -c "import json; d=json.load(open('/tmp/desktop.json')); p=next(x for x in d['packages'] if x['id']=='desktop'); print(p['url'])")
+          DT_SHA256=$(python3 -c "import json; d=json.load(open('/tmp/desktop.json')); p=next(x for x in d['packages'] if x['id']=='desktop'); print(p.get('sha256',''))")
+          DT_SIZE=$(python3 -c "import json; d=json.load(open('/tmp/desktop.json')); p=next(x for x in d['packages'] if x['id']=='desktop'); print(p.get('size',0))")
           echo "desktop_version=$DT_VERSION" >> "$GITHUB_OUTPUT"
           echo "desktop_url=$DT_URL" >> "$GITHUB_OUTPUT"
           echo "desktop_sha256=$DT_SHA256" >> "$GITHUB_OUTPUT"
