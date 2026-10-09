@@ -749,6 +749,9 @@
     <string name="upd_gone_status">Test ended</string>
     <string name="upd_gone_headline">This test has ended</string>
     <string name="upd_gone_detail">Its fix was merged or dropped. Follow Preview for the newest fixes.</string>
+    <string name="upd_stable_gone_status">No stable release yet</string>
+    <string name="upd_stable_gone_headline">Stable has not been published</string>
+    <string name="upd_stable_gone_detail">A release only lands here once it has been confirmed stable. Preview carries every fix ahead of Stable.</string>
     <string name="upd_current_status">Up to date</string>
     <string name="upd_current_headline">You have the latest %1$s</string>
     <string name="upd_dot_ago">· %1$s</string>
@@ -1352,6 +1355,7 @@
     <string name="content_system_many">Many systems</string>
     <!-- File manager -->
     <string name="fm_drive_internal">Internal</string>
+    <string name="fm_drive_download">Downloads</string>
     <string name="fm_drive_linux">Linux system</string>
     <string name="fm_drive_sd">SD card</string>
     <string name="fm_drive_storage">Storage</string>

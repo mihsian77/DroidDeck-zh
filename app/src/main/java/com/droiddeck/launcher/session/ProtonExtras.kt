@@ -9,13 +9,14 @@ import com.droiddeck.launcher.core.Downloader
 import com.droiddeck.launcher.core.FileUtils
 import com.droiddeck.launcher.runtime.LinuxRuntime
 import java.io.File
-import org.json.JSONArray
+import org.json.JSONObject
 
 /** Immediate download and installation of the optional ARM64 Proton builds. */
 object ProtonExtras {
     private const val TAG = "ProtonExtras"
     private const val NEED_BYTES = 4L * 1024 * 1024 * 1024
-    private const val RELEASES = "https://api.github.com/repos/%s/releases?per_page=15"
+    private const val PROTON_SEED_URL =
+        "https://raw.githubusercontent.com/mihsian77/DroidDeck-zh/main/proton-seed.json"
     @Volatile
     var installInProgress = false
         private set
@@ -206,31 +207,23 @@ object ProtonExtras {
         }
     }
 
+    /**
+     * The latest build comes from this repo's proton-seed.json, not api.github.com: the API is
+     * blocked or throttled for users on CN networks and the mirror nodes cannot proxy it. A raw
+     * GitHub URL is served by the same MirrorHub sources as every other fetch.
+     */
     private fun findLatestAsset(tool: Tool): Asset? {
-        val releases = Downloader.downloadString(RELEASES.format(tool.repo)) ?: return null
+        val json = Downloader.downloadString(PROTON_SEED_URL) ?: return null
         return try {
-            val array = JSONArray(releases)
-            for (i in 0 until array.length()) {
-                val release = array.getJSONObject(i)
-                if (release.optBoolean("draft", false)) continue
-                val assets = release.optJSONArray("assets") ?: continue
-                val entries = (0 until assets.length()).map { assets.getJSONObject(it) }
-                val archive = entries.sortedBy { it.optString("name") }.firstOrNull { tool.assetPattern.containsMatchIn(it.optString("name")) } ?: continue
-                val name = archive.optString("name")
-                val stem = name.substringBefore(".tar")
-                val checksum = entries.firstOrNull {
-                    it.optString("name").startsWith(stem) && it.optString("name").contains("sha512", ignoreCase = true)
-                }?.optString("browser_download_url")?.takeIf { it.startsWith("http") }
-                return Asset(
-                    release.optString("tag_name"), name,
-                    archive.optString("browser_download_url").takeIf { it.startsWith("http") } ?: continue, checksum,
-                    archive.optLong("size", 0L),
-                    Hashes.githubSha256(archive.optString("digest")),
-                )
-            }
-            null
+            val entry = JSONObject(json).optJSONObject("tools")?.optJSONObject(tool.id) ?: return null
+            Asset(
+                entry.optString("tag"), entry.optString("name"),
+                entry.optString("url").takeIf { it.startsWith("http") } ?: return null,
+                entry.optString("sha512").takeIf { it.startsWith("http") },
+                entry.optLong("size", 0L),
+            )
         } catch (e: Exception) {
-            Log.w(TAG, "release metadata for ${tool.id}", e)
+            Log.w(TAG, "proton seed for ${tool.id}", e)
             null
         }
     }

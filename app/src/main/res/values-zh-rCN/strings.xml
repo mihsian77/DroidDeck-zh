@@ -748,6 +748,9 @@
     <string name="upd_gone_status">测试已结束</string>
     <string name="upd_gone_headline">此测试已结束</string>
     <string name="upd_gone_detail">它的修复已被合并或放弃。关注预览版以获取最新修复。</string>
+    <string name="upd_stable_gone_status">稳定版尚未发布</string>
+    <string name="upd_stable_gone_headline">稳定版还没有发布</string>
+    <string name="upd_stable_gone_detail">只有确认稳定后才会发布正式版。预览版包含所有最新修复，先于稳定版发布。</string>
     <string name="upd_current_status">已是最新</string>
     <string name="upd_current_headline">你已在使用最新的 %1$s</string>
     <string name="upd_dot_ago">· %1$s</string>
@@ -1389,6 +1392,7 @@
 
     <!-- File manager -->
     <string name="fm_drive_internal">内部存储</string>
+    <string name="fm_drive_download">下载目录</string>
     <string name="fm_drive_linux">Linux 系统</string>
     <string name="fm_drive_sd">SD 卡</string>
     <string name="fm_drive_storage">存储</string>

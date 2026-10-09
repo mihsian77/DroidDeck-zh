@@ -1,5 +1,6 @@
 package com.droiddeck.launcher.files
 
+import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -692,6 +693,19 @@ fun FileManagerScreen(
                                     ).show()
                                 }
                             },
+                        )
+                    }
+                    val downloadDir = remember(storageTick) {
+                        File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path).takeIf { it.isDirectory }
+                    }
+                    downloadDir?.let { dir ->
+                        MenuItemDivider()
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.fm_drive_download)) },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Download, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                            },
+                            onClick = { showDriveMenu = false; openDrive(dir) },
                         )
                     }
                     linuxRoot?.let { root ->

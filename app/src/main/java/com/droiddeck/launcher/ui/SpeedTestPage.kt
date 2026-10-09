@@ -99,20 +99,22 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
         error?.let {
             Text(it, fontSize = 14.sp, color = MaterialTheme.colorScheme.error)
         }
-        if (directSpeed >= 0) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    stringResource(R.string.speed_test_direct),
-                    fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    speedLabel(directSpeed, ctx),
-                    fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface,
-                )
+        if (directSpeed >= 0 || nodeResults.isNotEmpty()) {
+            if (directSpeed >= 0) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        stringResource(R.string.speed_test_direct),
+                        fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        speedLabel(directSpeed, ctx),
+                        fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
             }
             Spacer(Modifier.height(4.dp))
             Text(
