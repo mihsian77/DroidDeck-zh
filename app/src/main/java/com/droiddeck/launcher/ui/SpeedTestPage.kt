@@ -30,9 +30,9 @@ import com.droiddeck.launcher.R
 import com.droiddeck.launcher.core.MirrorHub
 
 /**
- * DroidDeck-zh: a network speed-test page for the Setup screen. Probes GitHub direct and the
- * top MirrorHub nodes, measures real download speed over a 256 KiB window, and shows which
- * source the downloader will prefer. Reads only; it never changes the node list.
+ * DroidDeck-zh: a network speed-test page for the Setup screen. Probes GitHub direct and every
+ * MirrorHub node concurrently, measures real download speed over a 256 KiB window, and shows
+ * which source the downloader will prefer. Reads only; it never changes the node list.
  */
 @Composable
 internal fun SpeedTestPage(onBack: () -> Unit) {
@@ -55,13 +55,31 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
         // Fire the probes from a background thread and hand the results back on the main thread.
         Thread {
             val appCtx = ctx.applicationContext
-            val direct = MirrorHub.measureSpeed(appCtx, target)
-            val nodes = MirrorHub.getNodes(appCtx).take(3).map { node ->
-                NodeSpeed(node.name, node.domain, MirrorHub.measureSpeed(appCtx, "https://" + node.domain + "/" + target))
+            val nodes = MirrorHub.getNodes(appCtx)
+            // Probe direct and every node concurrently so the page reflects the same candidate
+            // set the downloader ranks from; a serial sweep of the whole list would take minutes.
+            val pool = java.util.concurrent.Executors.newFixedThreadPool(minOf(10, nodes.size + 1))
+            val directFuture = pool.submit(java.util.concurrent.Callable {
+                MirrorHub.measureSpeed(appCtx, target)
+            })
+            val futures = nodes.map { node ->
+                pool.submit(java.util.concurrent.Callable {
+                    NodeSpeed(node.name, node.domain,
+                        MirrorHub.measureSpeed(appCtx, "https://" + node.domain + "/" + target))
+                })
             }
+            val direct = try { directFuture.get() } catch (e: Exception) { -1L }
+            val measured = futures.mapNotNull {
+                try { it.get() } catch (e: Exception) { null }
+            }
+            pool.shutdownNow()
+            // Fastest first; failed probes (-1) sink to the bottom.
+            val sorted = measured.sortedWith(
+                compareByDescending<NodeSpeed> { it.speedBytesPerSec }.thenBy { it.name }
+            )
             Handler(Looper.getMainLooper()).post {
                 directSpeed = direct
-                nodeResults = nodes
+                nodeResults = sorted
                 running = false
             }
         }.start()
