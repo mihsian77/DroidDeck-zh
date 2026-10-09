@@ -1,0 +1,70 @@
+name: Update proton seed
+
+on:
+  workflow_dispatch:
+  schedule:
+    # GE-Proton ships a few times a month; a weekly refresh keeps the seed close enough.
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refresh proton-seed.json
+        run: |
+          set -euo pipefail
+          python3 - <<'PYEOF'
+          import json, urllib.request, re, datetime
+
+          def api(url):
+              req = urllib.request.Request(url, headers={"User-Agent": "DroidDeck-seed"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.load(r)
+
+          def find_entry(repo, pattern):
+              rels = api(f"https://api.github.com/repos/{repo}/releases?per_page=15")
+              for rel in rels:
+                  if rel.get("draft"): continue
+                  assets = rel.get("assets", [])
+                  entries = sorted(assets, key=lambda a: a.get("name", ""))
+                  archive = next((a for a in entries if re.search(pattern, a.get("name", ""))), None)
+                  if not archive: continue
+                  name = archive["name"]
+                  stem = name.split(".tar")[0]
+                  checksum = next((a for a in entries if a.get("name","").startswith(stem) and "sha512" in a.get("name","").lower()), None)
+                  return {
+                      "tag": rel.get("tag_name", ""),
+                      "name": name,
+                      "url": archive.get("browser_download_url", ""),
+                      "sha512": checksum.get("browser_download_url", "") if checksum else "",
+                      "size": archive.get("size", 0),
+                  }
+              return None
+
+          with open("proton-seed.json", "w", encoding="utf-8") as f:
+              json.dump({
+                  "schema": 1,
+                  "updatedAt": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  "note": "Latest ARM64 Proton builds, mirrored into this repo so the app never has to query api.github.com (blocked/throttled for users on CN networks). Updated by update-proton-seed workflow.",
+                  "tools": {
+                      "ge": find_entry("GloriousEggroll/proton-ge-custom", r"aarch64\.tar\.(gz|xz)$"),
+                      "cachyos": find_entry("CachyOS/proton-cachyos", r"arm64\.tar\.(gz|xz)$"),
+                  },
+              }, f, indent=2, ensure_ascii=False)
+              f.write("\n")
+          PYEOF
+          # Exit cleanly when nothing changed so the job does not create empty commits.
+          if ! git diff --quiet -- proton-seed.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add proton-seed.json
+            git commit -m "chore(proton): refresh seed to latest upstream releases"
+            git push
+          else
+            echo "No release changes; seed already current."
+          fi
