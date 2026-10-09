@@ -31,7 +31,10 @@ object GpuClockPin {
     /** At a session's start: pins the clock when the user asked for it. The line is for the log. */
     @Synchronized
     fun start(context: Context): String {
-        if (!SessionPrefs.gpuClockPin(context)) return "gpu clock: governed"
+        // Steam sessions default to pinned (games are the load that needs a held clock); the
+        // desktop session follows the user's toggle. The preference can still force it either way.
+        val steam = SessionState.mode == SessionService.MODE_STEAM
+        if (!SessionPrefs.gpuClockPin(context) && !steam) return "gpu clock: governed"
         if (!supported) return "gpu clock: no $KGSL_NODE, left governed"
         return try {
             File(context.filesDir, MARKER).createNewFile()

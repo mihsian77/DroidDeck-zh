@@ -651,8 +651,9 @@ class SessionService : Service() {
         guest.add("BL_SYNC_FALLBACK=" + (if (SessionPrefs.syncFallback(this)) "1" else "0"))
         guest.add("BL_FSYNC_FIRST=" + (if (SessionPrefs.fsyncFirst(this)) "1" else "0"))
         // gamescope's realtime Vulkan queues (the session script turns this into
-        // GAMESCOPE_FORCE_VULKAN_REALTIME); off unless the user turns it on.
-        guest.add("BL_GAMESCOPE_REALTIME=" + (if (SessionPrefs.gamescopeRealtime(this)) "1" else "0"))
+        // GAMESCOPE_FORCE_VULKAN_REALTIME); on for Steam sessions by default, the toggle off for
+        // desktop. Steam is where compositing latency shows up as frame pacing.
+        guest.add("BL_GAMESCOPE_REALTIME=" + (if (SessionPrefs.gamescopeRealtime(this) || SessionState.mode == MODE_STEAM) "1" else "0"))
         guest.add("BANNER_AUDIO_DIRECT_DECAY=0")
         // Anything else, for a device that cannot be reached with a debugger: droiddeck-env in the
         // app's own external files (envSwitchFile) holds KEY=VALUE lines that go into the session's
