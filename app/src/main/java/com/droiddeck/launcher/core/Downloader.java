@@ -89,13 +89,23 @@ public final class Downloader {
      */
     public static boolean downloadFile(String url, File destination, boolean resume,
                                        java.util.function.Consumer<Float> progress) {
+        return downloadFile(url, destination, resume, -1, progress);
+    }
+
+    /**
+     * Variant with a known total size: mirror nodes that stream release assets rarely send a
+     * Content-Length, which would leave the progress callback at -1 ("downloading" forever)
+     * even though bytes are moving. The catalog's size lets the caller compute real fractions.
+     */
+    public static boolean downloadFile(String url, File destination, boolean resume, long knownSize,
+                                       java.util.function.Consumer<Float> progress) {
         java.util.List<String> sources;
         if (mirrorHubReady() && MirrorHub.isGitHubUrl(url)) {
             sources = MirrorHub.buildSourceList(appContext, url);
         } else {
             sources = java.util.Collections.singletonList(url);
         }
-        return downloadFileWithSources(sources, destination, resume, progress);
+        return downloadFileWithSources(sources, destination, resume, knownSize, progress);
     }
 
     /**
@@ -106,10 +116,16 @@ public final class Downloader {
     public static boolean downloadFileWithSources(java.util.List<String> urls, File destination,
                                                   boolean resume,
                                                   java.util.function.Consumer<Float> progress) {
+        return downloadFileWithSources(urls, destination, resume, -1, progress);
+    }
+
+    public static boolean downloadFileWithSources(java.util.List<String> urls, File destination,
+                                                  boolean resume, long knownSize,
+                                                  java.util.function.Consumer<Float> progress) {
         if (urls == null || urls.isEmpty()) return false;
         for (int i = 0; i < urls.size(); i++) {
             String url = urls.get(i);
-            boolean ok = downloadFileSingle(url, destination, resume, progress);
+            boolean ok = downloadFileSingle(url, destination, resume, knownSize, progress);
             if (ok) return true;
             Log.w(TAG, "source " + (i + 1) + "/" + urls.size() + " failed, trying next");
         }
@@ -117,6 +133,7 @@ public final class Downloader {
     }
 
     private static boolean downloadFileSingle(String url, File destination, boolean resume,
+                                              long knownSize,
                                               java.util.function.Consumer<Float> progress) {
         HttpURLConnection connection = null;
         long have = resume && destination.isFile() ? destination.length() : 0;
@@ -143,7 +160,9 @@ public final class Downloader {
             }
             if (!appending) have = 0;
             long length = connection.getContentLengthLong();
-            long total = length < 0 ? -1 : length + have;
+            // Mirror nodes that stream the asset usually send no Content-Length; the caller's
+            // knownSize (the catalog row) keeps the progress fraction real in that case.
+            long total = knownSize > 0 ? knownSize : (length < 0 ? -1 : length + have);
             File parent = destination.getParentFile();
             if (parent != null && !parent.isDirectory()) //noinspection ResultOfMethodCallIgnored
                 parent.mkdirs();

@@ -654,7 +654,7 @@
     <string name="speed_test_title">Network speed test</string>
     <string name="speed_test_lede">Downloads use the fastest probed source automatically. This measures real speed so you can see which route wins.</string>
     <string name="speed_test_start">Start test</string>
-    <string name="speed_test_running">Testing…</string>
+    <string name="speed_test_running">Testing %1$d/%2$d…</string>
     <string name="speed_test_direct">GitHub direct</string>
     <string name="speed_test_nodes">MirrorHub nodes</string>
     <string name="speed_test_best">Best source</string>

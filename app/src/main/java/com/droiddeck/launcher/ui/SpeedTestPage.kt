@@ -41,6 +41,8 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
     var directSpeed by remember { mutableStateOf(-1L) }          // bytes/sec, -1 = not tested
     var nodeResults by remember { mutableStateOf<List<NodeSpeed>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
+    var tested by remember { mutableStateOf(0) }
+    var total by remember { mutableStateOf(0) }
 
     // The same file the runtime downloader uses, so the test reflects a real 754 MB fetch.
     val target = remember {
@@ -52,20 +54,24 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
         error = null
         directSpeed = -1
         nodeResults = emptyList()
+        tested = 0
+        val appCtx = ctx.applicationContext
+        val nodes = MirrorHub.getNodes(appCtx)
+        total = nodes.size + 1
         // Fire the probes from a background thread and hand the results back on the main thread.
         Thread {
-            val appCtx = ctx.applicationContext
-            val nodes = MirrorHub.getNodes(appCtx)
             // Probe direct and every node concurrently so the page reflects the same candidate
             // set the downloader ranks from; a serial sweep of the whole list would take minutes.
-            val pool = java.util.concurrent.Executors.newFixedThreadPool(minOf(10, nodes.size + 1))
+            val pool = java.util.concurrent.Executors.newFixedThreadPool(nodes.size + 1)
+            val tick = { Handler(Looper.getMainLooper()).post { tested++ } }
             val directFuture = pool.submit(java.util.concurrent.Callable {
-                MirrorHub.measureSpeed(appCtx, target)
+                val s = MirrorHub.measureSpeed(appCtx, target)
+                tick(); s
             })
             val futures = nodes.map { node ->
                 pool.submit(java.util.concurrent.Callable {
-                    NodeSpeed(node.name, node.domain,
-                        MirrorHub.measureSpeed(appCtx, "https://" + node.domain + "/" + target))
+                    val speed = MirrorHub.measureSpeed(appCtx, "https://" + node.domain + "/" + target)
+                    tick(); NodeSpeed(node.name, node.domain, speed)
                 })
             }
             val direct = try { directFuture.get() } catch (e: Exception) { -1L }
@@ -109,7 +115,8 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
         PrimaryButton(
-            if (running) stringResource(R.string.speed_test_running) else stringResource(R.string.speed_test_start),
+            if (running) stringResource(R.string.speed_test_running, tested, total)
+            else stringResource(R.string.speed_test_start),
             enabled = !running,
             main = true,
             onClick = runTest,

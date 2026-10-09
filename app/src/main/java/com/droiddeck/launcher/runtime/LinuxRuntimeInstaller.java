@@ -238,8 +238,9 @@ public final class LinuxRuntimeInstaller {
             java.util.List<String> sources = MirrorHub.buildSourceList(context, release.url);
             Log.i(TAG, "downloading from " + sources.size() + " candidate sources");
 
-            // Downloader reports a 0..1 fraction, or -1 while the total size is unknown.
-            boolean ok = Downloader.downloadFileWithSources(sources, archive, true, (fraction) -> {
+            // Downloader reports a 0..1 fraction. release.size is passed as the known total so the
+            // bar moves even when a mirror node streams without a Content-Length header.
+            boolean ok = Downloader.downloadFileWithSources(sources, archive, true, release.size, (fraction) -> {
                 if (listener != null) {
                     listener.onProgress(Step.DOWNLOADING, downloading,
                             fraction < 0 ? -1 : Math.round(fraction * 100f));

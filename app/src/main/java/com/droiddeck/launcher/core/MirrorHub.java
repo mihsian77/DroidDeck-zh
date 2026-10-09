@@ -236,7 +236,7 @@ public final class MirrorHub {
         try {
             conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setConnectTimeout(PROBE_TIMEOUT_MS);
-            conn.setReadTimeout(15_000);
+            conn.setReadTimeout(8_000); // a 256 KiB probe finishes in ~2 s on a usable node
             conn.setRequestProperty("User-Agent", "DroidDeck-Android");
             conn.setRequestProperty("Range", "bytes=0-262143"); // 256 KiB window
             conn.setInstanceFollowRedirects(true);
