@@ -163,7 +163,7 @@ private fun StatusPanel(s: FrontEndState, u: UpdatesState, ua: UpdatesActions, m
         offer == Offer.SWITCH -> Look(pal.signal, stringResource(R.string.upd_switch), newBuild(u.follow, release!!), null)
         offer == Offer.AHEAD -> Look(pal.signal, stringResource(R.string.upd_ahead_status), stringResource(R.string.upd_ahead_headline),
             stringResource(R.string.upd_ahead_detail))
-        offer == Offer.GONE && u.follow == Channel.STABLE -> Look(pal.good,
+        offer == Offer.GONE && u.follow.channel == Channel.STABLE -> Look(pal.good,
             stringResource(R.string.upd_stable_gone_status), stringResource(R.string.upd_stable_gone_headline),
             stringResource(R.string.upd_stable_gone_detail))
         offer == Offer.GONE -> Look(AttentionAmber, stringResource(R.string.upd_gone_status), stringResource(R.string.upd_gone_headline),
