@@ -228,7 +228,8 @@ public final class LinuxRuntimeInstaller {
             // Its quarantined home is not user data to carry into an update.
             File pendingRemoval = removalDirectory(LinuxRuntime.rootDir(context));
             if (pendingRemoval.exists() && listener != null) listener.onProgress(context.getString(R.string.rtinst_removing_leftovers), -1);
-            RuntimeFileTree.delete(pendingRemoval, null);
+            if (!discard(pendingRemoval, null)) throw new IOException("Cannot clear the previous runtime: " + pendingRemoval);
+            emptyTrash(LinuxRuntime.rootDir(context).getParentFile());
             String downloading = context.getString(R.string.rtinst_downloading);
             if (listener != null) listener.onProgress(Step.DOWNLOADING, downloading, 0);
 
@@ -452,13 +453,9 @@ public final class LinuxRuntimeInstaller {
             File root = LinuxRuntime.rootDir(context);
             File staging = new File(root.getParentFile(), LinuxRuntime.DIR + ".new");
             File old = new File(root.getParentFile(), LinuxRuntime.DIR + ".old");
-            try {
-                recoverInterruptedSwap(root, staging, old);
-            } catch (IOException e) {
-                Log.w(TAG, "recover swap", e);
-            }
-            RuntimeFileTree.delete(staging, null);
-            if (!staging.mkdirs()) return false;
+            recoverInterruptedSwap(root, staging, old);
+            // Upstream 0.3.2: discard() sets aside anything undeletable instead of stranding it.
+            if (!discard(staging, null) || !staging.mkdirs()) return false;
             if (listener != null) listener.onProgress(context.getString(R.string.rtinst_extracting), -1);
             if (!extract(context, archive, staging, listener)) {
                 RuntimeFileTree.delete(staging, null);
@@ -466,7 +463,10 @@ public final class LinuxRuntimeInstaller {
             }
             FileUtils.writeString(new File(staging, VERSION_FILE), release.version);
 
-            RuntimeFileTree.delete(old, null);
+            if (!discard(old, null)) {
+                discard(staging, null);
+                return false;
+            }
             if (root.isDirectory() && !root.renameTo(old)) {
                 RuntimeFileTree.delete(staging, null);
                 return false;
@@ -487,7 +487,9 @@ public final class LinuxRuntimeInstaller {
                 if (old.isDirectory()) old.renameTo(root);
                 return false;
             }
-            RuntimeFileTree.delete(old, null);
+            discard(old, null);
+            // The downloaded archive is only kept for resume on failure; once the runtime is in
+            // place it costs cache space, so drop it (local imports keep their source file).
             if (deleteOnSuccess) archive.delete();
             return LinuxRuntime.isInstalled(context);
         } catch (Exception e) {
@@ -507,6 +509,35 @@ public final class LinuxRuntimeInstaller {
         if (!root.isDirectory() && old.isDirectory() && old.renameTo(root)) {
             Log.w(TAG, "restored the previous runtime after an interrupted update");
         }
+    }
+
+    /** Where entries the app cannot unlink are set aside, out of the way of the runtime's names. */
+    static final String TRASH = ".runtime-trash";
+
+    /**
+     * Gets {@code tree} out from under its name. What can be deleted is; if something inside
+     * cannot be (a file made by root or {@code su} carries another SELinux category, and the app
+     * may not unlink it), the remainder is moved aside into {@link #TRASH} instead of blocking
+     * every later install and removal on it. False only when even that move is refused.
+     */
+    static boolean discard(File tree, java.util.function.LongConsumer progress) {
+        if (RuntimeFileTree.deleteWhatCan(tree, progress)) return true;
+        File trash = new File(tree.getParentFile(), TRASH);
+        trash.mkdirs();
+        File aside = new File(trash, tree.getName() + "-" + System.currentTimeMillis());
+        if (tree.renameTo(aside)) {
+            Log.w(TAG, "could not delete all of " + tree + "; set the rest aside in " + aside);
+            return true;
+        }
+        Log.w(TAG, "could not delete or set aside " + tree);
+        return !tree.exists();
+    }
+
+    /** Another try at what {@link #discard} set aside. Whatever still cannot go stays there. */
+    static void emptyTrash(File parent) {
+        File trash = new File(parent, TRASH);
+        if (trash.exists() && !RuntimeFileTree.deleteWhatCan(trash, null))
+            Log.i(TAG, "some runtime leftovers still cannot be deleted: " + trash);
     }
 
     private static boolean isEmptyDir(File dir) {
@@ -563,15 +594,21 @@ public final class LinuxRuntimeInstaller {
                 // Invalidate the installation before traversing it. A process killed halfway
                 // through leaves a named removal to resume, never a launchable partial runtime.
                 if (root.exists()) {
-                    RuntimeFileTree.delete(pending, progress);
-                    if (!root.renameTo(pending)) throw new IOException("Cannot prepare the runtime for removal");
+                    if (!discard(pending, progress) || !root.renameTo(pending))
+                        throw new IOException("Cannot prepare the runtime for removal");
                 } else if (!pending.isDirectory() && !pending.mkdirs()) {
                     throw new IOException("Cannot prepare the runtime for removal");
                 }
                 // Keep the quarantine until all leftovers are gone, so a failure stays retryable.
-                RuntimeFileTree.delete(new File(root.getParentFile(), root.getName() + ".new"), progress);
-                RuntimeFileTree.delete(new File(root.getParentFile(), root.getName() + ".old"), progress);
-                RuntimeFileTree.delete(pending, progress);
+                // An entry the app may not delete is set aside rather than failing the removal:
+                // a quarantine that can never clear would block reinstalling for good.
+                for (File leftover : new File[]{
+                        new File(root.getParentFile(), root.getName() + ".new"),
+                        new File(root.getParentFile(), root.getName() + ".old"),
+                        pending}) {
+                    if (!discard(leftover, progress)) throw new IOException("Cannot remove " + leftover);
+                }
+                emptyTrash(root.getParentFile());
                 job.ok = true;
                 report(text(app, R.string.rtinst_removed), 100);
                 return true;
