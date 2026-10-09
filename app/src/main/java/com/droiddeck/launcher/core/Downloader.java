@@ -126,14 +126,19 @@ public final class Downloader {
             int code = connection.getResponseCode();
             boolean appending = code == HttpURLConnection.HTTP_PARTIAL;
             if (code / 100 != 2) {
-                // The server ignored or refused the range: start the file again.
-                if (have > 0) {
-                    connection.disconnect();
-                    //noinspection ResultOfMethodCallIgnored
-                    destination.delete();
-                    return downloadFileSingle(url, destination, false, progress);
-                }
-                Log.w(TAG, url + " -> HTTP " + code);
+                // A source that refuses the range is not worth restarting the file over: keep
+                // the partial archive and let the caller try the next source. The file is only
+                // rewritten from scratch when a later attempt finds a range-capable source.
+                Log.w(TAG, url + " -> HTTP " + code + (have > 0 ? " (range refused, partial kept)" : ""));
+                return false;
+            }
+            if (!appending && have > 0) {
+                // The source ignored our Range header (200 instead of 206): accepting it would
+                // truncate the partial and rewrite the whole file from byte 0, losing everything
+                // downloaded so far. Skip this source; a range-capable one (direct GitHub, whose
+                // release URL redirects to objects.githubusercontent.com, or a proxying mirror)
+                // continues where we left off.
+                Log.w(TAG, url + " ignored Range (HTTP 200), partial kept for the next source");
                 return false;
             }
             if (!appending) have = 0;
