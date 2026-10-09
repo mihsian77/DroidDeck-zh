@@ -232,8 +232,8 @@ public final class LinuxRuntimeInstaller {
             String downloading = context.getString(R.string.rtinst_downloading);
             if (listener != null) listener.onProgress(Step.DOWNLOADING, downloading, 0);
 
-            // Build candidate source list: fastest probed source first, then direct, then other nodes.
-            // MirrorHub.refresh() is cached 6h; selectFastestSource probes direct + top 3 nodes.
+            // Build candidate source list: probes direct + every MirrorHub node concurrently,
+            // keeps only sources that answered (range-capable first), up to MAX_SOURCES.
             MirrorHub.refresh(context);
             java.util.List<String> sources = MirrorHub.buildSourceList(context, release.url);
             Log.i(TAG, "downloading from " + sources.size() + " candidate sources");

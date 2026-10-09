@@ -40,7 +40,7 @@ public final class MirrorHub {
     private static final String KEY_LAST_FETCH = "last_fetch";
     private static final long CACHE_TTL_MS = 6 * 3600_000L;
     private static final int PROBE_TIMEOUT_MS = 8_000;
-    private static final int MAX_NODES_TO_PROBE = 3;
+    private static final int MAX_SOURCES = 8;
 
     private MirrorHub() {}
 
@@ -65,9 +65,12 @@ public final class MirrorHub {
     private static final class ProbeResult {
         final String url;
         final long latencyMs;
-        ProbeResult(String url, long latencyMs) {
+        /** True when the server answered 206 (Range honoured) - such a source can resume. */
+        final boolean range;
+        ProbeResult(String url, long latencyMs, boolean range) {
             this.url = url;
             this.latencyMs = latencyMs;
+            this.range = range;
         }
     }
 
@@ -173,13 +176,22 @@ public final class MirrorHub {
             sources.add(url);
             return sources;
         }
-        String fastest = selectFastestSource(context, url);
-        sources.add(fastest);
-        if (!fastest.equals(url)) sources.add(url);
+        // Probe direct + every node and trust only sources that actually answered, range-capable
+        // (206) first. The ping order in active-nodes.json is not the proxy order: some of the
+        // lowest-latency domains are not GitHub proxies at all and time out, while the usable
+        // proxies sit further down the list and never got tried when we only took the top few.
+        List<ProbeResult> probed = probeAll(context, url);
+        for (ProbeResult r : probed) {
+            if (!sources.contains(r.url)) sources.add(r.url);
+            if (sources.size() >= MAX_SOURCES) return sources;
+        }
+        // Fallbacks even if their probe failed (a probe can time out while the real download
+        // works): direct first, then the remaining nodes in cached latency order.
+        if (!sources.contains(url)) sources.add(url);
         for (Node node : getNodes(context)) {
             String mirrored = "https://" + node.domain + "/" + url;
             if (!sources.contains(mirrored)) sources.add(mirrored);
-            if (sources.size() >= 5) break;
+            if (sources.size() >= MAX_SOURCES) break;
         }
         return sources;
     }
@@ -248,29 +260,26 @@ public final class MirrorHub {
     }
 
     /**
-     * Select the fastest download source for a GitHub URL.
-     * Probes direct connection and the top N universal_proxy nodes concurrently with a
-     * 1-byte Range request, returns the fastest. Falls back to the original URL if all fail.
+     * Probes direct GitHub and every universal_proxy node concurrently with a 1-byte Range
+     * request. Returns the sources that answered 2xx, range-capable (206) first, each group
+     * ordered by measured latency. Sources that time out or are not real proxies drop out.
      */
-    public static String selectFastestSource(Context context, String githubUrl) {
+    private static List<ProbeResult> probeAll(Context context, String githubUrl) {
         List<Node> nodes = getNodes(context);
         List<String> candidates = new ArrayList<>();
         candidates.add(githubUrl); // direct first
-        int limit = Math.min(MAX_NODES_TO_PROBE, nodes.size());
-        for (int i = 0; i < limit; i++) {
-            candidates.add("https://" + nodes.get(i).domain + "/" + githubUrl);
-        }
+        for (Node node : nodes) candidates.add("https://" + node.domain + "/" + githubUrl);
 
         ExecutorService executor = Executors.newFixedThreadPool(candidates.size());
         List<Future<ProbeResult>> futures = new ArrayList<>();
-        for (String url : candidates) {
-            futures.add(executor.submit(new ProbeTask(url)));
+        for (String u : candidates) {
+            futures.add(executor.submit(new ProbeTask(u)));
         }
 
         List<ProbeResult> results = new ArrayList<>();
         for (Future<ProbeResult> f : futures) {
             try {
-                ProbeResult r = f.get(PROBE_TIMEOUT_MS + 2000, TimeUnit.MILLISECONDS);
+                ProbeResult r = f.get(PROBE_TIMEOUT_MS + 3000, TimeUnit.MILLISECONDS);
                 if (r != null && r.latencyMs > 0) results.add(r);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 // skip this source
@@ -278,14 +287,24 @@ public final class MirrorHub {
         }
         executor.shutdownNow();
 
+        results.sort(Comparator.comparing((ProbeResult r) -> r.range ? 0 : 1)
+                .thenComparingLong(r -> r.latencyMs));
+        return results;
+    }
+
+    /**
+     * Select the fastest download source for a GitHub URL. Probes direct and all nodes
+     * concurrently; returns the fastest range-capable source, or the original URL if all fail.
+     */
+    public static String selectFastestSource(Context context, String githubUrl) {
+        List<ProbeResult> results = probeAll(context, githubUrl);
         if (results.isEmpty()) {
             Log.w(TAG, "all probes failed, using direct");
             return githubUrl;
         }
-        results.sort(Comparator.comparingLong(r -> r.latencyMs));
         ProbeResult best = results.get(0);
         Log.i(TAG, "fastest source: " + best.url.substring(0, Math.min(60, best.url.length()))
-                + " (" + best.latencyMs + "ms) out of " + results.size() + " candidates");
+                + " (" + best.latencyMs + "ms, range=" + best.range + ") out of " + results.size() + " candidates");
         return best.url;
     }
 
@@ -317,11 +336,11 @@ public final class MirrorHub {
                 // 200 = full file (no range support), 206 = partial content (range supported)
                 if (code / 100 == 2) {
                     long latency = System.currentTimeMillis() - start;
-                    return new ProbeResult(url, latency);
+                    return new ProbeResult(url, latency, code == HttpURLConnection.HTTP_PARTIAL);
                 }
-                return new ProbeResult(url, -1);
+                return new ProbeResult(url, -1, false);
             } catch (Exception e) {
-                return new ProbeResult(url, -1);
+                return new ProbeResult(url, -1, false);
             } finally {
                 if (conn != null) conn.disconnect();
             }
