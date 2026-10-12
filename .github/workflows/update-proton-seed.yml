@@ -54,6 +54,7 @@ jobs:
                   "tools": {
                       "ge": find_entry("GloriousEggroll/proton-ge-custom", r"aarch64\.tar\.(gz|xz)$"),
                       "cachyos": find_entry("CachyOS/proton-cachyos", r"arm64\.tar\.(gz|xz)$"),
+                      "droiddeck": find_entry("The412Banner/DroidDeck-Proton", r"aarch64\.tar\.(gz|xz)$"),
                   },
               }, f, indent=2, ensure_ascii=False)
               f.write("\n")

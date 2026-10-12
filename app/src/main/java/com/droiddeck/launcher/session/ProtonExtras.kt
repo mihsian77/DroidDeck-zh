@@ -188,7 +188,7 @@ object ProtonExtras {
             if (SessionState.running) return context.getString(R.string.pextra_stop_session)
             if (!LinuxRuntime.isInstalled(context)) return context.getString(R.string.user_apps_runtime_required)
             val downloads = File(context.filesDir, "proton-downloads").apply { mkdirs() }
-            val archive = File(downloads, "${tool.id}-local${file.name.substringBeforeLast('.')}.tar.gz")
+            val archive = File(downloads, "${tool.id}-local-${file.name}")
             onProgress(context.getString(R.string.pextra_copying, tool.name), 0)
             file.copyTo(archive, overwrite = true)
             return installArchive(context, tool, archive, null, onProgress)

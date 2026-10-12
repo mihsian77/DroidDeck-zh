@@ -16,6 +16,13 @@
       "url": "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261005-slr/proton-cachyos-11.0-20261005-slr-arm64.tar.xz",
       "sha512": "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261005-slr/proton-cachyos-11.0-20261005-slr-arm64.sha512sum",
       "size": 356312716
+    },
+    "droiddeck": {
+      "tag": "DroidDeck-Proton-11-7.5",
+      "name": "DroidDeck-Proton-11-7.5-aarch64.tar.gz",
+      "url": "https://github.com/The412Banner/DroidDeck-Proton/releases/download/DroidDeck-Proton-11-7.5/DroidDeck-Proton-11-7.5-aarch64.tar.gz",
+      "sha512": "https://github.com/The412Banner/DroidDeck-Proton/releases/download/DroidDeck-Proton-11-7.5/DroidDeck-Proton-11-7.5-aarch64.sha512sum",
+      "size": 625775670
     }
   }
 }
