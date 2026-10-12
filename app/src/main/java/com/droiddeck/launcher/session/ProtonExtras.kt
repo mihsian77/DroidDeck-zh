@@ -191,7 +191,7 @@ object ProtonExtras {
             val archive = File(downloads, "${tool.id}-local${file.name.substringBeforeLast('.')}.tar.gz")
             onProgress(context.getString(R.string.pextra_copying, tool.name), 0)
             file.copyTo(archive, overwrite = true)
-            return installArchive(context, tool, archive, onProgress)
+            return installArchive(context, tool, archive, null, onProgress)
         } finally {
             installInProgress = false
         }
@@ -254,7 +254,7 @@ object ProtonExtras {
             archive.delete()
             return context.getString(R.string.pextra_checksum_mismatch)
         }
-        return installArchive(context, tool, archive, onProgress)
+        return installArchive(context, tool, archive, asset, onProgress)
     }
 
     /**
@@ -264,7 +264,7 @@ object ProtonExtras {
      * Imported archives arrive here unverified (no release to vouch for them) and are installed
      * as-is - the shim refuses an archive that does not look like a Proton build.
      */
-    private fun installArchive(context: Context, tool: Tool, archive: File, onProgress: (String, Int) -> Unit): String? {
+    private fun installArchive(context: Context, tool: Tool, archive: File, asset: Asset?, onProgress: (String, Int) -> Unit): String? {
         if (SessionState.running) return context.getString(R.string.pextra_session_started)
         val installing = context.getString(R.string.pextra_installing, tool.name)
         onProgress(installing, -1)
