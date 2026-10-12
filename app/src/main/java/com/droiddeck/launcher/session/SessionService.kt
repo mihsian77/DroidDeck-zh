@@ -328,6 +328,12 @@ class SessionService : Service() {
         }
 
         val root = LinuxRuntime.rootDir(this)
+        // A logout asked from the Steam home is carried out here, before the client boots: wipe
+        // its credentials so the next start lands on the sign-in screen. The flag dies with them.
+        if (SteamLogout.requested(this)) {
+            Log.i(TAG, SteamLogout.apply(this, root))
+            File(filesDir, SteamLogout.FLAG).delete()
+        }
         val sessionRoot = LinuxRuntime.sessionRoot(this).apply { mkdirs() }
         val runtimeDir = File(filesDir, ".wayland-rt").apply { mkdirs() }
         killStragglers()
