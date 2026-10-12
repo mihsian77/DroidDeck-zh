@@ -14,7 +14,6 @@ import org.json.JSONObject
 class AgentStartActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = com.droiddeck.launcher.session.SessionPrefs.orientation(this)
         val request = decodeRequest(intent.getStringExtra(EXTRA_REQUEST))
         if (request == null) {
             finish()
