@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedAt": "2026-10-09T01:58:15Z",
+  "updatedAt": "2026-10-12T10:31:33Z",
   "note": "Latest ARM64 Proton builds, mirrored into this repo so the app never has to query api.github.com (blocked/throttled for users on CN networks). Updated by update-proton-seed workflow.",
   "tools": {
     "ge": {
