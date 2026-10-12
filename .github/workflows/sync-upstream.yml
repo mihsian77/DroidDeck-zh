@@ -112,16 +112,13 @@ jobs:
               echo "::error::gh pr create failed: $PR_URL"
               gh issue create \
                 --title "sync: failed to open PR for $BRANCH" \
-                --body "The sync-upstream workflow could not open a pull request for branch \`$BRANCH\`.
+                --body "The sync-upstream workflow could not open a pull request for branch $BRANCH.
 
-Upstream commits behind: $COMMIT_COUNT
-Merge status: $MERGE_STATUS
+                Upstream commits behind: $COMMIT_COUNT. Merge status: $MERGE_STATUS.
 
-Error:
-\`\`\`
-$PR_URL
-\`\`\`
-" || echo "::error::issue creation also failed - the sync is stuck silently"
+                Error:
+                $PR_URL
+                " || echo "::error::issue creation also failed - the sync is stuck silently"
               exit 1
             fi
           else
