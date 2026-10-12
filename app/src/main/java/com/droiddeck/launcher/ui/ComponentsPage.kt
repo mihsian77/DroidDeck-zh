@@ -638,6 +638,7 @@ fun ComponentsPage(
                     p.name, "${p.version} · ${p.detail}", progress = if (gpu.busy == p.key) gpu.percent else null, enabled = gpu.busy == null,
                     badge = if (p.recommended) stringResource(R.string.gpu_recommended_caps) else null,
                     onGet = { gpuActions.onAuto(false); gpuActions.onPair(p.key) }
+                )
                 if (gpu.pairs.any { !it.suits }) Box(Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
                     FocusText(stringResource(if (showAllPairs) R.string.gpu_hide_other else R.string.gpu_show_other), pal.signal) { showAllPairs = !showAllPairs }
                 }
@@ -661,6 +662,7 @@ fun ComponentsPage(
                     action = if (row.update != null) stringResource(R.string.common_update) else null,
                     extra = if (row.installed == null && protons.busyId == null) Pair(stringResource(R.string.store_import), { protonActions.onImport(row.id) }) else null,
                     onGet = { protonActions.onInstall(row.id) }
+                )
             }
             else -> {
                 val available = availableFor(l, catalog, snapshot)
@@ -669,6 +671,7 @@ fun ComponentsPage(
                     d.file.removeSuffix(".wcp"), "${d.release} · " + stringResource(R.string.common_size_mb, d.size / 1048576.0),
                     progress = downloads[d.file], enabled = busy == null,
                     onGet = { onDownload(d) }
+                )
             }
         }
     }

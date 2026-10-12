@@ -303,7 +303,7 @@ object ProtonExtras {
             else {
                 archive.delete()
                 unqueue(context, tool)
-                record(context, tool, placed, asset.tag)
+                record(context, tool, placed, asset?.tag ?: "local")
                 if (EsyncPacks.enabled(context)) {
                     onProgress(context.getString(R.string.esync_fetching), -1)
                     try {
