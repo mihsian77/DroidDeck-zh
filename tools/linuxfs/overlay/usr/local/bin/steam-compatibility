@@ -92,10 +92,52 @@ TOOL_MANIFEST_VDF = """"manifest"
 # relies on compatdata/0 itself. The launch-time check below is the protection instead.
 
 # The Components page's choices, enforced in the one place every game launch passes: the app keeps
-# desired.tsv (tool dir, Proton build, component, file, sha256, source copy) and an unpacked copy of
-# each package in use. A file that no longer matches - whatever changed it - is put back before
-# Proton starts. Only for the Proton build the choice was made for: after a Steam update the build
-# differs and the Proton's own new files are left alone until the user chooses again.
+# desired.tsv (scope, tool dir, Proton build, component, file, sha256, source copy) and an unpacked
+# copy of each package in use. A game's rows replace General rows for that component. A `-` source
+# removes a managed file absent from the selected package, so one game's package cannot leak into
+# the next game. A file that no longer matches - whatever changed it - is put back before Proton
+# starts. Only the matching Proton build is changed; after a Steam update the build differs and the
+# Proton's own new files are left alone until the user chooses again.
+# A store game (GOG, Epic, Amazon) is started through the launcher .bat DroidDeck wrote beside it.
+# An Epic game needs a fresh sign-in code, which only the app can mint: droiddeck-store-launch asks
+# for it and the app writes it into the game's folder, so a launch from the client's own Play
+# button signs in just as one from the app does. A real launch only; never in the way of it.
+BL_STORE_SETUP = """
+bl_store_launch() {
+  [ "${verb:-}" = waitforexitandrun ] || return 0
+  # A web address the game opens (Wine's winebrowser runs xdg-open) goes to Android's browser:
+  # droiddeck-open-url as xdg-open, first on the game's PATH, with the session channel left in a
+  # file in case Wine does not pass BL_LAUNCH_DIR on. (The prefix also names it as Wine's browser.)
+  if [ -x /usr/local/bin/droiddeck-open-url ]; then
+    mkdir -p /tmp/droiddeck-browser
+    ln -sfn /usr/local/bin/droiddeck-open-url /tmp/droiddeck-browser/xdg-open
+    [ -n "${BL_LAUNCH_DIR:-}" ] && printf '%s\n' "$BL_LAUNCH_DIR" > /tmp/droiddeck-browser/launch-dir
+    PATH="/tmp/droiddeck-browser:$PATH"; export PATH
+  fi
+  # BL_DEBUG_BROWSER=1 (droiddeck-env): Wine traces how the game opens a web address.
+  if [ "${BL_DEBUG_BROWSER:-}" = 1 ]; then
+    WINEDEBUG="${WINEDEBUG:+$WINEDEBUG,}+shell,+winebrowser"; export WINEDEBUG
+  fi
+  [ -x /usr/local/bin/droiddeck-store-launch ] || return 0
+  /usr/local/bin/droiddeck-store-launch "$@"
+  # 10: a store game with cloud saves - the launch waits for Proton and uploads after (bl_run).
+  [ $? -eq 10 ] && BL_STORE_EXIT=1
+  return 0
+}
+
+# Runs Proton: exec'd as always, except for a store game with cloud saves, where the wrapper stays
+# to tell the app the game has exited so it can upload what changed.
+bl_run() {
+  if [ -n "${BL_STORE_EXIT:-}" ]; then
+    "$@"
+    rc=$?
+    /usr/local/bin/droiddeck-store-launch --exited "${BL_STORE_ARGS[@]}" || true
+    exit $rc
+  fi
+  exec "$@"
+}
+"""
+
 BL_COMPONENTS_SETUP = """
 bl_components() {
   base=$1
@@ -109,17 +151,68 @@ bl_components() {
   [ "${verb:-}" = waitforexitandrun ] || return 0
   case "${STEAM_COMPAT_DATA_PATH:-}" in ''|*/compatdata/0|*/compatdata/0/|*/compatdata/0-*) return 0 ;; esac
   [ -f "$cm_list" ] || return 0
-  cm_app=${STEAM_COMPAT_DATA_PATH%/}
+  cm_app=${STEAM_COMPAT_DATA_PATH}
+  while [[ "$cm_app" == */ ]]; do cm_app=${cm_app%/}; done
   cm_app=${cm_app##*/}
+  if [[ "$cm_app" =~ ^(-?)([0-9]+)$ ]]; then
+    cm_sign=${BASH_REMATCH[1]}
+    cm_digits=${BASH_REMATCH[2]}
+    while [[ ${#cm_digits} -gt 1 && "$cm_digits" == 0* ]]; do cm_digits=${cm_digits#0}; done
+    if [[ ${#cm_digits} -le 10 ]]; then
+      cm_app=$((10#$cm_digits))
+      [ "$cm_sign" = "-" ] && cm_app=$((-cm_app))
+      if (( cm_app >= -2147483648 && cm_app <= 4294967295 && cm_app != 0 )); then
+        (( cm_app < 0 )) && cm_app=$((cm_app + 4294967296))
+      else
+        cm_app=""
+      fi
+    else
+      cm_app=""
+    fi
+  else
+    cm_app=""
+  fi
+  if [ -z "$cm_app" ]; then
+    echo "droiddeck-proton: components: invalid game prefix, left as it is" >&2
+    return 0
+  fi
   cm_tool=${base##*/}
   cm_build=$(awk 'NR == 1 { print $2 }' "$base/version" 2>/dev/null)
   cm_fixed=0
   cm_checked=0
-  while IFS=$'\\t' read -r t want comp rel sum src; do
-    [ "$t" = "$cm_tool" ] && [ "$want" = "$cm_build" ] || continue
+  cm_selected=$(awk -F '\\t' -v app="$cm_app" -v tool="$cm_tool" -v build="$cm_build" '
+    $2 == tool && $3 == build {
+      rows[++count] = $0
+      scopes[count] = $1
+      comps[count] = $4
+      if ($1 == app) specific[$4] = 1
+    }
+    END {
+      for (i = 1; i <= count; i++)
+        if (scopes[i] == app || (scopes[i] == "*" && !specific[comps[i]])) print rows[i]
+    }
+  ' "$cm_list")
+  # One sha256sum for every file: each program started here pays a dozen traced library lookups
+  # under the game's search path before it does anything.
+  local cm_rows=() cm_files=() row h p
+  local -A cm_sums=()
+  while IFS=$'\\t' read -r scope t want comp rel sum src; do
+    [ -n "$scope" ] || continue
+    cm_rows+=("$comp"$'\\t'"$rel"$'\\t'"$sum"$'\\t'"$src")
+    [ "$src" != "-" ] && [ -f "$base/$rel" ] && cm_files+=("$base/$rel")
+  done <<< "$cm_selected"
+  if [ ${#cm_files[@]} -gt 0 ]; then
+    while read -r h p; do cm_sums["$p"]=$h; done < <(sha256sum -- "${cm_files[@]}" 2>/dev/null)
+  fi
+  for row in "${cm_rows[@]}"; do
+    IFS=$'\\t' read -r comp rel sum src <<< "$row"
     cm_checked=$((cm_checked + 1))
     f="$base/$rel"
-    if [ -f "$f" ] && [ "$(sha256sum "$f" | cut -d' ' -f1)" = "$sum" ]; then continue; fi
+    if [ "$src" = "-" ]; then
+      if [ -e "$f" ]; then rm -f "$f" && cm_fixed=$((cm_fixed + 1)); fi
+      continue
+    fi
+    if [ -f "$f" ] && [ "${cm_sums[$f]:-}" = "$sum" ]; then continue; fi
     if [ ! -f "$src" ]; then
       echo "droiddeck-proton: components: $comp source missing ($src), left as it is" >&2
       continue
@@ -128,7 +221,7 @@ bl_components() {
     cp -f "$src" "$f.bl-new" && mv -f "$f.bl-new" "$f" || continue
     case "$rel" in *.so) chmod 755 "$f" ;; *) chmod 644 "$f" ;; esac
     cm_fixed=$((cm_fixed + 1))
-  done < "$cm_list"
+  done
   [ "$cm_checked" -gt 0 ] && echo "droiddeck-proton: components: checked $cm_checked file(s) in $cm_tool for app $cm_app" >&2
   if [ "$cm_fixed" -gt 0 ]; then
     echo "droiddeck-proton: components: re-applied $cm_fixed of $cm_checked file(s) in $cm_tool before this launch" >&2
@@ -307,6 +400,16 @@ for fake in /usr/local/lib/libfakeinput.so /usr/local/lib/libblsession.so; do
     esac
   fi
 done
+# ld.so looks every library up along the game's search path (its own directory, Steam's runtime
+# and video directories, Proton's), and under proot each miss is a round trip to the tracer. With
+# the fast path, the audit module skips the misses it can prove (tools/proot/fastpath/audit.c).
+audit=/usr/local/lib/libblaudit.so
+if [ -n "${PROOT_FP_KEY:-}" ] && [ -f "$audit" ]; then
+  case ":${LD_AUDIT:-}:" in
+    *":$audit:"*) ;;
+    *) LD_AUDIT="$audit${LD_AUDIT:+:$LD_AUDIT}"; export LD_AUDIT ;;
+  esac
+fi
 # The depot this tool is named after, newest across the libraries that hold it; the others in the
 # list stand in only when it is missing.
 depot=
@@ -332,7 +435,9 @@ if [ -n "$depot" ]; then
   bl_game_cpus
   bl_idtech3 "$@"
   bl_libpath
-  exec ${BL_TASKSET:-} /usr/local/bin/droiddeck-game-env "$depot/proton" "$verb" "$@" "${BL_EXTRA_ARGS[@]}"
+  bl_store_launch "$@"
+  BL_STORE_ARGS=("$@")
+  bl_run ${BL_TASKSET:-} /usr/local/bin/droiddeck-game-env "$depot/proton" "$verb" "$@" "${BL_EXTRA_ARGS[@]}"
 fi
 echo "droiddeck-proton: no ARM64 Proton depot yet - the client downloads one as this tool's dependency; retry the launch once it has" >&2
 exit 1
@@ -346,7 +451,7 @@ def launcher_sh(sources=SOURCES):
     # something else.
     return (LAUNCHER_TEMPLATE % " ".join('"%s"' % n for n in sources)).replace(
         "verb=$1; shift", "verb=$1; shift\n" + BL_DIRECTAUDIO_SETUP + BL_GAME_CPUS_SETUP + BL_IDTECH3_SETUP
-        + BL_COMPONENTS_SETUP + BL_LIBPATH_SETUP, 1)
+        + BL_COMPONENTS_SETUP + BL_LIBPATH_SETUP + BL_STORE_SETUP, 1)
 
 
 LAUNCHER_SH = launcher_sh()
@@ -385,14 +490,24 @@ for fake in /usr/local/lib/libfakeinput.so /usr/local/lib/libblsession.so; do
     esac
   fi
 done
+# See droiddeck-proton: library lookups that cannot succeed are skipped with the fast path.
+audit=/usr/local/lib/libblaudit.so
+if [ -n "${PROOT_FP_KEY:-}" ] && [ -f "$audit" ]; then
+  case ":${LD_AUDIT:-}:" in
+    *":$audit:"*) ;;
+    *) LD_AUDIT="$audit${LD_AUDIT:+:$LD_AUDIT}"; export LD_AUDIT ;;
+  esac
+fi
 bl_components "$here"
 bl_directaudio "$here"
 bl_game_cpus
 bl_idtech3 "$@"
 bl_libpath
+bl_store_launch "$@"
+BL_STORE_ARGS=("$@")
 # Proton takes its base directory from dirname(sys.argv[0]) without resolving it, so it has to be
 # started from its own tree.
-exec ${BL_TASKSET:-} /usr/local/bin/droiddeck-game-env "$here/%s" "$verb" "$@" "${BL_EXTRA_ARGS[@]}"
+bl_run ${BL_TASKSET:-} /usr/local/bin/droiddeck-game-env "$here/%s" "$verb" "$@" "${BL_EXTRA_ARGS[@]}"
 """
 EXTRA_COMPAT_TOOL_VDF = """"compatibilitytools"
 {
@@ -619,7 +734,7 @@ def adopt_extras(tools):
             body = (EXTRA_WRAPPER_SH % entry_point).replace(
                     'here=$(dirname "$0")',
                     'here=$(dirname "$0")\n' + BL_DIRECTAUDIO_SETUP + BL_GAME_CPUS_SETUP + BL_IDTECH3_SETUP
-                    + BL_COMPONENTS_SETUP + BL_LIBPATH_SETUP, 1)
+                    + BL_COMPONENTS_SETUP + BL_LIBPATH_SETUP + BL_STORE_SETUP, 1)
             write_changed(wrapper, body, 0o755)
             write_changed(manifest, EXTRA_MANIFEST_VDF)
             write_changed(compat_vdf, EXTRA_COMPAT_TOOL_VDF % (name, display_name(entry)))
@@ -678,6 +793,21 @@ def installed_apps(steam_root):
 
 APPINFO_CACHE = {}
 STEAM_PLAY_MANIFESTS = 891390
+
+
+def launch_programs(config):
+    """The Windows and Linux programs an app's launch options start, relative to its folder (lowercase, "/")."""
+    launch = config.get("launch") if isinstance(config, dict) else None
+    found = []
+    for option in launch.values() if isinstance(launch, dict) else ():
+        if not isinstance(option, dict) or not option.get("executable"):
+            continue
+        settings = option.get("config") if isinstance(option.get("config"), dict) else {}
+        oslist = str(settings.get("oslist", "")).lower()
+        if oslist and "windows" not in oslist and "linux" not in oslist:
+            continue
+        found.append(os.path.normpath(str(option["executable"]).replace("\\", "/")).lstrip("/").lower())
+    return found
 
 
 def appinfo_entries(path):
@@ -770,6 +900,7 @@ def appinfo_entries(path):
             "osarch": str(common.get("osarch", "")).lower(),
             "type": str(common.get("type", "")).lower(),
             "recommended": str(recommended),
+            "launch": launch_programs(info.get("config")),
         }
         if app == STEAM_PLAY_MANIFESTS:
             extended = info.get("extended", {})
@@ -895,16 +1026,30 @@ def app_order(app):
     return (len(app), app)
 
 
-def plan_mapping(current, installed, runnable, default, auto, native=None, picks=()):
+DEFERRED_GAME_TOOL = object()
+
+
+def plan_mapping(current, installed, runnable, default, auto, native=None, picks=(), overrides=None):
     runnable = {n.lower() for n in runnable}
     installed = set(installed)
     picks = set(picks)
     native = native or {}
+    overrides = overrides or {}
     changes, kept = {}, {}
     if current.get("0", "") != default:
         changes["0"] = default
-    for app in sorted((set(current) | installed | picks | set(auto)) - {"0"}, key=app_order):
+    for app in sorted((set(current) | installed | picks | set(auto) | set(overrides)) - {"0"}, key=app_order):
         name = current.get(app, "")
+        if app in overrides:
+            target = overrides[app]
+            if target is DEFERRED_GAME_TOOL:
+                continue
+            target = target or default
+            if name != target:
+                changes[app] = target
+            if overrides[app] is None:
+                kept[app] = target
+            continue
         mine = auto.get(app)
         target = native.get(app, default)
         stale = unrunnable(name, runnable) or (app in native and linux_runtime_tool(name))
@@ -961,6 +1106,34 @@ def requested_tool(request, catalog):
         if tool["dir"] and tool["dir"] == request.get("dir") and tool["valve"] == bool(request.get("valve")):
             return tool["name"]
     return None
+
+
+def game_requests(directory=None):
+    value = read_json(state_path("games.json", directory))
+    if value.get("version") != 1 or not isinstance(value.get("games"), dict):
+        return {}
+    return value["games"]
+
+
+def requested_games(requests, catalog, runnable=None):
+    """App id -> requested tool, None for inherit, or DEFERRED_GAME_TOOL while unavailable."""
+    runnable = None if runnable is None else set(runnable)
+    resolved = {}
+    for app, request in requests.items():
+        if not isinstance(app, str) or not re.fullmatch(r"[1-9][0-9]*", app) or int(app) > 0xFFFFFFFF:
+            continue
+        if request is None:
+            resolved[app] = None
+            continue
+        if (not isinstance(request, dict) or not isinstance(request.get("dir"), str) or
+                not request["dir"] or not isinstance(request.get("valve"), bool)):
+            continue
+        tool = requested_tool(request, catalog)
+        if tool is None or runnable is not None and tool not in runnable:
+            resolved[app] = DEFERRED_GAME_TOOL
+        else:
+            resolved[app] = tool
+    return resolved
 
 
 def now_ms():
@@ -1084,7 +1257,9 @@ def register_default(config_path, apps=(), protect=(), default=None, catalog=Non
             else:
                 default = state.get("default") if state.get("default") in names else TOOL
         steam_root = os.path.dirname(os.path.dirname(os.path.abspath(config_path)))
-        changes, auto = plan_mapping(current, apps, names, default, followers(state, current), native_targets(steam_root, apps), picks)
+        overrides = requested_games(game_requests(directory), catalog)
+        changes, auto = plan_mapping(
+            current, apps, names, default, followers(state, current), native_targets(steam_root, apps), picks, overrides)
         for app, tool in changes.items():
             set_mapping(tokens, mapping, app, tool)
         text = serialize(tokens)
