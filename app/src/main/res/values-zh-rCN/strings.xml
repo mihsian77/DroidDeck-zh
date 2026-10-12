@@ -2400,4 +2400,53 @@
     <string name="wincomp_downloading">正在下载 %1$s</string>
     <string name="wincomp_installing">正在安装：%1$s</string>
     <string name="wincomp_reverting">正在关闭…</string>
+    <string name="achievements_title">成就</string>
+    <string name="achievements_count">已解锁 %1$d / %2$d</string>
+    <string name="achievements_count_short">%1$d / %2$d</string>
+    <string name="achievements_group_unlocked">已解锁 · %1$d</string>
+    <string name="achievements_group_locked">未解锁 · %1$d</string>
+    <string name="achievements_group_hidden">隐藏 · %1$d</string>
+    <string name="achievements_hidden">隐藏成就</string>
+    <string name="achievements_hidden_detail">解锁后显示详情。</string>
+    <string name="achievements_all">已解锁全部成就</string>
+    <string name="achievements_reading">读取中…</string>
+    <string name="achievements_signed_out">登录 %1$s 以查看你的成就。</string>
+    <string name="achievements_unreachable">无法连接到 %1$s。请在联网后再查看。</string>
+    <string name="achievements_none">%1$s 未列出此游戏的成就。</string>
+    <string name="achievements_show_all">显示全部 %1$d 项</string>
+    <string name="achievements_dialog_title">成就 · %1$s</string>
+
+    <!-- 0.4.0: 不启动 Steam、按键目标、GOG 成就、卸载 -->
+    <string name="game_no_steam_title">不启动 Steam</string>
+    <string name="game_no_steam_detail">针对启动后立即退出的游戏：不经过 Proton 的 Steam 配置直接启动。Steam 悬浮层等 Steam 功能对该游戏关闭。</string>
+    <string name="game_no_steam_on">开启</string>
+    <string name="ctrl_target_a">A</string>
+    <string name="ctrl_target_b">B</string>
+    <string name="ctrl_target_x">X</string>
+    <string name="ctrl_target_y">Y</string>
+    <string name="ctrl_target_lb">LB</string>
+    <string name="ctrl_target_rb">RB</string>
+    <string name="ctrl_target_lt">LT</string>
+    <string name="ctrl_target_rt">RT</string>
+    <string name="ctrl_target_l3">L3</string>
+    <string name="ctrl_target_r3">R3</string>
+    <string name="ctrl_target_steam">Steam</string>
+    <string name="gstore_folder_on_volume">%1$s（%2$s）</string>
+    <string name="stores_uninstalling">正在卸载…</string>
+    <string name="stores_uninstall_title">卸载 %1$s？</string>
+    <string name="stores_uninstall_body_size">释放 %1$s 空间，并从 Steam 中移除。</string>
+    <string name="stores_uninstall_body">删除其文件和 Steam 快捷方式。</string>
+    <string name="gog_achievements">GOG 成就</string>
+    <string name="gog_achievements_hint">为支持的 GOG 游戏同步成就。下次启动时生效。</string>
+    <string name="gog_achievements_off">成就已关闭</string>
+    <string name="gog_achievements_on">成就已启用</string>
+    <string name="gog_achievements_signin">重新登录 GOG</string>
+    <string name="gog_achievements_uploaded">成就已上传</string>
+    <string name="gog_achievements_pending">成就等待上传</string>
+    <string name="gog_achievements_enable_store">在商店设置中启用 GOG 成就</string>
+    <string name="gog_achievements_unavailable">成就不可用，请查看会话日志</string>
+    <string name="achievement_unlocked">成就已解锁</string>
+    <plurals name="drawer_profile_environment_overrides">
+        <item quantity="other">%1$d 个游戏覆盖</item>
+    </plurals>
 </resources>

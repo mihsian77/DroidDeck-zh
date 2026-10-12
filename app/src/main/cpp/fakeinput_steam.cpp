@@ -3600,6 +3600,13 @@ static bool wait_snapshot(std::shared_ptr<FakeController> fake,
   }
 }
 
+static int forward_ioctl(int fd, ioctl_request_t op, void *argp) {
+  using ioctl_fn = int (*)(int, ioctl_request_t, ...);
+  // Preserve later preload hooks, including GPU allocation adapters.
+  static const auto next = reinterpret_cast<ioctl_fn>(dlsym(RTLD_NEXT, "ioctl"));
+  return next ? next(fd, op, argp) : static_cast<int>(syscall(SYS_ioctl, fd, op, argp));
+}
+
 EXPORT int ioctl(int fd, ioctl_request_t op, ...) {
   va_list va;
   void *argp;
@@ -3611,7 +3618,7 @@ EXPORT int ioctl(int fd, ioctl_request_t op, ...) {
   // The lock must not be held across the passthrough: binder's transport is a
   // blocking ioctl(BINDER_WRITE_READ), so a parked binder pool thread would own
   // controller_mutex() for as long as it waits and deadlock every other ioctl.
-  if (!watched(fd)) return syscall(SYS_ioctl, fd, op, argp);
+  if (!watched(fd)) return forward_ioctl(fd, op, argp);
   std::unique_lock<std::recursive_mutex> guard(controller_mutex());
   auto maker = uinput_map().find(fd);
   if (maker != uinput_map().end()) return ioctl_uinput(*maker->second, op, argp);
@@ -3629,7 +3636,7 @@ EXPORT int ioctl(int fd, ioctl_request_t op, ...) {
   auto controller = controller_map().find(fd);
   if (controller == controller_map().end()) {
     guard.unlock();
-    return syscall(SYS_ioctl, fd, op, argp);
+    return forward_ioctl(fd, op, argp);
   }
 
   int type = (op >> 8 & 0xFF);
@@ -3825,7 +3832,7 @@ EXPORT int ioctl(int fd, ioctl_request_t op, ...) {
   } else {
     Logger::log("Unhandled evdev ioctl, type %d number %d\n", type, number);
     guard.unlock();
-    return syscall(SYS_ioctl, fd, op, argp);
+    return forward_ioctl(fd, op, argp);
   }
 }
 
