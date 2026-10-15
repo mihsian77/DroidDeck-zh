@@ -118,11 +118,28 @@ public final class Downloader {
                                                   boolean resume, long knownSize,
                                                   java.util.function.Consumer<Float> progress) {
         if (urls == null || urls.isEmpty()) return false;
+        boolean partialKept = resume && destination.isFile() && destination.length() > 0;
         for (int i = 0; i < urls.size(); i++) {
             String url = urls.get(i);
             boolean ok = downloadFileSingle(url, destination, resume, knownSize, progress);
             if (ok) return true;
             Log.w(TAG, "source " + (i + 1) + "/" + urls.size() + " failed, trying next");
+        }
+        // P0-9: every source refused the range while a partial exists. Failing here made the caller
+        // retry from scratch, and the old 4-arg recursion also dropped the known size (progress then
+        // sat at -1 forever). Restart from byte 0 into a temp file and swap it in only once the whole
+        // file is in hand, so the partial stays intact on failure.
+        if (partialKept && destination.isFile() && destination.length() > 0) {
+            for (int i = 0; i < urls.size(); i++) {
+                File tmp = new File(destination.getAbsolutePath() + ".fromzero");
+                boolean ok = downloadFileSingle(urls.get(i), tmp, false, knownSize, progress);
+                if (ok && tmp.renameTo(destination)) {
+                    Log.i(TAG, "all sources refused the range; restarted from scratch via " + urls.get(i));
+                    return true;
+                }
+                tmp.delete();
+            }
+            Log.w(TAG, "all sources refused the range and a from-scratch restart also failed");
         }
         return false;
     }
@@ -141,7 +158,18 @@ public final class Downloader {
                 // A 206 that does not begin where the kept bytes end would corrupt the file if appended.
                 connection.disconnect();
                 destination.delete();
-                return downloadFile(url, destination, false, progress);
+                return downloadFile(url, destination, false, knownSize, progress);
+            }
+            if (appending && knownSize > 0) {
+                // The remote total must match the caller's known size: a mismatch means the file
+                // changed on the server and the kept partial belongs to the old one. Restart clean.
+                long total = parseTotal(connection.getHeaderField("Content-Range"));
+                if (total > 0 && total != knownSize) {
+                    Log.w(TAG, url + " total " + total + " != known " + knownSize + ", restarting from scratch");
+                    connection.disconnect();
+                    destination.delete();
+                    return downloadFile(url, destination, false, knownSize, progress);
+                }
             }
             if (code / 100 != 2) {
                 // A source that refuses the range is not worth restarting the file over: keep
@@ -196,6 +224,13 @@ public final class Downloader {
         if (contentRange == null) return false;
         java.util.regex.Matcher m = java.util.regex.Pattern.compile("^\\s*bytes\\s+(\\d+)-\\d+/(?:\\d+|\\*)\\s*$").matcher(contentRange);
         return m.matches() && Long.parseLong(m.group(1)) == start;
+    }
+
+    /** The TOTAL part of `Content-Range: bytes START-END/TOTAL`, or -1 when absent. */
+    static long parseTotal(String contentRange) {
+        if (contentRange == null) return -1;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^\\s*bytes\\s+\\d+-\\d+/(\\d+)\\s*$").matcher(contentRange);
+        return m.matches() ? Long.parseLong(m.group(1)) : -1;
     }
 
     private static HttpURLConnection open(String url) throws java.io.IOException {

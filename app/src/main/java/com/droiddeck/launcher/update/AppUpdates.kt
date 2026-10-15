@@ -338,13 +338,22 @@ object AppUpdates {
     }
 
     fun compareVersions(a: String, b: String): Int {
-        val x = a.removePrefix("v").split('.', '-').map { it.toIntOrNull() ?: 0 }
-        val y = b.removePrefix("v").split('.', '-').map { it.toIntOrNull() ?: 0 }
+        val x = parseVersion(a)
+        val y = parseVersion(b)
         for (i in 0 until maxOf(x.size, y.size)) {
-            val c = (x.getOrElse(i) { 0 }).compareTo(y.getOrElse(i) { 0 })
+            val c = (x.getOrElse(i) { 0L }).compareTo(y.getOrElse(i) { 0L })
             if (c != 0) return c
         }
         return 0
+    }
+
+    /** "0.4.0-zh2" → [0,4,0,2]. The -zhN tail used to parse as 0 (every zh build compared equal). */
+    private fun parseVersion(s: String): List<Long> {
+        val zh = Regex("""^zh(\d+)$""")
+        return s.removePrefix("v").split('.', '-').map { tok ->
+            val m = zh.matchEntire(tok)
+            if (m != null) m.groupValues[1].toLong() else (tok.toLongOrNull() ?: 0L)
+        }
     }
 
     private fun get(context: Context, url: String): String {
