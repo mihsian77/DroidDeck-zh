@@ -182,12 +182,199 @@ if [ -z "${BL_INSIDE:-}" ]; then
     zh_stamp=/var/cache/fontconfig/.droiddeck-zh-font
     zh_seen=$(ls -lL "$zh_font" 2>/dev/null | md5sum)
     if [ "$zh_seen" != "$(cat "$zh_stamp" 2>/dev/null)" ]; then
-      fc-cache -f /usr/share/fonts >/dev/null 2>&1 && printf '%s\n' "$zh_seen" > "$zh_stamp"
+      fc-cache -f /usr/share/fonts >/dev/null 2>&1 && printf '%s
+' "$zh_seen" > "$zh_stamp"
       echo "== zh font: indexed WenQuanYi Micro Hei, zh falls back to $(fc-match -f '%{family[0]}' ':lang=zh-cn' 2>/dev/null)"
     fi
   fi
-  # The compositor may still be starting, and a socket left by an earlier session is not
-  # a compositor: probe until a connection succeeds.
+  for _ in $(seq 1 100); do
+    wayland-info >/dev/null 2>&1 && break
+    sleep 0.1
+  done
+  if [ "$mode" = lxqt ]; then
+    step "starting the desktop"
+    start_agent --no-focus
+    [ -x /usr/local/bin/droiddeck-desktop ] || { echo "== the desktop package is not installed"; exit 66; }
+    cores=$(program_cores)
+    if [ -n "$cores" ]; then
+      echo "== desktop cores: $cores (the desktop and every program started from it)"
+      taskset -cp "$cores" $$ >/dev/null 2>&1 || echo "== desktop cores: not allowed right now, every core"
+    fi
+    exec /usr/local/bin/droiddeck-desktop
+  fi
+  width=${BL_WIDTH:-1280}
+  height=${BL_HEIGHT:-720}
+  nested=$width
+  if [ "${BL_FOLLOW_OUTPUT:-0}" = 1 ]; then
+    echo "== gamescope: the output follows the screen (${width}x${height} to start)"
+  elif [ "$mode" = steam ] && [ "${BL_GAMESCOPE_STRETCH_16X9:-0}" = 1 ]; then
+    wide=$(( (height * 16 + 4) / 9 / 2 * 2 ))
+    if [ "$wide" -gt "$width" ]; then
+      nested=$wide
+      echo "== gamescope: games at ${nested}x${height} stretched to the ${width}x${height} output"
+    fi
+  fi
+  if [ "$mode" = steam ]; then
+    export gamescope_cursor_composite=2
+  fi
+  args=(--backend wayland --expose-wayland -f -W "$width" -H "$height" -w "$nested" -h "$height")
+  [ "$nested" != "$width" ] && args+=(-S stretch) && export BL_STRETCHED=1
+  if [ "${BL_FPS:-0}" -gt 0 ]; then
+    args+=(-r "$BL_FPS")
+  elif [ "${BL_REFRESH:-0}" -gt 0 ]; then
+    args+=(-r "$BL_REFRESH")
+  fi
+  [ "$mode" = steam ] && [ "${BL_STEAM_UI:-}" != desktop ] && args+=(-e)
+  if [ "$mode" = steam ] && [ "${BL_XWAYLAND_COUNT:-2}" -gt 1 ]; then
+    args+=(--xwayland-count "${BL_XWAYLAND_COUNT:-2}")
+    export STEAM_MULTIPLE_XWAYLANDS=1
+  fi
+  [ "$mode" = steam ] && args+=(--default-touch-mode 4)
+  [ "${BL_HDR:-0}" = 1 ] && args+=(--hdr-enabled)
+  [ -n "${BL_GAMESCOPE_ARGS:-}" ] && read -r -a _bl_extra <<<"$BL_GAMESCOPE_ARGS" && args+=("${_bl_extra[@]}")
+  if [ "$mode" = steam ] && [ "${BL_MANGOAPP:-1}" = 1 ] \
+     && [ "${BL_STEAM_UI:-}" != desktop ] && command -v mangoapp >/dev/null 2>&1; then
+    MANGOHUD_CONFIGFILE=/tmp/droiddeck-mangohud.conf
+    echo no_display > "$MANGOHUD_CONFIGFILE"
+    export MANGOHUD_CONFIGFILE STEAM_USE_MANGOAPP=1 STEAM_MANGOAPP_PRESETS_SUPPORTED=1 STEAM_MANGOAPP_HORIZONTAL_SUPPORTED=1
+    args+=(--mangoapp)
+    echo "== gamescope: mangoapp on ($(command -v mangoapp), config $MANGOHUD_CONFIGFILE)"
+  fi
+  export BL_INSIDE=1
+  exec gamescope "${args[@]}" -- "$0" "$mode" "$@"
+fi
+
+bl_displays() {
+  printf '%s\n' "$DISPLAY"
+  [ -n "${STEAM_GAME_DISPLAY_0:-}" ] && [ "$STEAM_GAME_DISPLAY_0" != "$DISPLAY" ] && printf '%s\n' "$STEAM_GAME_DISPLAY_0"
+  return 0
+}
+bl_xprop_set_all() {
+  local d ok=1
+  for d in $(bl_displays); do
+    DISPLAY=$d xprop -root -f "$1" 32c -set "$1" "$2" 2>/dev/null || ok=0
+  done
+  [ "$ok" = 1 ]
+}
+export GDK_BACKEND=x11 QT_QPA_PLATFORM=xcb SDL_VIDEODRIVER=x11
+reap_orphans() {
+  local round p stat pid left
+  for round in 1 2 3 4 5; do
+    left=
+    for p in /proc/[0-9]*; do
+      pid=${p#/proc/}
+      [ "$pid" = "$$" ] && continue
+      stat=$(cat "$p/stat" 2>/dev/null) || continue
+      stat=${stat##*) }
+      set -- $stat
+      [ "${2:-}" = "$PPID" ] && left="$left $pid"
+    done
+    [ -n "$left" ] || return 0
+    echo "== leaving behind:$left"
+    kill -9 $left 2>/dev/null
+    sleep 0.2
+  done
+}
+
+if [ "${BL_DESKTOP:-}" != 1 ] && [ -n "${BL_ANDROID_CLIPBOARD:-}" ] && [ -x /usr/local/bin/droiddeck-clipboard ]; then
+  /usr/local/bin/droiddeck-clipboard "$BL_ANDROID_CLIPBOARD" &
+fi
+
+[ "${BL_DESKTOP:-}" = 1 ] || start_agent
+
+case $mode in
+  desktop)
+    exec pcmanfm
+    ;;
+  run)
+    target=${1:?program path}
+    shift
+    cores=$(program_cores)
+    if [ -n "$cores" ]; then
+      echo "== program cores: $cores"
+      taskset -cp "$cores" $$ >/dev/null 2>&1 || true
+    fi
+    python3 /usr/local/bin/droiddeck-pad-defaults 2>&1 || true
+    fex=()
+    if [ -x /usr/local/bin/droiddeck-fex ]; then
+      case $(od -An -tu2 -j18 -N2 "$target" 2>/dev/null | tr -d ' ') in
+        3|62) fex=(/usr/local/bin/droiddeck-fex run --mode on --) ;;
+      esac
+    fi
+    case ${target,,} in
+      *.appimage)
+        export APPIMAGE_EXTRACT_AND_RUN=1
+        chmod +x "$target" 2>/dev/null
+        exec "${fex[@]}" "$target" "$@"
+        ;;
+      *.sh)
+        if [ -x /usr/local/bin/droiddeck-fex ]; then
+          exec /usr/local/bin/droiddeck-fex run --for "$target" -- bash "$target" "$@"
+        fi
+        exec bash "$target" "$@"
+        ;;
+      *)
+        chmod +x "$target" 2>/dev/null
+        cd "$(dirname "$target")" && exec "${fex[@]}" "$target" "$@"
+        ;;
+    esac
+    ;;
+  steam)
+    step "checking the Steam client (first run downloads it, ~1-2 min with nothing on screen)"
+    droiddeck-steam-install || exit $?
+    step "Steam client ready"
+    steam_root=$XDG_DATA_HOME/Steam
+    # Log out of Steam when the front end asked for it: drop the credentials that identify an
+    # account, but keep config.vdf (download region, client settings) intact.
+    # The app writes the flag at context.filesDir, which is /data/user/0/<pkg>/files on
+    # Android 9+. /data/data is only a symlink on the host; proot binds the real path, so the
+    # container sees /data/user/0/... but not /data/data/... Check both to cover every layout.
+    logout_flag=""
+    for _candidate in \
+        /data/user/0/com.droiddeck.launcher/files/.droiddeck-steam-logout \
+        /data/data/com.droiddeck.launcher/files/.droiddeck-steam-logout
+    do
+      if [ -f "$_candidate" ]; then
+        logout_flag="$_candidate"
+        break
+      fi
+    done
+    if [ -n "$logout_flag" ]; then
+      rm -f "$logout_flag"
+      # A flag written under either path must not linger for the next session.
+      rm -f /data/user/0/com.droiddeck.launcher/files/.droiddeck-steam-logout 2>/dev/null
+      rm -f /data/data/com.droiddeck.launcher/files/.droiddeck-steam-logout 2>/dev/null
+      echo "== steam: logout requested, clearing credentials"
+      rm -f "$steam_root/config/loginusers.vdf" 2>/dev/null
+      rm -rf "$steam_root/config/htmlcache" 2>/dev/null
+      rm -f "$steam_root"/ssfn* 2>/dev/null
+      # localconfig.vdf holds the saved login token; remove it for every account.
+      find "$steam_root/userdata" -maxdepth 3 -name localconfig.vdf -delete 2>/dev/null
+      echo "== steam: credentials cleared (settings kept)"
+    fi
+    # On a first run with no config.vdf, preselect the China download region for faster updates.
+    # Never rewrite an existing config.vdf - that carries the user's real settings.
+    steam_config="$steam_root/config/config.vdf"
+    mkdir -p "$steam_root/config"
+    if [ ! -f "$steam_config" ]; then
+      cat > "$steam_config" << 'STEAMCFG'
+"InstallConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"DownloadRegion"		"China"
+				"AutoUpdateWindowEnabled"		"0"
+			}
+		}
+	}
+}
+STEAMCFG
+      echo "== steam: China download region preset (first run)"
+    fi
     if [ -s "$HOME/.bl-proton-extra" ]; then
       _bl_left=$HOME/.bl-proton-extra.left
       : > "$_bl_left"
