@@ -38,6 +38,9 @@ public final class LinuxRuntimeInstaller {
 
     private static final String VERSION_FILE = ".version";
 
+    /** Decompression bomb guard for bundle imports: cap expanded bytes well above any real bundle. */
+    private static final long MAX_BUNDLE_BYTES = 8L * 1024 * 1024 * 1024;
+
     public enum Step { DOWNLOADING, VERIFYING, OTHER }
 
     public interface ProgressListener {
@@ -401,13 +404,27 @@ public final class LinuxRuntimeInstaller {
             try (java.util.zip.ZipInputStream zin = new java.util.zip.ZipInputStream(new BufferedInputStream(new FileInputStream(bundle), 1 << 16))) {
                 java.util.zip.ZipEntry entry;
                 byte[] buf = new byte[1 << 16];
+                long totalBytes = 0;
+                String workPath = work.getCanonicalPath();
                 while ((entry = zin.getNextEntry()) != null) {
                     if (entry.isDirectory()) continue;
                     File out = new File(work, entry.getName());
+                    // Zip Slip guard: reject entries that escape the bundle work dir.
+                    if (!out.getCanonicalPath().startsWith(workPath + File.separator)) {
+                        Log.w(TAG, "importBundle: entry escapes the bundle dir: " + entry.getName());
+                        return false;
+                    }
                     File parent = out.getParentFile();
                     if (parent != null && !parent.isDirectory() && !parent.mkdirs()) return false;
                     try (OutputStream os = new FileOutputStream(out)) {
-                        for (int read = zin.read(buf); read > 0; read = zin.read(buf)) os.write(buf, 0, read);
+                        for (int read = zin.read(buf); read > 0; read = zin.read(buf)) {
+                            os.write(buf, 0, read);
+                            totalBytes += read;
+                            if (totalBytes > MAX_BUNDLE_BYTES) {
+                                Log.w(TAG, "importBundle: expanded size exceeds the " + MAX_BUNDLE_BYTES + " cap");
+                                return false;
+                            }
+                        }
                     }
                 }
             }
@@ -441,8 +458,11 @@ public final class LinuxRuntimeInstaller {
             JSONObject dt = manifest.optJSONObject("desktop");
             File desktopArchive = new File(work, "desktop.tar.zst");
             if (dt != null && desktopArchive.isFile()) {
+                // The desktop id comes from the manifest (desktop-kde for the KDE bundle) so the
+                // installed marker matches what the app looks up, instead of a hard-coded id.
+                String desktopId = dt.optString("id", "desktop");
                 DesktopCatalog.Entry entry = new DesktopCatalog.Entry(
-                        "desktop", dt.optString("name", "Desktop"), 1, dt.optString("version", "bundle"),
+                        desktopId, dt.optString("name", "Desktop"), 1, dt.optString("version", "bundle"),
                         "tar", "local://bundle/desktop.tar.zst", dt.optString("sha256", ""),
                         dt.optLong("size", desktopArchive.length()), "", "applications-games", "Game");
                 String problem = DesktopCatalog.INSTANCE.installFromFile(context, entry, desktopArchive, listener);
