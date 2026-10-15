@@ -505,19 +505,6 @@ jobs:
       - name: Unit tests
         run: ./gradlew testReleaseUnitTest --console=plain -PndkVersion="$NDK_VERSION"
 
-      - name: Sign with the testkey (v1 + v2 + v3)
-        run: |
-          set -euo pipefail
-          APK=$(find app/build/outputs/apk -name '*.apk' | head -1)
-          TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -type d | sort -V | tail -1)
-          "$TOOLS/zipalign" -p -f 4 "$APK" "$APK.aligned"
-          "$TOOLS/apksigner" sign \
-            --ks keystore/testkey.p12 --ks-type PKCS12 --ks-pass pass:android \
-            --ks-key-alias testkey --key-pass pass:android \
-            --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
-            --out "$APK" "$APK.aligned"
-          rm -f "$APK.aligned" "$APK.idsig"
-
       - name: Check the signature
         run: |
           set -euo pipefail
@@ -530,8 +517,18 @@ jobs:
                         "v3 scheme (APK Signature Scheme v3): true"; do
             grep -qF "$scheme" /tmp/sig.txt || { echo "::error::apk is not signed with $scheme"; exit 1; }
           done
-          grep -qi "CN=Android, OU=Android, O=Android" /tmp/sig.txt \
-            || { echo "::error::apk is not signed with the AOSP testkey"; exit 1; }
+          # The DroidDeck-zh release key when the secret is present (CI main builds),
+          # otherwise the AOSP testkey fallback (PR/local builds without the secret).
+          if [ -n "${{ secrets.DROIDDECK_KEYSTORE_B64 }}" ]; then
+            expected=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
+            grep -qi "$expected" /tmp/sig.txt \
+              || { echo "::error::apk is not signed with the DroidDeck-zh release key"; cat /tmp/sig.txt; exit 1; }
+            echo "signature OK (DroidDeck-zh release key)"
+          else
+            grep -qi "CN=Android, OU=Android, O=Android" /tmp/sig.txt \
+              || { echo "::error::apk is not signed with the AOSP testkey"; cat /tmp/sig.txt; exit 1; }
+            echo "signature OK (AOSP testkey fallback)"
+          fi
 
       - name: Report on the pull request
         if: always() && github.event_name == 'pull_request'
