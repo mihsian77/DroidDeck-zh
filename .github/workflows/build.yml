@@ -22,8 +22,6 @@ permissions:
   pull-requests: write
 
 concurrency:
-  # Replace older builds only for the same PR. Each push/dispatch gets its own group so one main
-  # build cannot cancel another before it signs and publishes.
   group: build-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -186,7 +184,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: app/src/main/assets/linuxfs
-          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'app/src/main/cpp/adrenotools/src/hook/kgsl.h', 'tools/quest/*', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/overlay/usr/share/fonts/**', 'tools/linuxfs/overlay/etc/fonts/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**', 'tools/comet/**', 'tools/linuxfs/debian-image.env') }}
+          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'app/src/main/cpp/adrenotools/src/hook/kgsl.h', 'tools/quest/*', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/overlay/usr/share/fonts/**', 'tools/linuxfs/overlay/etc/fonts/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**', 'tools/comet/**', 'tools/linuxfs/debian-image.env', 'tools/vr/**') }}
 
       - name: Build libfakeinput.so and libblsession.so (glibc aarch64)
         if: steps.preloads.outputs.cache-hit != 'true'
@@ -211,13 +209,14 @@ jobs:
           aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -nostdlib -ffreestanding -fno-stack-protector \
             -fno-tree-loop-distribute-patterns -Wl,-z,defs -o "$D/libblaudit.so" tools/proot/fastpath/audit.c
           aarch64-linux-gnu-strip --strip-unneeded "$D/libblaudit.so"
-          # Force-SSBS adapter, preloaded into a game's Wine only when the game asks for it.
           aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -pthread \
             -o "$D/libssbs.so" tools/linuxfs/ssbs/ssbs_adapter.c -ldl
           aarch64-linux-gnu-strip --strip-unneeded "$D/libssbs.so"
           mkdir -p "$D/usr/local/bin"
           aarch64-linux-gnu-gcc -O2 -Wall -Wextra -o "$D/usr/local/bin/droiddeck-clipboard" tools/linuxfs/clipboard/clipboard.c -ldl
           aarch64-linux-gnu-strip --strip-unneeded "$D/usr/local/bin/droiddeck-clipboard"
+          VK_INCLUDE=$(ls -d "${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-$ANDROID_NDK_ROOT}}"/toolchains/llvm/prebuilt/*/sysroot/usr/include | head -1) \
+            tools/vr/build.sh --native "$D/usr/local/lib/droiddeck-vr"
           for script in tools/linuxfs/overlay/usr/local/bin/droiddeck-* tools/linuxfs/overlay/usr/local/bin/steam-compatibility; do
             install -Dm644 "$script" "$D/usr/local/bin/$(basename "$script")"
           done
@@ -256,14 +255,12 @@ jobs:
           for so in libfmt.so.10 libspdlog.so.1.13 libglfw.so.3 libtraceevent.so.1; do
             cp -L "mango-pkgs/usr/lib/$so" "$M/$so"
           done
-          # Ours, not the package's: GPU memory without tracefs (tools/mangoapp/libtracefs-shim.c).
           aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wl,-soname,libtracefs.so.1 \
             -o "$M/libtracefs.so.1" tools/mangoapp/libtracefs-shim.c
           aarch64-linux-gnu-strip --strip-unneeded "$M/libtracefs.so.1"
           install -Dm644 tools/mangoapp/mangoapp "$D/usr/local/bin/mangoapp"
           rm -rf mango-pkgs
           ls -l "$M"
-          # The Windows components installer's tools (tools/msitools/packages.txt).
           T="$D/usr/local/lib/droiddeck-msitools"
           mkdir -p "$T" msi-pkgs
           grep -v '^#' tools/msitools/packages.txt | while read -r sum url; do
@@ -275,7 +272,6 @@ jobs:
           done
           install -m644 msi-pkgs/usr/bin/msiinfo "$T/msiinfo"
           install -m644 msi-pkgs/usr/bin/cabextract "$T/cabextract"
-          # 7-Zip (the full build with its format plugin) opens installer .exe wrappers.
           install -m644 msi-pkgs/usr/lib/7zip/7z "$T/7z"
           install -m644 msi-pkgs/usr/lib/7zip/7z.so "$T/7z.so"
           for so in libmsi-1.0.so.0 libgsf-1.so.114 libgcab-1.0.so.0; do
@@ -293,10 +289,6 @@ jobs:
           install -Dm644 tools/linuxfs/desktop/firefox-droiddeck.js "$D/usr/lib/firefox/defaults/pref/droiddeck.js"
           ls -lR "$D"
 
-      # The Debian 11 image the preloads are compiled in comes from a release on this repo
-      # (published once by ci-debian-image.yml, pinned in tools/linuxfs/debian-image.env): the
-      # public registry mirrors rate-limit the shared runner addresses and failed builds on a
-      # busy evening. Only if that download fails is the image pulled, with retries.
       - name: Fetch the Debian image the preloads build in
         if: steps.preloads.outputs.cache-hit != 'true'
         env:
@@ -372,9 +364,6 @@ jobs:
           set -euo pipefail
           curl -fsSL -o pa.tar.gz https://github.com/pulseaudio/pulseaudio/archive/refs/tags/v13.0.tar.gz
           mkdir -p pa13 && tar -xzf pa.tar.gz -C pa13 --strip-components=1 && rm pa.tar.gz
-      # DirectAudio - the game driver (one set per Wine audio interface), the Android-side helper and
-      # the Steam client's sinks - comes from a pinned release of The412Banner/directaudio, checksummed,
-      # exactly like gamescope; nothing compiled for audio is kept in this repo.
       - name: Fetch DirectAudio (tools/directaudio/release.env)
         run: tools/directaudio/fetch.sh "$PWD" "$PWD/sink-out"
       - name: Build the AAudio sink into the audio bundle
@@ -412,12 +401,6 @@ jobs:
           set -euo pipefail
           bash tools/linuxfs/check-preloads.sh app/src/main/assets/linuxfs
 
-      # The store download engines (app/src/main/rust/stores) are Rust, built by Gradle's
-      # buildRustStores task through cargo-ndk. rustup and cargo are on the runner image; the Android
-      # target and cargo-ndk are added here. Cache = cargo registry + cargo-ndk + the crate's target
-      # tree, keyed on the rustc version and Cargo.lock, so a source-only change rebuilds this crate
-      # on top of the cached dependency objects, and a lockfile change still starts from the
-      # previous objects (restore-keys).
       - name: Rust toolchain for the store engines (aarch64-linux-android)
         id: rust
         run: |
@@ -492,9 +475,6 @@ jobs:
           python3 tools/release/runtime_inputs.py apk app/build/outputs/apk/release/app-release.apk
 
       - name: Check the store engines' library
-        # The exports Kotlin binds must be in the apk's libdroiddeckstores.so, or the stores fail on
-        # the device with an UnsatisfiedLinkError instead of here. The lockfile check is the
-        # reproducibility guard: cargo must not have had to re-resolve anything.
         run: |
           set -euo pipefail
           NDK="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-$ANDROID_NDK_ROOT}}"
@@ -505,11 +485,6 @@ jobs:
             || { echo "::error::Cargo.lock changed during the build; commit the regenerated lockfile (uploaded as stores-cargo-lock)"; exit 1; }
 
       - name: Store engines host unit tests
-        # The crate's #[test] functions are pure host-side logic (manifest parsing, chunk plans,
-        # assembly from a cache, hashes), so a plain `cargo test` on the runner's own architecture
-        # runs them; the Android build above compiles none of them. Informational on this first
-        # run - the point is to learn whether they pass - and bounded so a hang can never hold
-        # the apk. Make it blocking once it is known green.
         timeout-minutes: 10
         continue-on-error: true
         run: |

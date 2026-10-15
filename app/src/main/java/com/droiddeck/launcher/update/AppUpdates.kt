@@ -159,7 +159,6 @@ object AppUpdates {
             r.commit.startsWith(me.commit, ignoreCase = true)
     }
 
-    /** Recent Preview changes relative to a CI-installed commit, when its position is known. */
     fun previewHistory(catalog: Catalog, me: Installed = installed()): PreviewHistory? {
         if (!me.ciBuild || catalog.recentPreviews.isEmpty()) return null
         val stable = catalog.stable
@@ -190,14 +189,12 @@ object AppUpdates {
             (installed.length < 40 && published.startsWith(installed, ignoreCase = true))
     }
 
-    /** Why Android cannot install this published build over [me], before downloading anything. */
     fun installBlock(r: Release, me: Installed = installed()): InstallBlock? = when {
         r.apk == null -> InstallBlock(R.string.upd_block_no_apk)
         r.apk.versionCode < me.versionCode -> InstallBlock(R.string.upd_block_version_code, r.apk.versionCode, me.versionCode)
         else -> null
     }
 
-    /** Why Android would refuse a build, as a line for the user. */
     class InstallBlock(@androidx.annotation.StringRes val text: Int, private vararg val args: Any) {
         fun message(context: Context): String = context.getString(text, *args)
     }
@@ -238,11 +235,9 @@ object AppUpdates {
         return runCatching { readCachedCatalog(JSONObject(raw)) }.getOrNull()
     }
 
-    /** One static request, rather than several unauthenticated GitHub API requests. */
     fun refresh(context: Context): Catalog {
         val checkedAt = System.currentTimeMillis()
         val published = JSONObject(get(context, "$CATALOG_URL?checked=$checkedAt"))
-        // Its checks say why in English; the user gets that inside a sentence in the app's language.
         val catalog = try {
             readPublishedCatalog(published, context.packageName, checkedAt)
         } catch (e: IOException) {

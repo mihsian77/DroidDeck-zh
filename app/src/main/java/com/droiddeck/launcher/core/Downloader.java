@@ -12,11 +12,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
-/**
- * The two fetches this app makes: the runtime catalog (a few hundred bytes of JSON) and the
- * runtime tarball itself (~790 MB). Plain HttpURLConnection - nothing here needs a client library,
- * and one fewer dependency is one fewer thing that can fail a release build.
- */
 public final class Downloader {
     private static final String TAG = "Downloader";
     private static final int TIMEOUT_MS = 30_000;
@@ -142,6 +137,12 @@ public final class Downloader {
             if (have > 0) connection.setRequestProperty("Range", "bytes=" + have + "-");
             int code = connection.getResponseCode();
             boolean appending = code == HttpURLConnection.HTTP_PARTIAL;
+            if (appending && !rangeStartsAt(connection.getHeaderField("Content-Range"), have)) {
+                // A 206 that does not begin where the kept bytes end would corrupt the file if appended.
+                connection.disconnect();
+                destination.delete();
+                return downloadFile(url, destination, false, progress);
+            }
             if (code / 100 != 2) {
                 // A source that refuses the range is not worth restarting the file over: keep
                 // the partial archive and let the caller try the next source. The file is only
@@ -164,7 +165,7 @@ public final class Downloader {
             // knownSize (the catalog row) keeps the progress fraction real in that case.
             long total = knownSize > 0 ? knownSize : (length < 0 ? -1 : length + have);
             File parent = destination.getParentFile();
-            if (parent != null && !parent.isDirectory()) //noinspection ResultOfMethodCallIgnored
+            if (parent != null && !parent.isDirectory())
                 parent.mkdirs();
             long written = have;
             try (InputStream in = new BufferedInputStream(connection.getInputStream(), 1 << 16);
@@ -174,8 +175,6 @@ public final class Downloader {
                 for (int read = in.read(buffer); read > 0; read = in.read(buffer)) {
                     out.write(buffer, 0, read);
                     written += read;
-                    // A callback per 64 KB would be tens of thousands of UI hops; once per MB is
-                    // enough to move a progress bar smoothly.
                     if (progress != null && written - lastReport > (1 << 20)) {
                         lastReport = written;
                         progress.accept(total > 0 ? written / (float) total : -1f);
@@ -190,6 +189,13 @@ public final class Downloader {
         } finally {
             if (connection != null) connection.disconnect();
         }
+    }
+
+    /** True when a `Content-Range: bytes START-END/TOTAL` header starts exactly at {@code start}. */
+    static boolean rangeStartsAt(String contentRange, long start) {
+        if (contentRange == null) return false;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^\\s*bytes\\s+(\\d+)-\\d+/(?:\\d+|\\*)\\s*$").matcher(contentRange);
+        return m.matches() && Long.parseLong(m.group(1)) == start;
     }
 
     private static HttpURLConnection open(String url) throws java.io.IOException {

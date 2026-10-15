@@ -9,11 +9,6 @@ import com.droiddeck.launcher.session.ProtonExtras
 import com.droiddeck.launcher.ui.ProtonRow
 import com.droiddeck.launcher.session.SessionState
 
-/**
- * The optional ARM64 Protons (GE-Proton, proton-cachyos, DroidDeck-Proton): the rows the page lists,
- * an install or removal in progress, and whether a newer release is out. The launcher screen keeps
- * one and shows it.
- */
 internal class ProtonMenu(private val activity: android.app.Activity, private val ui: android.os.Handler) {
     var protonRows by mutableStateOf<List<ProtonRow>>(emptyList())
     var protonBusyId by mutableStateOf<String?>(null)
@@ -87,7 +82,6 @@ internal class ProtonMenu(private val activity: android.app.Activity, private va
         }
     }
 
-    /** Looks for newer releases, at most every few hours (see ProtonExtras.checkLatest); quiet offline. */
     fun checkUpdates(force: Boolean = false) {
         if (!checking.compareAndSet(false, true)) return
         Thread({

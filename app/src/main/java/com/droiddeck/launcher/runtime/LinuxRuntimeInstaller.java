@@ -30,30 +30,19 @@ import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 
-/**
- * Downloads and unpacks the Linux runtime rootfs into {@code files/linuxfs}. It is opt-in: nothing
- * fetches it until the user asks for it, and a gamescope session refuses to start without it.
- *
- * <p>The catalog row names the build, its URL and its sha256, so an interrupted or corrupted
- * download is caught before anything is written into the app's files directory.
- */
 public final class LinuxRuntimeInstaller {
     private static final String TAG = "LinuxRuntimeInstaller";
 
-    /** Catalog row, beside the other component catalogs in winlator-contents. */
     public static final String CATALOG_URL =
             "https://raw.githubusercontent.com/Droid-Deck/DroidDeck-Components/main/linuxfs.json";
 
     private static final String VERSION_FILE = ".version";
 
-    /** What a stage is doing, for code that branches on it rather than on its (translated) words. */
     public enum Step { DOWNLOADING, VERIFYING, OTHER }
 
     public interface ProgressListener {
-        /** {@code percent} is -1 while the size is unknown. */
         void onProgress(String stage, int percent);
 
-        /** The same with its {@link Step}; a listener that branches on the step overrides this one. */
         default void onProgress(Step step, String stage, int percent) {
             onProgress(stage, percent);
         }
@@ -73,11 +62,6 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
-    /**
-     * One runtime operation per process. The launcher and session can both install, and a
-     * launcher rebuilt mid-install (a pad plugged in, dark mode switched) forgets it had: a second
-     * install would share the first one's archive and staging directory and wreck both.
-     */
     private static final class Job {
         final CopyOnWriteArrayList<ProgressListener> listeners = new CopyOnWriteArrayList<>();
         final CountDownLatch done = new CountDownLatch(1);
@@ -96,7 +80,6 @@ public final class LinuxRuntimeInstaller {
 
     private LinuxRuntimeInstaller() {}
 
-    /** The build currently unpacked, or null when the runtime is not installed. */
     public static String installedVersion(Context context) {
         File marker = new File(LinuxRuntime.rootDir(context), VERSION_FILE);
         if (!marker.isFile() || !LinuxRuntime.isInstalled(context)) return null;
@@ -104,7 +87,6 @@ public final class LinuxRuntimeInstaller {
         return v == null ? null : v.trim();
     }
 
-    /** The catalog's current build, or null when it cannot be reached or read. */
     public static Release fetchRelease() {
         String body = Downloader.downloadString(CATALOG_URL);
         if (body == null || body.isEmpty()) return null;
@@ -121,22 +103,8 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
-    /**
-     * The guest's home directory, carried across an update rather than replaced with the tarball's
-     * empty one. Steam installs itself here - the client, the signed-in account and every
-     * downloaded game - so replacing the rootfs wholesale used to delete all three and leave the
-     * user re-downloading Steam and signing in again, with their library gone.
-     */
     private static final String USER_DATA = "root";
 
-    /**
-     * Downloads {@code release} and replaces whatever is installed with it. Returns false and
-     * leaves the existing runtime alone if the download or the checksum fails; the new rootfs is
-     * only moved into place once it has been unpacked whole.
-     *
-     * <p>{@link #USER_DATA} survives the swap: the system is replaced, what the user put in it is
-     * not. An update therefore keeps Steam, the login and the installed games.
-     */
     public static boolean install(Context context, Release release, ProgressListener listener) {
         Job job;
         boolean owner;
@@ -170,7 +138,6 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
-    /** True while an install is running in this process, whoever started it. */
     public static boolean isInstalling() {
         synchronized (JOB_LOCK) {
             return running != null && !running.removal && !running.maintenance;
@@ -189,7 +156,6 @@ public final class LinuxRuntimeInstaller {
         synchronized (JOB_LOCK) { return running != null && running.maintenance; }
     }
 
-    /** Reserve an in-place package operation with the same exclusion/progress as runtime installs. */
     public static Maintenance beginMaintenance(Context context, String stage) {
         if (com.droiddeck.launcher.session.SessionState.INSTANCE.getRunning()) return null;
         com.droiddeck.launcher.session.SessionPhase phase = com.droiddeck.launcher.session.SessionState.INSTANCE.getPhase();
@@ -242,10 +208,6 @@ public final class LinuxRuntimeInstaller {
         return new File(root.getParentFile(), root.getName() + ".removing");
     }
 
-    /**
-     * Follows the runtime operation already running, including removal, after a screen rebuild.
-     * Blocks until it ends and returns its result, or null when there is no current operation.
-     */
     public static Boolean attach(ProgressListener listener) {
         Job job;
         synchronized (JOB_LOCK) {
@@ -269,11 +231,30 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
+    /**
+     * The download is named after the release, so a partial file is only ever resumed for the same
+     * version and checksum, never for a different runtime that happens to share a fixed name.
+     */
+    static String archiveName(Release release) {
+        String version = release.version.replaceAll("[^A-Za-z0-9._-]", "_");
+        String sum = release.sha256.replaceAll("[^A-Za-z0-9]", "");
+        if (sum.length() > 12) sum = sum.substring(0, 12);
+        return "linuxfs-" + version + "-" + sum + ".tar.zst";
+    }
+
+    /** Removes archives left by other releases and by builds that used the fixed name. */
+    private static void deleteOtherArchives(File dir, String keep) {
+        File[] files = dir.listFiles((d, name) -> name.startsWith("linuxfs") && name.endsWith(".tar.zst") && !name.equals(keep));
+        if (files == null) return;
+        for (File file : files) file.delete();
+    }
+
     private static boolean installOnce(Context context, Release release, ProgressListener listener) {
-        File archive = new File(context.getCacheDir(), "linuxfs.tar.zst");
+        File archive = new File(context.getCacheDir(), archiveName(release));
+        // A failed download keeps what it fetched so the next attempt resumes it; anything that
+        // reached verification and failed is not trusted and is removed.
         try {
-            // A failed/interrupted explicit removal must finish before a fresh installation.
-            // Its quarantined home is not user data to carry into an update.
+            deleteOtherArchives(context.getCacheDir(), archive.getName());
             File pendingRemoval = removalDirectory(LinuxRuntime.rootDir(context));
             if (pendingRemoval.exists() && listener != null) listener.onProgress(context.getString(R.string.rtinst_removing_leftovers), -1);
             if (!discard(pendingRemoval, null)) throw new IOException("Cannot clear the previous runtime: " + pendingRemoval);
@@ -559,15 +540,8 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
-    /** Where entries the app cannot unlink are set aside, out of the way of the runtime's names. */
     static final String TRASH = ".runtime-trash";
 
-    /**
-     * Gets {@code tree} out from under its name. What can be deleted is; if something inside
-     * cannot be (a file made by root or {@code su} carries another SELinux category, and the app
-     * may not unlink it), the remainder is moved aside into {@link #TRASH} instead of blocking
-     * every later install and removal on it. False only when even that move is refused.
-     */
     static boolean discard(File tree, java.util.function.LongConsumer progress) {
         if (RuntimeFileTree.deleteWhatCan(tree, progress)) return true;
         File trash = new File(tree.getParentFile(), TRASH);
@@ -581,7 +555,6 @@ public final class LinuxRuntimeInstaller {
         return !tree.exists();
     }
 
-    /** Another try at what {@link #discard} set aside. Whatever still cannot go stays there. */
     static void emptyTrash(File parent) {
         File trash = new File(parent, TRASH);
         if (trash.exists() && !RuntimeFileTree.deleteWhatCan(trash, null))
@@ -593,7 +566,6 @@ public final class LinuxRuntimeInstaller {
         return dir.isDirectory() && names != null && names.length == 0;
     }
 
-    /** Reserve removal before returning to the UI, so Play cannot race the worker. */
     public static Removal beginUninstall(Context context) {
         if (com.droiddeck.launcher.session.SessionState.INSTANCE.getRunning()) return null;
         com.droiddeck.launcher.session.SessionPhase phase = com.droiddeck.launcher.session.SessionState.INSTANCE.getPhase();
@@ -601,7 +573,6 @@ public final class LinuxRuntimeInstaller {
         return beginUninstall(context.getApplicationContext(), LinuxRuntime.rootDir(context));
     }
 
-    /** {@code app} words the progress; unit tests pass null and get none. */
     static Removal beginUninstall(Context app, File root) {
         synchronized (JOB_LOCK) {
             if (running != null) return null;
@@ -639,17 +610,12 @@ public final class LinuxRuntimeInstaller {
                     }
                 };
                 File pending = removalDirectory(root);
-                // Invalidate the installation before traversing it. A process killed halfway
-                // through leaves a named removal to resume, never a launchable partial runtime.
                 if (root.exists()) {
                     if (!discard(pending, progress) || !root.renameTo(pending))
                         throw new IOException("Cannot prepare the runtime for removal");
                 } else if (!pending.isDirectory() && !pending.mkdirs()) {
                     throw new IOException("Cannot prepare the runtime for removal");
                 }
-                // Keep the quarantine until all leftovers are gone, so a failure stays retryable.
-                // An entry the app may not delete is set aside rather than failing the removal:
-                // a quarantine that can never clear would block reinstalling for good.
                 for (File leftover : new File[]{
                         new File(root.getParentFile(), root.getName() + ".new"),
                         new File(root.getParentFile(), root.getName() + ".old"),
@@ -677,12 +643,6 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
-    /**
-     * A whole-rootfs tar, which is not the shape the shared extractor handles: a distribution
-     * rootfs is full of hard links (one binary under several names), and an entry written as an
-     * empty file instead of its link target is a rootfs that boots to nothing. Symlinks, hard
-     * links and the executable bit are all carried over here.
-     */
     public static boolean extract(Context context, File archive, File destination, ProgressListener listener) {
         long entries = 0;
         String extracting = context.getString(R.string.rtinst_extracting);
@@ -691,7 +651,6 @@ public final class LinuxRuntimeInstaller {
              TarArchiveInputStream tar = new TarArchiveInputStream(in)) {
             TarArchiveEntry entry;
             while ((entry = tar.getNextTarEntry()) != null) {
-                // Refuse anything that would land outside the runtime directory.
                 File file = ArchivePaths.inside(destination, entry.getName());
                 if (file == null) {
                     Log.w(TAG, "skipping entry outside the rootfs: " + entry.getName());
@@ -708,10 +667,6 @@ public final class LinuxRuntimeInstaller {
                     file.delete();
                     FileUtils.symlink(entry.getLinkName(), file.getAbsolutePath());
                 } else if (entry.isLink()) {
-                    // A hard link to an earlier entry. Link where the filesystem allows it and
-                    // fall back to a copy, which costs space but always works.
-                    // The target is checked too: a link to "../../shared_prefs/x" would pull a
-                    // file from outside the rootfs into it.
                     File target = ArchivePaths.inside(destination, entry.getLinkName());
                     if (target == null) {
                         Log.w(TAG, "skipping hard link outside the rootfs: " + entry.getLinkName());
@@ -733,7 +688,7 @@ public final class LinuxRuntimeInstaller {
                     }
                     if ((entry.getMode() & 0111) != 0) file.setExecutable(true, false);
                 } else {
-                    continue; // device nodes and fifos: the runtime binds the real ones
+                    continue;
                 }
                 if (++entries % 2000 == 0 && listener != null) {
                     listener.onProgress(extracting, -1);
