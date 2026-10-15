@@ -9,6 +9,9 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  # Upstream changes often touch .github/workflows; the default token cannot push a branch
+  # carrying workflow-file edits without this (4 consecutive sync failures on 2026-10-12..15).
+  workflows: write
 
 concurrency:
   group: sync-upstream

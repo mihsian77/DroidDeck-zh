@@ -2392,7 +2392,6 @@
     <string name="stores_tier_max">最高</string>
     <string name="stores_title">商店</string>
     <string name="stores_uninstall">卸载</string>
-    <string name="stores_uninstall_confirm">再次点击以确认卸载</string>
     <string name="stores_view_on">在 %1$s 上查看</string>
     <string name="unfolded_controls">展开屏幕上的控制</string>
     <string name="unfolded_controls_hint">展开时，游戏画面位于 Steam Deck 触控板和背部按键上方；折叠时游戏全屏显示。</string>

@@ -467,10 +467,26 @@ jobs:
         env:
           DROIDDECK_BUILD_LABEL: ${{ steps.build-label.outputs.label }}
           SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
+          DROIDDECK_KEYSTORE_B64: ${{ secrets.DROIDDECK_KEYSTORE_B64 }}
+          DROIDDECK_KEYSTORE_PASS: ${{ secrets.DROIDDECK_KEYSTORE_PASS }}
+          DROIDDECK_KEY_ALIAS: ${{ secrets.DROIDDECK_KEY_ALIAS }}
+          DROIDDECK_KEY_PASS: ${{ secrets.DROIDDECK_KEY_PASS }}
         run: |
           set -o pipefail
           python3 tools/quest/build-driver.py "$ANDROID_HOME/ndk/$NDK_VERSION"
           python3 tools/release/runtime_inputs.py record
+          # The DroidDeck-zh release key comes from Actions secrets: decode it to a file and point
+          # build.gradle at it. Without the secret the release falls back to testkey (local dev).
+          if [ -n "$DROIDDECK_KEYSTORE_B64" ]; then
+            echo "$DROIDDECK_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP"/droiddeck-release.p12
+            echo "DROIDDECK_KEYSTORE_FILE=$RUNNER_TEMP/droiddeck-release.p12" >> "$GITHUB_ENV"
+            echo "DROIDDECK_KEYSTORE_PASS=$DROIDDECK_KEYSTORE_PASS" >> "$GITHUB_ENV"
+            echo "DROIDDECK_KEY_ALIAS=$DROIDDECK_KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "DROIDDECK_KEY_PASS=$DROIDDECK_KEY_PASS" >> "$GITHUB_ENV"
+            echo "signing: DroidDeck-zh release key"
+          else
+            echo "signing: no release key secret, falling back to testkey"
+          fi
           ./gradlew assembleRelease --console=plain -PndkVersion="$NDK_VERSION" 2>&1 | tee /tmp/build.log
           python3 tools/release/check_session_assets.py app/build/outputs/apk/release/app-release.apk
           python3 tools/release/runtime_inputs.py apk app/build/outputs/apk/release/app-release.apk

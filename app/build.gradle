@@ -139,6 +139,30 @@ android {
             enableV2Signing = true
             enableV3Signing = true
         }
+        // The DroidDeck-zh release key: a private keystore held in GitHub Actions secrets, decoded
+        // to a file by the build workflow. Local builds without the secret fall back to testkey so
+        // development still installs over previous builds. Signing with our own key gives the apk
+        // a real identity: no more untrusted-app warnings on the phone, and in-app updates no
+        // longer fail on a signature mismatch.
+        release {
+            def ks = System.getenv("DROIDDECK_KEYSTORE_FILE")
+            if (ks != null && file(ks).exists()) {
+                storeFile file(ks)
+                storeType "PKCS12"
+                storePassword System.getenv("DROIDDECK_KEYSTORE_PASS")
+                keyAlias System.getenv("DROIDDECK_KEY_ALIAS")
+                keyPassword System.getenv("DROIDDECK_KEY_PASS")
+            } else {
+                storeFile file("${rootDir}/keystore/testkey.p12")
+                storeType "PKCS12"
+                storePassword "android"
+                keyAlias "testkey"
+                keyPassword "android"
+            }
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+        }
     }
 
     buildTypes {
@@ -148,7 +172,7 @@ android {
         }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.testkey
+            signingConfig signingConfigs.release
         }
     }
 
