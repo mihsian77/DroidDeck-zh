@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "sourceRepo": "mihsian77/DroidDeck-zh",
+  "ciRepo": "mihsian77/DroidDeck-zh",
+  "stable": null,
+  "preview": {
+    "tag": "0.4.0-zh1-a67ab6e",
+    "title": "0.4.0-zh1 预发布 (a67ab6e)",
+    "summary": "## 0.4.0-zh1 (a67ab6e)\n\nfix(ci): record build-time values into catalog, promote stable from the APK in hand\n\n基于上游 DroidDeck 源码编译的中文优化版。\n\n### 本次变更\n- 详见 commit: `a67ab6e`\n\n### 独家功能\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不显示口口口）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- 国内 Steam 下载区域预设（首次启动自动设置）\n- 汉化声明弹窗\n\n### 注意\n- 使用 DroidDeck-zh 自有 release key 签名（非上游 testkey），安装时可能提示未知来源，属正常现象\n- 与旧 testkey 版本签名不同，需卸载旧版或接受覆盖安装提示\n- 此为预发布版，仅供测试验证\n\nSHA-256:\n```\n1851c5feba7c215598401de579ad627c6c8102aeacb8005ffc",
+    "commit": "a67ab6ee905ae678b0dcbc475d7647e4bec5b9a4",
+    "pr": 0,
+    "version": "0.4.0-zh1",
+    "versionCode": 15,
+    "publishedAt": 1792073696000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.4.0-zh1-a67ab6e",
+    "apks": {
+      "com.droiddeck.launcher": {
+        "name": "app-release.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.4.0-zh1-a67ab6e/app-release.apk",
+        "size": 64078979,
+        "sha256": "1851c5feba7c215598401de579ad627c6c8102aeacb8005ffc563639367ad140",
+        "packageName": "com.droiddeck.launcher",
+        "versionCode": 15,
+        "signerSha256": "1c61c55b071523c511f963bad7acd02431fb962fd341b856581637bcb841412c"
+      }
+    }
+  },
+  "tests": [],
+  "recentPreviews": []
+}
