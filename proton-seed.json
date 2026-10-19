@@ -1,28 +1,28 @@
 {
   "schema": 1,
-  "updatedAt": "2026-10-12T10:31:33Z",
+  "updatedAt": "2026-10-19T08:40:16Z",
   "note": "Latest ARM64 Proton builds, mirrored into this repo so the app never has to query api.github.com (blocked/throttled for users on CN networks). Updated by update-proton-seed workflow.",
   "tools": {
     "ge": {
-      "tag": "GE-Proton11-7",
-      "name": "GE-Proton11-7-aarch64.tar.gz",
-      "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton11-7/GE-Proton11-7-aarch64.tar.gz",
-      "sha512": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton11-7/GE-Proton11-7-aarch64.sha512sum",
-      "size": 645786140
+      "tag": "GE-Proton11-10",
+      "name": "GE-Proton11-10-aarch64.tar.gz",
+      "url": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton11-10/GE-Proton11-10-aarch64.tar.gz",
+      "sha512": "https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton11-10/GE-Proton11-10-aarch64.sha512sum",
+      "size": 648016707
     },
     "cachyos": {
-      "tag": "cachyos-11.0-20261005-slr",
-      "name": "proton-cachyos-11.0-20261005-slr-arm64.tar.xz",
-      "url": "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261005-slr/proton-cachyos-11.0-20261005-slr-arm64.tar.xz",
-      "sha512": "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261005-slr/proton-cachyos-11.0-20261005-slr-arm64.sha512sum",
-      "size": 356312716
+      "tag": "cachyos-11.0-20261014-slr",
+      "name": "proton-cachyos-11.0-20261014-slr-arm64.tar.xz",
+      "url": "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261014-slr/proton-cachyos-11.0-20261014-slr-arm64.tar.xz",
+      "sha512": "https://github.com/CachyOS/proton-cachyos/releases/download/cachyos-11.0-20261014-slr/proton-cachyos-11.0-20261014-slr-arm64.sha512sum",
+      "size": 357219668
     },
     "droiddeck": {
-      "tag": "DroidDeck-Proton-11-7.5",
-      "name": "DroidDeck-Proton-11-7.5-aarch64.tar.gz",
-      "url": "https://github.com/The412Banner/DroidDeck-Proton/releases/download/DroidDeck-Proton-11-7.5/DroidDeck-Proton-11-7.5-aarch64.tar.gz",
-      "sha512": "https://github.com/The412Banner/DroidDeck-Proton/releases/download/DroidDeck-Proton-11-7.5/DroidDeck-Proton-11-7.5-aarch64.sha512sum",
-      "size": 625775670
+      "tag": "DroidDeck-Proton-11-9.1",
+      "name": "DroidDeck-Proton-11-9.1-aarch64.tar.gz",
+      "url": "https://github.com/The412Banner/DroidDeck-Proton/releases/download/DroidDeck-Proton-11-9.1/DroidDeck-Proton-11-9.1-aarch64.tar.gz",
+      "sha512": "https://github.com/The412Banner/DroidDeck-Proton/releases/download/DroidDeck-Proton-11-9.1/DroidDeck-Proton-11-9.1-aarch64.sha512sum",
+      "size": 625414776
     }
   }
 }
