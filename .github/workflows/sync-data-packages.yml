@@ -61,8 +61,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RELEASE=$(gh release view data-packages --repo "$GITHUB_REPOSITORY" --json tagName,body 2>/dev/null || echo "NOT_FOUND")
-          if [ "$RELEASE" = "NOT_FOUND" ]; then
+          RELEASE_BODY=$(gh release view data-packages --repo "$GITHUB_REPOSITORY" --json body --jq '.body' 2>/dev/null || echo "")
+          if [ -z "$RELEASE_BODY" ]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "up_to_date=false" >> "$GITHUB_OUTPUT"
             echo "current_linuxfs=none" >> "$GITHUB_OUTPUT"
@@ -70,16 +70,12 @@ jobs:
             echo "current_proton=none" >> "$GITHUB_OUTPUT"
           else
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            CL=$(echo "$RELEASE" | python3 -c "import json,sys,re; b=json.load(sys.stdin).get('body',''); m=re.search(r'linuxfs version:\*\*\s*(\S+)',b); print(m.group(1) if m else 'unknown')")
-            CD=$(echo "$RELEASE" | python3 -c "import json,sys,re; b=json.load(sys.stdin).get('body',''); m=re.search(r'desktop version:\*\*\s*(\S+)',b); print(m.group(1) if m else 'unknown')")
-            CP=$(echo "$RELEASE" | python3 -c "import json,sys,re; b=json.load(sys.stdin).get('body',''); m=re.search(r'proton version:\*\*\s*(\S+)',b); print(m.group(1) if m else 'unknown')")
-            CL=$(echo "$CURRENT" | python3 -c "import json,sys; print(json.load(sys.stdin)['linuxfs'])")
-            CD=$(echo "$CURRENT" | python3 -c "import json,sys; print(json.load(sys.stdin)['desktop'])")
-            CP=$(echo "$CURRENT" | python3 -c "import json,sys; print(json.load(sys.stdin)['proton'])")
+            CL=$(echo "$RELEASE_BODY" | grep -oP 'linuxfs version:\*\*\s*\K\S+' || echo "unknown")
+            CD=$(echo "$RELEASE_BODY" | grep -oP 'desktop version:\*\*\s*\K\S+' || echo "unknown")
+            CP=$(echo "$RELEASE_BODY" | grep -oP 'proton version:\*\*\s*\K\S+' || echo "unknown")
             echo "current_linuxfs=$CL" >> "$GITHUB_OUTPUT"
             echo "current_desktop=$CD" >> "$GITHUB_OUTPUT"
             echo "current_proton=$CP" >> "$GITHUB_OUTPUT"
-            # Up to date only when all three components match upstream.
             if [ "$CL" = "${{ steps.upstream.outputs.linuxfs_version }}" ] \
                && [ "$CD" = "${{ steps.upstream.outputs.desktop_version }}" ] \
                && [ "$CP" = "${{ steps.upstream.outputs.proton_version }}" ]; then
