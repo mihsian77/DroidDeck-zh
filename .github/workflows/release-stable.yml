@@ -109,6 +109,7 @@ jobs:
           # Reuse the shared generator (single source of truth).
           signer=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
           version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
+          tag=${version:-${{ inputs.label }}}
           AAPT=$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -n1)/aapt
           # Real values of the promoted APK, taken from the file in hand.
           versionCode=$("$AAPT" dump badging apk/*.apk | sed -n "s/^package: name=.* versionCode='\([0-9]*\)'.*$/\1/p")
