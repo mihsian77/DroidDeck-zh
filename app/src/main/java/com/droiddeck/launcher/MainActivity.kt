@@ -5,6 +5,7 @@ import android.Manifest
 import android.app.ActivityOptions
 import android.content.Intent
 import android.content.ClipData
+import android.os.Environment
 import android.content.ClipboardManager
 import java.io.File
 import android.content.pm.PackageManager
@@ -674,7 +675,7 @@ class MainActivity : ComponentActivity() {
                         onInstallPackage = { id -> installPackage(id) },
                         onRemovePackage = { id -> removePackage(id) },
                         onRuntime = { onRuntimeButton() },
-                        onImportRuntime = { pickRuntimeArchive.launch(InAppFilePicker.buildIntent(this, listOf("zst", "tar", "zip"), getString(R.string.setup_runtime_import))) },
+                        onImportRuntime = { pickRuntimeArchive.launch(InAppFilePicker.buildIntent(this, listOf("zst", "tar", "zip"), getString(R.string.setup_runtime_import), Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath)) },
                         onFrameGenPick = { mode ->
                             FrameGen.set(this, mode)
                             frameGenLabel = FrameGen.label(this)
@@ -1202,7 +1203,7 @@ class MainActivity : ComponentActivity() {
                 onInstall = { id -> protons.installProton(id) },
                 onImport = { id ->
                     pendingProtonImport = id
-                    pickProtonArchive.launch(InAppFilePicker.buildIntent(this, listOf("tar.gz", "tar.xz", "tar.zst", "zip", "tgz"), getString(R.string.store_import)))
+                    pickProtonArchive.launch(InAppFilePicker.buildIntent(this, listOf("tar.gz", "tar.xz", "tar.zst", "zip", "tgz"), getString(R.string.store_import), Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).absolutePath))
                 },
                 onCancel = { id -> ProtonExtras.tools.firstOrNull { it.id == id }?.let { ProtonExtras.unqueue(this, it) }; protons.refreshProtons() },
                 onRemove = { id, dir -> protons.removeProton(id, dir) },
