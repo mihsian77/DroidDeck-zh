@@ -29,10 +29,10 @@
 
 | 渠道 | Tag 格式 | 说明 |
 |---|---|---|
-| **Stable 稳定版** | `0.3.1-zh1` | 确认稳定可用后手动发布，非预发布 |
-| **Preview 预览版** | `0.3.1-zh1-<sha7>` | 每次 main 构建自动发布，预发布标签，保留最近 3 个 |
+| **Stable 稳定版** | `0.5.0-zh1` | 确认稳定可用后手动发布 |
+| **Preview 预览版** | `0.5.0-zh1-<sha7>` | 每次 push main 自动构建，预发布标签，保留最近 3 个 |
 
-两个渠道均为**同一签名**（AOSP 公开 testkey，与原版一致），可互相覆盖安装。应用内更新读取 [catalog.json](https://raw.githubusercontent.com/mihsian77/DroidDeck-zh/catalog/catalog.json) 自动区分渠道。
+两个渠道均为同一签名（我们自己的 release key），可互相覆盖安装。应用内更新读取 [catalog.json](https://raw.githubusercontent.com/mihsian77/DroidDeck-zh/catalog/catalog.json) 自动区分渠道。想稳定装 Stable，想试新功能装 Preview。
 
 ## 下载与安装
 
