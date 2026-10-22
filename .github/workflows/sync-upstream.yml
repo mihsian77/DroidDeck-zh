@@ -77,13 +77,13 @@ jobs:
             git -c core.editor=true commit --no-edit -m "sync: upstream merge conflict - resolve before merging" || \
               git commit --allow-empty -m "sync: upstream merge conflict - resolve before merging"
           fi
-          # Drop workflow files that exist only on upstream. GITHUB_TOKEN cannot create
-          # .github/workflows files without the workflows permission, so they must not
-          # ride along on the sync branch. We manage our own workflows.
-          NEW_WORKFLOWS=$(git show --name-only --diff-filter=A HEAD -- .github/workflows/ || true)
-          if [ -n "$NEW_WORKFLOWS" ]; then
-            echo "$NEW_WORKFLOWS" | while read f; do git rm -f "$f" 2>/dev/null || true; done
-            git commit --no-edit -m "sync: drop upstream-added workflow files" || true
+          # Keep our own .github/workflows/ as-is. GITHUB_TOKEN cannot create or update
+          # workflow files without the workflows permission, and we maintain our workflows
+          # separately from upstream anyway.
+          git checkout HEAD~1 -- .github/workflows/
+          if [ -n "$(git status --porcelain .github/workflows/)" ]; then
+            git add .github/workflows/
+            git commit --no-edit -m "sync: keep our own workflows" || true
           fi
 
       - name: Push branch
