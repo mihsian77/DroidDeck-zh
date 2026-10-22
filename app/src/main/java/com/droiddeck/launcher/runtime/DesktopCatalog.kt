@@ -64,14 +64,25 @@ object DesktopCatalog {
 
     fun desktopInstalled(context: Context): Boolean = desktopInstalled(LinuxRuntime.rootDir(context))
 
-    fun desktopInstalled(root: File): Boolean =
-        !File(root, DesktopRemoval.PENDING).exists() &&
-        File(root, "usr/bin/kwin_wayland").isFile &&
-            FileUtils.readString(File(root, ".droiddeck-pkg-$DESKTOP_ID"))?.trim() == BuildConfig.DESKTOP_KDE_TAG
+    fun desktopInstalled(root: File): Boolean {
+        if (File(root, DesktopRemoval.PENDING).exists()) return false
+        // Accept either the upstream KDE package (kwin_wayland) or the LXQt/labwc package
+        // distributed via our data-packages bundle. Both are valid desktops; the ID just
+        // differs because they come from different sources.
+        val hasKde = File(root, "usr/bin/kwin_wayland").isFile
+        val hasLxqt = File(root, "usr/bin/labwc").isFile || File(root, "usr/bin/openbox").isFile
+        if (!hasKde && !hasLxqt) return false
+        val kdeTag = BuildConfig.DESKTOP_KDE_TAG
+        if (FileUtils.readString(File(root, ".droiddeck-pkg-desktop-kde"))?.trim() == kdeTag) return true
+        // Bundle-imported LXQt: any non-empty marker counts (version from manifest).
+        return FileUtils.readString(File(root, ".droiddeck-pkg-desktop"))?.trim()?.isNotEmpty() == true
+    }
 
     fun desktopPresent(context: Context): Boolean {
         val root = LinuxRuntime.rootDir(context)
-        return File(root, DesktopRemoval.PENDING).exists() || marker(context, DESKTOP_ID).exists()
+        return File(root, DesktopRemoval.PENDING).exists() ||
+            marker(context, DESKTOP_ID).exists() ||
+            marker(context, "desktop").exists()
     }
 
     fun desktopSize(context: Context): Long = DesktopRemoval.installedSize(context)
