@@ -366,7 +366,7 @@ case $mode in
 		{
 			"Steam"
 			{
-				"DownloadRegion"		"China"
+				"DownloadRegion"		"China - Shanghai"
 				"AutoUpdateWindowEnabled"		"0"
 			}
 		}
