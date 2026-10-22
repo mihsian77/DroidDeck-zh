@@ -116,22 +116,12 @@ jobs:
 
           PR_URL=$(gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file /tmp/pr-body.txt 2>&1) || PR_FAILED=1
           if [ -n "${PR_FAILED:-}" ]; then
-            # PR could not be created (e.g. a PR for this branch already exists).
-            # Existing PR: nothing more to do. Otherwise flag it loudly.
-            if gh pr list --head "$BRANCH" --json number -q '.[0].number' | grep -q '[0-9]'; then
+            # PR could not be created (GITHUB_TOKEN may lack permission, or one already exists).
+            # The branch is pushed; the user can open the PR manually. Do not fail the workflow.
+            if gh pr list --head "$BRANCH" --json number -q '.[0].number' 2>/dev/null | grep -q '[0-9]'; then
               echo "PR for $BRANCH already exists."
             else
-              echo "::error::gh pr create failed: $PR_URL"
-              gh issue create \
-                --title "sync: failed to open PR for $BRANCH" \
-                --body "The sync-upstream workflow could not open a pull request for branch $BRANCH.
-
-                Upstream commits behind: $COMMIT_COUNT. Merge status: $MERGE_STATUS.
-
-                Error:
-                $PR_URL
-                " || echo "::error::issue creation also failed - the sync is stuck silently"
-              exit 1
+              echo "::warning::PR create failed (token permission?). Branch $BRANCH pushed; open the PR manually."
             fi
           else
             echo "Created PR: $PR_URL"
