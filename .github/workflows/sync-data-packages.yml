@@ -70,15 +70,9 @@ jobs:
             echo "current_proton=none" >> "$GITHUB_OUTPUT"
           else
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            CURRENT=$(echo "$RELEASE" | python3 - <<'PY'
-            import json, re, sys
-            b = json.load(sys.stdin).get('body', '')
-            def grab(key):
-                m = re.search(r'^\s*-\s*\*\*' + key + r' version:\*\*\s*(\S+)', b, re.M)
-                return m.group(1) if m else 'unknown'
-            print(json.dumps({'linuxfs': grab('linuxfs'), 'desktop': grab('desktop'), 'proton': grab('proton')}))
-            PY
-            )
+            CL=$(echo "$RELEASE" | python3 -c "import json,sys,re; b=json.load(sys.stdin).get('body',''); m=re.search(r'linuxfs version:\*\*\s*(\S+)',b); print(m.group(1) if m else 'unknown')")
+            CD=$(echo "$RELEASE" | python3 -c "import json,sys,re; b=json.load(sys.stdin).get('body',''); m=re.search(r'desktop version:\*\*\s*(\S+)',b); print(m.group(1) if m else 'unknown')")
+            CP=$(echo "$RELEASE" | python3 -c "import json,sys,re; b=json.load(sys.stdin).get('body',''); m=re.search(r'proton version:\*\*\s*(\S+)',b); print(m.group(1) if m else 'unknown')")
             CL=$(echo "$CURRENT" | python3 -c "import json,sys; print(json.load(sys.stdin)['linuxfs'])")
             CD=$(echo "$CURRENT" | python3 -c "import json,sys; print(json.load(sys.stdin)['desktop'])")
             CP=$(echo "$CURRENT" | python3 -c "import json,sys; print(json.load(sys.stdin)['proton'])")

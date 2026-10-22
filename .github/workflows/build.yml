@@ -462,7 +462,13 @@ jobs:
           # build.gradle at it. Without the secret the release falls back to testkey (local dev).
           if [ -n "$DROIDDECK_KEYSTORE_B64" ]; then
             echo "$DROIDDECK_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP"/droiddeck-release.p12
-            echo "DROIDDECK_KEYSTORE_FILE=$RUNNER_TEMP/droiddeck-release.p12" >> "$GITHUB_ENV"
+            # Export to the current shell so gradle (a child process below) inherits them.
+            # GITHUB_ENV alone does not take effect within the same step.
+            export DROIDDECK_KEYSTORE_FILE="$RUNNER_TEMP"/droiddeck-release.p12
+            export DROIDDECK_KEYSTORE_PASS="$DROIDDECK_KEYSTORE_PASS"
+            export DROIDDECK_KEY_ALIAS="$DROIDDECK_KEY_ALIAS"
+            export DROIDDECK_KEY_PASS="$DROIDDECK_KEY_PASS"
+            echo "DROIDDECK_KEYSTORE_FILE=$DROIDDECK_KEYSTORE_FILE" >> "$GITHUB_ENV"
             echo "DROIDDECK_KEYSTORE_PASS=$DROIDDECK_KEYSTORE_PASS" >> "$GITHUB_ENV"
             echo "DROIDDECK_KEY_ALIAS=$DROIDDECK_KEY_ALIAS" >> "$GITHUB_ENV"
             echo "DROIDDECK_KEY_PASS=$DROIDDECK_KEY_PASS" >> "$GITHUB_ENV"
@@ -676,7 +682,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          signer=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
+          # Read the actual signer from the APK in hand, not from a static file:
+          # the catalog must match whatever the build really signed with.
+          APK=$(find signed -name '*.apk' | head -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
+          signer=$("$APKSIGNER" verify --print-certs "$APK" \
+            | grep -oP 'certificate SHA-256 digest: \K[0-9a-fA-F]+' | head -1 | tr 'A-F' 'a-f')
           version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
           versionCode=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' app/build.gradle)
           sha7=${GITHUB_SHA::7}

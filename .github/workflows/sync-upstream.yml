@@ -34,7 +34,9 @@ jobs:
       - name: Fetch upstream
         run: |
           git remote add upstream https://github.com/Droid-Deck/DroidDeck.git 2>/dev/null || true
-          git fetch upstream main --tags
+          # Do not fetch tags: our own release tags (e.g. ci-debian-bullseye-r1) collide with
+          # upstream's and would abort the whole fetch. We only need the main branch.
+          git fetch upstream main
 
       - name: Check for new upstream commits
         id: check
