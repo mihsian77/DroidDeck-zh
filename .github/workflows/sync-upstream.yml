@@ -89,7 +89,7 @@ jobs:
         if: steps.check.outputs.has_updates == 'true'
         run: |
           set -euo pipefail
-          git push origin "${{ steps.check.outputs.branch }}"
+          git push origin "${{ steps.check.outputs.branch }}" --force
 
       - name: Wait for CI to start
         if: steps.check.outputs.has_updates == 'true'
