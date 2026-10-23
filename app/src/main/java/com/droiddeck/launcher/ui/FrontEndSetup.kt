@@ -448,12 +448,6 @@ internal fun SetupPanel(
                     STORAGE_TAB -> StoragePanel(s, a)
                     4 -> {
                         SettingsGroup(stringResource(R.string.setup_tab_diagnostics)) {
-                            ActionRow(
-                                stringResource(R.string.setup_speed_test),
-                                stringResource(R.string.setup_speed_test_hint),
-                                stringResource(R.string.speed_test_start),
-                                { speedTestOpen = true },
-                            )
                             ToggleRow(host, "logs", stringResource(R.string.setup_logs), stringResource(R.string.setup_logs_hint), s.logsEnabled) { a.onLogs() }
                             ToggleRow(host, "vacdiag", stringResource(R.string.setup_vac_diag), stringResource(R.string.setup_vac_diag_hint), s.vacDiagnostics) { a.onVacDiagnostics() }
                             ToggleRow(host, "agent-commands", stringResource(R.string.setup_agent_commands), null, s.agentCommands) { a.onAgentCommands() }
