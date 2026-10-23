@@ -1,10 +1,25 @@
 """Reject an APK with missing or stale session helpers, including cached local bundles."""
 from pathlib import Path
+<<<<<<< HEAD
+=======
+import re
+>>>>>>> upstream/main
 import sys
 from zipfile import ZipFile
 
 
 OVERLAY = Path(__file__).resolve().parents[1] / 'linuxfs/overlay'
+<<<<<<< HEAD
+=======
+SESSION_FILES = OVERLAY.parents[2] / 'app/src/main/java/com/droiddeck/launcher/session/SessionFiles.kt'
+
+
+def check_extraction(overlay, source):
+    deployed = set(re.findall(r'"(usr/local/bin/droiddeck-[^"]+)"\s+to\s+"\1"', source))
+    return ['not extracted at session start: ' + path.relative_to(overlay).as_posix()
+            for path in sorted((overlay / 'usr/local/bin').glob('droiddeck-*'))
+            if path.relative_to(overlay).as_posix() not in deployed]
+>>>>>>> upstream/main
 
 
 def source_assets(overlay=OVERLAY):
@@ -23,7 +38,11 @@ def source_assets(overlay=OVERLAY):
 
 
 def check(apk, overlay=OVERLAY):
+<<<<<<< HEAD
     errors = []
+=======
+    errors = check_extraction(overlay, SESSION_FILES.read_text()) if overlay == OVERLAY else []
+>>>>>>> upstream/main
     with ZipFile(apk) as package:
         for source, asset in source_assets(overlay).items():
             try:

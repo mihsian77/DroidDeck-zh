@@ -31,6 +31,10 @@ object SessionEvents {
             SessionState.programArgs = emptyList()
             SessionState.steamUi = null
             SessionState.steamUrl = null
+<<<<<<< HEAD
+=======
+            SessionState.steamVr = false
+>>>>>>> upstream/main
             SessionState.firstFrameSeen = false
             SessionState.suspended = false
         }
@@ -103,6 +107,10 @@ object SessionEvents {
         if (!SessionState.running || SessionState.guestPid <= 1 || !SessionState.firstFrameSeen || SessionState.suspended) return
         if (SessionState.phase != SessionPhase.READY) {
             transition(SessionPhase.READY, "session.ready")
+<<<<<<< HEAD
+=======
+            Thread({ com.droiddeck.launcher.gpu.AutoDriverTrial.sessionReady() }, "gpu-driver-trial").start()
+>>>>>>> upstream/main
         }
     }
 

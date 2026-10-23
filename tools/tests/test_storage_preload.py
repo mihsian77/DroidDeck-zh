@@ -88,6 +88,12 @@ class StoragePreloadTest(unittest.TestCase):
         subprocess.run(["cc", "-O2", "-o", str(cls.steam), str(build / "program.c")], check=True)
         cls.other = build / "steamwebhelper"
         shutil.copy(cls.steam, cls.other)
+<<<<<<< HEAD
+=======
+        cls.steam_x64 = cls.dir / "steamrt64/steam"
+        cls.steam_x64.parent.mkdir()
+        shutil.copy(cls.steam, cls.steam_x64)
+>>>>>>> upstream/main
 
     @classmethod
     def tearDownClass(cls):
@@ -117,6 +123,15 @@ class StoragePreloadTest(unittest.TestCase):
         self.assertEqual(["fallocate -1 EOPNOTSUPP 0", "ftruncate 0 - 0", "ftruncate 0 - 0"], out)
         self.assertEqual(["data.pak 0"], self.reached())
 
+<<<<<<< HEAD
+=======
+    def test_x86_64_client_reservation_is_not_zero_filled_either(self):
+        data = self.staging / "data.pak"
+        out = self.run_program(("fallocate", data, 1 << 20), ("ftruncate", data, 1 << 20), program=self.steam_x64)
+        self.assertEqual(["fallocate -1 EOPNOTSUPP 0", "ftruncate 0 - 0"], out)
+        self.assertEqual([], self.reached())
+
+>>>>>>> upstream/main
     def test_reservation_is_real_until_the_device_has_refused_one(self):
         data = self.staging / "data.pak"
         self.assertEqual(["ftruncate 0 - 4096"], self.run_program(("ftruncate", data, 4096)))

@@ -41,6 +41,13 @@ object SessionState {
 
     @Volatile
     var running = false
+<<<<<<< HEAD
+=======
+    @Volatile
+    var activityDisplayId = 0
+    @Volatile
+    var runtimeDriver: String? = null
+>>>>>>> upstream/main
     var suspended by mutableStateOf(false)
     @Volatile var pipActive = false
     @Volatile
@@ -51,6 +58,14 @@ object SessionState {
     var steamUi: String? = null
     @Volatile
     var steamUrl: String? = null
+<<<<<<< HEAD
+=======
+    @Volatile
+    var steamClientArch: String? = null
+    // A Play SteamVR request can arrive while an existing session is visible.
+    // Wake the status/launch effect even if no glasses surface has attached yet.
+    var steamVr by mutableStateOf(false)
+>>>>>>> upstream/main
     var relaunch: android.content.Intent? = null
     @JvmStatic var hdr = false
 

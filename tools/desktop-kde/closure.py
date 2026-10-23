@@ -72,8 +72,17 @@ def main():
     seeds = [l.strip() for l in open(seeds_file) if l.strip() and not l.lstrip().startswith("#")]
 
     pkgs, providers = {}, collections.defaultdict(list)
+<<<<<<< HEAD
     for repo in REPOS:
         root = os.path.join(dbdir, "x_" + repo)
+=======
+    pins = os.path.join(os.path.dirname(__file__), "pins")
+    sources = [("extra", pins)]
+    sources.extend((repo, os.path.join(dbdir, "x_" + repo)) for repo in REPOS)
+    for repo, root in sources:
+        if not os.path.isdir(root):
+            continue
+>>>>>>> upstream/main
         for entry in sorted(os.listdir(root)):
             fields, key = {}, None
             for fname in ("desc", "depends"):
@@ -92,6 +101,11 @@ def main():
             name = fields.get("NAME", [None])[0]
             if not name or name in pkgs:
                 continue
+<<<<<<< HEAD
+=======
+            if root == pins:
+                runtime.pop(name, None)
+>>>>>>> upstream/main
             provides = [parse_dep(p) for p in fields.get("PROVIDES", [])]
             pkgs[name] = {"repo": repo, "file": fields["FILENAME"][0], "version": fields["VERSION"][0],
                           "sha256": fields.get("SHA256SUM", [""])[0],

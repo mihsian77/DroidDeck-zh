@@ -7,6 +7,14 @@ import com.droiddeck.launcher.session.SessionState
 object CompositorHost {
     @Volatile
     private var started = false
+<<<<<<< HEAD
+=======
+
+    @Volatile
+    var displayChoice: String? = null
+
+    @Volatile
+>>>>>>> upstream/main
     private var vsyncRunning = false
 
     private val vsync = object : Choreographer.FrameCallback {
@@ -36,7 +44,11 @@ object CompositorHost {
             resumeVsync()
             return false
         }
+<<<<<<< HEAD
         WaylandCompositor.nativeSetOutputRefreshRate(refreshHz)
+=======
+        com.droiddeck.launcher.gpu.TpUbwcHint.applyToProcess()
+>>>>>>> upstream/main
         WaylandCompositor.nativeStartWithSurface(
             surface, xdgRuntimeDir, driverPath, libraryName, nativeLibDir,
         )
@@ -49,6 +61,16 @@ object CompositorHost {
     private fun pace(refreshHz: Float, fpsLimit: Int) {
         WaylandCompositor.nativeSetFpsLimit(fpsLimit)
         WaylandCompositor.nativeSetLayerFrameRate(if (fpsLimit > 0) fpsLimit.toFloat() else refreshHz)
+<<<<<<< HEAD
+=======
+        WaylandCompositor.nativeSetOutputRefreshRate(refreshHz)
+        SessionState.refreshHz = refreshHz
+    }
+
+    @Synchronized
+    fun updatePacing(refreshHz: Float, fpsLimit: Int) {
+        if (started) pace(refreshHz, fpsLimit)
+>>>>>>> upstream/main
     }
 
     @Synchronized
@@ -72,6 +94,17 @@ object CompositorHost {
     private var attached: Surface? = null
 
     @Synchronized
+<<<<<<< HEAD
+=======
+    fun attachXr() {
+        check(started) { "DroidDeck compositor is not running" }
+        pauseVsync()
+        attached = null
+        WaylandCompositor.nativeSetSurface(null)
+    }
+
+    @Synchronized
+>>>>>>> upstream/main
     fun detach(surface: Surface?) {
         if (!started) return
         if (surface != null && attached != null && attached !== surface) return

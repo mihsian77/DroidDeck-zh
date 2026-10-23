@@ -24,6 +24,10 @@ data class AmazonGame(
     val publisher: String = "",
     val productSku: String = "",
     val versionId: String = "",
+<<<<<<< HEAD
+=======
+    val logoUrl: String = "",
+>>>>>>> upstream/main
 )
 
 object AmazonLibrary {
@@ -42,7 +46,12 @@ object AmazonLibrary {
             JSONObject()
                 .put("productId", g.productId).put("entitlementId", g.entitlementId).put("title", g.title)
                 .put("artUrl", g.artUrl).put("heroUrl", g.heroUrl).put("developer", g.developer)
+<<<<<<< HEAD
                 .put("publisher", g.publisher).put("productSku", g.productSku).put("versionId", g.versionId),
+=======
+                .put("publisher", g.publisher).put("productSku", g.productSku).put("versionId", g.versionId)
+                .apply { if (g.logoUrl.isNotEmpty()) put("logoUrl", g.logoUrl) },
+>>>>>>> upstream/main
         )
     }.toString()
 
@@ -60,6 +69,10 @@ object AmazonLibrary {
                 publisher = o.optString("publisher", ""),
                 productSku = o.optString("productSku", ""),
                 versionId = o.optString("versionId", ""),
+<<<<<<< HEAD
+=======
+                logoUrl = o.optString("logoUrl", ""),
+>>>>>>> upstream/main
             )
         }
         return tidy(games)
@@ -94,6 +107,10 @@ object AmazonLibrary {
             sizeBytes = prefs.getLong("size_${game.productId}", 0L).takeIf { it > 0 } ?: 0L,
             storeUrl = STORE_URL,
             extra = mapOf("entitlementId" to game.entitlementId, "sku" to game.productSku, "version" to ""),
+<<<<<<< HEAD
+=======
+            logoUrl = game.logoUrl.ifEmpty { null },
+>>>>>>> upstream/main
         )
     }
 
@@ -106,7 +123,11 @@ object AmazonLibrary {
         }
     }
 
+<<<<<<< HEAD
     private fun gameFrom(o: JSONObject, before: AmazonGame?): AmazonGame = AmazonGame(
+=======
+    internal fun gameFrom(o: JSONObject, before: AmazonGame?): AmazonGame = AmazonGame(
+>>>>>>> upstream/main
         productId = o.optString("productId"),
         entitlementId = o.optString("entitlementId"),
         title = o.optString("title"),
@@ -116,6 +137,10 @@ object AmazonLibrary {
         publisher = o.optString("publisher"),
         productSku = o.optString("sku"),
         versionId = before?.versionId.orEmpty(),
+<<<<<<< HEAD
+=======
+        logoUrl = o.optString("logo").ifEmpty { before?.logoUrl.orEmpty() },
+>>>>>>> upstream/main
     )
 
     private fun backfillPosters(app: Context, games: List<AmazonGame>) {

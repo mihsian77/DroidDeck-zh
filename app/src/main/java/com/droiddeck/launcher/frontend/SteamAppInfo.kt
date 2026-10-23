@@ -3,7 +3,10 @@ package com.droiddeck.launcher.frontend
 import android.content.Context
 import android.util.AtomicFile
 import android.util.Log
+<<<<<<< HEAD
 import com.droiddeck.launcher.runtime.LinuxRuntime
+=======
+>>>>>>> upstream/main
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.DataInputStream
@@ -20,7 +23,11 @@ object SteamAppInfo {
 
     class Info(val name: String, val sharedDepots: List<String>)
 
+<<<<<<< HEAD
     fun appinfoFile(context: Context) = File(LinuxRuntime.rootDir(context), "root/.local/share/Steam/appcache/appinfo.vdf")
+=======
+    fun appinfoFile(context: Context) = File(com.droiddeck.launcher.session.SessionPrefs.activeSteamRoot(context), "appcache/appinfo.vdf")
+>>>>>>> upstream/main
 
     @Synchronized
     fun info(context: Context, appId: Int, appinfo: File = appinfoFile(context)): Info? {
@@ -154,7 +161,11 @@ object SteamAppInfo {
         return String(bytes, Charsets.UTF_8)
     }
 
+<<<<<<< HEAD
     private fun readMap(b: ByteBuffer, strings: List<String>?): Map<String, Any> {
+=======
+    internal fun readMap(b: ByteBuffer, strings: List<String>?): Map<String, Any> {
+>>>>>>> upstream/main
         val out = LinkedHashMap<String, Any>()
         while (b.hasRemaining()) {
             val type = b.get().toInt() and 0xFF

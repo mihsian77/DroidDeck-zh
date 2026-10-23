@@ -2,6 +2,10 @@ package com.droiddeck.launcher.ui
 
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Path
+<<<<<<< HEAD
+=======
+import androidx.compose.ui.graphics.PathMeasure
+>>>>>>> upstream/main
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -9,6 +13,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+<<<<<<< HEAD
+=======
+import org.robolectric.annotation.GraphicsMode
+>>>>>>> upstream/main
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], manifest = Config.NONE)
@@ -44,6 +52,18 @@ class StepOutTest {
         assertEquals(pill.bottom, b.bottom, 0.5f)
     }
 
+<<<<<<< HEAD
+=======
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Test fun aNearlyClosedOutlineDoesNotDoubleBackPastThePillCorner() {
+        val path = Path()
+        stepPath(path, pill, left = pill.left - 1f, bottom = pill.bottom + 2f, pullTop = pill.bottom + 6f, box = 16f, fillet = 10f, pillCorner = 12f)
+        val length = PathMeasure().apply { setPath(path, false) }.length
+        val arcs = (Math.PI / 2).toFloat() * (12f + 16f + 15f + 0.5f + 12f)
+        assertEquals(175f + arcs, length, 2f)
+    }
+
+>>>>>>> upstream/main
     @Test fun aCardMarkIsTakenOnceAndOnlyForItsGame() {
         StoresMotion.markCard(CardMark("gog:1", pill, 10f, null))
         assertNull(StoresMotion.takeCard("gog:2"))

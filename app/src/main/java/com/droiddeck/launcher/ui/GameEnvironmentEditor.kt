@@ -143,15 +143,26 @@ internal fun GameEnvironmentEditor(byPad: Boolean, initialScope: String = "", on
             }
         }
         otherId?.let { id ->
+<<<<<<< HEAD
+=======
+            val valid = id.isNotEmpty() && GameEnvironment.validScope(id)
+            val open = { if (valid) { scope = id.toLong().toString(); otherId = null } }
+>>>>>>> upstream/main
             Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 AdbTextField(
                     id, { otherId = it.filter(Char::isDigit) }, stringResource(R.string.game_env_app_id), KeyboardType.Number, ImeAction.Done,
                     modifier = Modifier.weight(1f), compact = true,
+<<<<<<< HEAD
                     onDone = { if (GameEnvironment.validScope(id)) { scope = id.toLong().toString(); otherId = null } },
                 )
                 SecondaryButton(stringResource(R.string.game_env_open), enabled = id.isNotEmpty() && GameEnvironment.validScope(id)) {
                     scope = id.toLong().toString(); otherId = null
                 }
+=======
+                    onDone = open,
+                )
+                SecondaryButton(stringResource(R.string.game_env_open), enabled = valid, onClick = open)
+>>>>>>> upstream/main
             }
         }
         if (error) Small(stringResource(R.string.game_env_error), error = true)

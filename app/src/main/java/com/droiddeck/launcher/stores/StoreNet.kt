@@ -25,7 +25,11 @@ internal object StoreNet {
                 headers.forEach { (k, v) -> setRequestProperty(k, v) }
             }
             val code = conn.responseCode
+<<<<<<< HEAD
             if (code !in 200..299) { Log.w(TAG, "GET $code ${StoreLog.redactUrl(url)}"); null } else readAll(conn)
+=======
+            if (code !in 200..299) { StoresState.logLine("GET $code ${StoreLog.redactUrl(url)}"); null } else readAll(conn)
+>>>>>>> upstream/main
         } catch (e: Exception) {
             Log.w(TAG, "GET failed ${StoreLog.redactUrl(url)}: ${e.javaClass.simpleName}")
             null

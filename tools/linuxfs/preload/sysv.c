@@ -403,6 +403,12 @@ struct msg_queue {
     struct { uint64_t seq; long mtype; size_t len; char data[2048]; } slot[MSG_SLOTS];
 };
 
+<<<<<<< HEAD
+=======
+struct msg_map { int id; int refs; struct msg_queue *q; };
+static struct msg_map g_msgs[MAX_OBJECTS];
+
+>>>>>>> upstream/main
 static struct msg_queue *msg_map(int id) {
     int fd = open_by_id("msg", id);
     if (fd < 0) return NULL;
@@ -415,6 +421,50 @@ static struct msg_queue *msg_map(int id) {
     return NULL;
 }
 
+<<<<<<< HEAD
+=======
+static int msg_removed(struct msg_queue *q) { return __atomic_load_n(&q->magic, __ATOMIC_ACQUIRE) != MSG_MAGIC; }
+
+static struct msg_map *msg_get(int id) {
+    struct msg_map *found = NULL, *spare = NULL, *idle = NULL;
+    pthread_mutex_lock(&g_lock);
+    for (int i = 0; i < MAX_OBJECTS; i++) {
+        struct msg_map *e = &g_msgs[i];
+        if (e->q && !e->refs && msg_removed(e->q)) {
+            munmap(e->q, sizeof(*e->q));
+            e->q = NULL;
+        }
+        if (!e->q) {
+            if (!spare) spare = e;
+        } else if (e->id == id && !msg_removed(e->q)) {
+            found = e;
+        } else if (!e->refs && !idle) {
+            idle = e;
+        }
+    }
+    if (!found && !spare && idle) {
+        munmap(idle->q, sizeof(*idle->q));
+        idle->q = NULL;
+        spare = idle;
+    }
+    if (!found && spare && (spare->q = msg_map(id))) {
+        spare->id = id;
+        found = spare;
+    } else if (!found && !spare) {
+        errno = ENOSPC;
+    }
+    if (found) found->refs++;
+    pthread_mutex_unlock(&g_lock);
+    return found;
+}
+
+static void msg_put(struct msg_map *m) {
+    pthread_mutex_lock(&g_lock);
+    m->refs--;
+    pthread_mutex_unlock(&g_lock);
+}
+
+>>>>>>> upstream/main
 static void msg_lock(struct msg_queue *q) {
     for (int32_t owner = 0; !atomic_compare_exchange_strong(&q->lock, &owner, getpid()); owner = 0) {
         if (kill(owner, 0) != 0 && errno == ESRCH) atomic_compare_exchange_strong(&q->lock, &owner, 0);
@@ -446,12 +496,28 @@ int msgget(key_t key, int msgflg) {
 }
 
 int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg) {
+<<<<<<< HEAD
     struct msg_queue *q = msg_map(msqid);
     if (!q) return -1;
     if (msgsz > sizeof(q->slot[0].data) || *(const long *)msgp < 1) { munmap(q, sizeof(*q)); errno = EINVAL; return -1; }
     for (;;) {
         msg_lock(q);
         int32_t seen = atomic_load(&q->changed);
+=======
+    struct msg_map *m = msg_get(msqid);
+    if (!m) return -1;
+    struct msg_queue *q = m->q;
+    if (msgsz > sizeof(q->slot[0].data) || *(const long *)msgp < 1) { msg_put(m); errno = EINVAL; return -1; }
+    for (;;) {
+        msg_lock(q);
+        int32_t seen = atomic_load(&q->changed);
+        if (msg_removed(q)) {
+            msg_unlock(q, 0);
+            msg_put(m);
+            errno = EIDRM;
+            return -1;
+        }
+>>>>>>> upstream/main
         for (int i = 0; i < MSG_SLOTS; i++) {
             if (q->slot[i].seq) continue;
             q->slot[i].mtype = *(const long *)msgp;
@@ -459,12 +525,20 @@ int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg) {
             memcpy(q->slot[i].data, (const long *)msgp + 1, msgsz);
             q->slot[i].seq = ++q->next_seq;
             msg_unlock(q, 1);
+<<<<<<< HEAD
             munmap(q, sizeof(*q));
+=======
+            msg_put(m);
+>>>>>>> upstream/main
             return 0;
         }
         msg_unlock(q, 0);
         if ((msgflg & IPC_NOWAIT) || (futex(&q->changed, FUTEX_WAIT, seen, NULL) != 0 && errno == EINTR)) {
+<<<<<<< HEAD
             munmap(q, sizeof(*q));
+=======
+            msg_put(m);
+>>>>>>> upstream/main
             if (msgflg & IPC_NOWAIT) errno = EAGAIN;
             return -1;
         }
@@ -473,11 +547,26 @@ int msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg) {
 
 ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg) {
     if (msgtyp < 0) { errno = EINVAL; return -1; }
+<<<<<<< HEAD
     struct msg_queue *q = msg_map(msqid);
     if (!q) return -1;
     for (;;) {
         msg_lock(q);
         int32_t seen = atomic_load(&q->changed);
+=======
+    struct msg_map *m = msg_get(msqid);
+    if (!m) return -1;
+    struct msg_queue *q = m->q;
+    for (;;) {
+        msg_lock(q);
+        int32_t seen = atomic_load(&q->changed);
+        if (msg_removed(q)) {
+            msg_unlock(q, 0);
+            msg_put(m);
+            errno = EIDRM;
+            return -1;
+        }
+>>>>>>> upstream/main
         int best = -1;
         for (int i = 0; i < MSG_SLOTS; i++)
             if (q->slot[i].seq && (!msgtyp || q->slot[i].mtype == msgtyp) && (best < 0 || q->slot[i].seq < q->slot[best].seq))
@@ -488,12 +577,20 @@ ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg) {
             memcpy((long *)msgp + 1, q->slot[best].data, n);
             q->slot[best].seq = 0;
             msg_unlock(q, 1);
+<<<<<<< HEAD
             munmap(q, sizeof(*q));
+=======
+            msg_put(m);
+>>>>>>> upstream/main
             return (ssize_t)n;
         }
         msg_unlock(q, 0);
         if ((msgflg & IPC_NOWAIT) || (futex(&q->changed, FUTEX_WAIT, seen, NULL) != 0 && errno == EINTR)) {
+<<<<<<< HEAD
             munmap(q, sizeof(*q));
+=======
+            msg_put(m);
+>>>>>>> upstream/main
             if (msgflg & IPC_NOWAIT) errno = ENOMSG;
             return -1;
         }
@@ -502,15 +599,34 @@ ssize_t msgrcv(int msqid, void *msgp, size_t msgsz, long msgtyp, int msgflg) {
 
 int msgctl(int msqid, int cmd, struct msqid_ds *buf) {
     if (cmd != IPC_RMID) { errno = EINVAL; return -1; }
+<<<<<<< HEAD
     pthread_mutex_lock(&g_lock);
     int rc = unlink_by_id("msg", msqid);
     pthread_mutex_unlock(&g_lock);
+=======
+    struct msg_queue *q = msg_map(msqid);
+    if (!q) return -1;
+    pthread_mutex_lock(&g_lock);
+    int rc = unlink_by_id("msg", msqid);
+    pthread_mutex_unlock(&g_lock);
+    int saved = errno;
+    if (rc == 0) {
+        __atomic_store_n(&q->magic, 0, __ATOMIC_SEQ_CST);
+        atomic_fetch_add(&q->changed, 1);
+        futex(&q->changed, FUTEX_WAKE, INT_MAX, NULL);
+    }
+    munmap(q, sizeof(*q));
+    errno = saved;
+>>>>>>> upstream/main
     return rc;
 }
 
 static void sysv_lock_before_fork(void) { pthread_mutex_lock(&g_lock); }
 static void sysv_unlock_after_fork(void) { pthread_mutex_unlock(&g_lock); }
-static void sysv_reset_after_fork(void) { pthread_mutex_init(&g_lock, NULL); }
+static void sysv_reset_after_fork(void) {
+    pthread_mutex_init(&g_lock, NULL);
+    for (int i = 0; i < MAX_OBJECTS; i++) g_msgs[i].refs = 0;
+}
 
 __attribute__((constructor)) static void install_sysv_fork_handlers(void) {
   pthread_atfork(sysv_lock_before_fork, sysv_unlock_after_fork, sysv_reset_after_fork);

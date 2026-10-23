@@ -1,6 +1,10 @@
 package com.droiddeck.launcher.runtime
 
 import android.content.Context
+<<<<<<< HEAD
+=======
+import com.droiddeck.launcher.core.AddonPack
+>>>>>>> upstream/main
 import com.droiddeck.launcher.session.SessionPrefs
 import java.io.File
 import java.security.MessageDigest
@@ -11,7 +15,11 @@ object ProotFastPath {
 
     fun enabled(context: Context): Boolean =
         SessionPrefs.prootFastPath(context) && !SessionPrefs.prootNoSeccomp(context) &&
+<<<<<<< HEAD
             LinuxRuntime.prootBinary(context).parent == context.applicationInfo.nativeLibraryDir
+=======
+            LinuxRuntime.prootBinary(context).parentFile == AddonPack.PROOT.dir(context)
+>>>>>>> upstream/main
 
     fun key(root: File, binds: List<String>): String? {
         if (binds.size > MAX_BINDS || binds.any { it.contains('|') } || root.path.contains('|')) return null

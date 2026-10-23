@@ -1,9 +1,17 @@
 package com.droiddeck.launcher.stores
 
 import android.annotation.SuppressLint
+<<<<<<< HEAD
 import android.graphics.Color
 import android.net.Uri
 import android.net.http.SslError
+=======
+import android.content.res.Configuration
+import android.graphics.Color
+import android.net.Uri
+import android.net.http.SslError
+import android.os.Build
+>>>>>>> upstream/main
 import android.os.Bundle
 import android.os.Message
 import android.util.Log
@@ -17,6 +25,10 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
+<<<<<<< HEAD
+=======
+import android.webkit.WebSettings
+>>>>>>> upstream/main
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
@@ -35,9 +47,20 @@ class StoreLoginActivity : ComponentActivity() {
     companion object {
         private const val TAG = "StoreLogin"
         const val EXTRA_STORE = "store"
+<<<<<<< HEAD
         private const val KEY_STATE = "oauth_state"
         @Volatile internal var floodColor: Int? = null
         private const val CHROME_UA = "Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.103 Mobile Safari/537.36"
+=======
+        const val EXTRA_CLIENT_URL = "client_url"
+        private const val KEY_STATE = "oauth_state"
+        private const val KEY_SIGN_IN_CLEARED = "sign_in_cleared"
+        @Volatile internal var floodColor: Int? = null
+        internal fun chromeUserAgent(webView: String?): String =
+            webView?.replace(Regex(" Build/[^;)]*"), "")?.replace("; wv)", ")")?.replace(" Version/4.0", "")
+                ?.takeIf { "Chrome/" in it }
+                ?: "Mozilla/5.0 (Linux; Android ${Build.VERSION.RELEASE}; ${Build.MODEL}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.6533.103 Mobile Safari/537.36"
+>>>>>>> upstream/main
 
         fun generateState(): String {
             val bytes = ByteArray(24)
@@ -52,9 +75,17 @@ class StoreLoginActivity : ComponentActivity() {
         fun isRedirect(url: String): Boolean
         fun finish(activity: StoreLoginActivity, view: WebView, url: String): String?
         val readsPage: Boolean get() = false
+<<<<<<< HEAD
     }
 
     private var store: Store? = null
+=======
+        fun forgetSignIn(done: () -> Unit) = done()
+    }
+
+    private var store: Store? = null
+    private var clientUrl: String? = null
+>>>>>>> upstream/main
     private var flow: Flow? = null
     private var webViewRef: WebView? = null
     private var popupWebView: WebView? = null
@@ -64,17 +95,35 @@ class StoreLoginActivity : ComponentActivity() {
     private lateinit var errorPanel: LinearLayout
     private lateinit var errorText: TextView
     private lateinit var titleText: TextView
+<<<<<<< HEAD
     private var oauthState: String? = null
     private val captured = AtomicBoolean(false)
     private var flooded = false
+=======
+    private lateinit var topBar: LinearLayout
+    private lateinit var reloadButton: ImageButton
+    private lateinit var closeButton: ImageButton
+    private lateinit var retryButton: Button
+    private var oauthState: String? = null
+    private val captured = AtomicBoolean(false)
+    private var flooded = false
+    private val chromeUa by lazy { chromeUserAgent(runCatching { WebSettings.getDefaultUserAgent(this) }.getOrNull()) }
+    private var signInCleared = false
+>>>>>>> upstream/main
 
     private fun dp(value: Int): Int = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value.toFloat(), resources.displayMetrics).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         store = Store.byId(intent.getStringExtra(EXTRA_STORE))
+<<<<<<< HEAD
         oauthState = savedInstanceState?.getString(KEY_STATE) ?: generateState()
         flow = store?.let { LoginFlows.forStore(it, oauthState!!) }
+=======
+        clientUrl = intent.getStringExtra(EXTRA_CLIENT_URL)?.takeIf { store == Store.EPIC }
+        oauthState = savedInstanceState?.getString(KEY_STATE) ?: generateState()
+        flow = newFlow(oauthState!!)
+>>>>>>> upstream/main
         floodColor?.let { c ->
             floodColor = null
             flooded = true
@@ -101,7 +150,23 @@ class StoreLoginActivity : ComponentActivity() {
                 }
             }
         })
+<<<<<<< HEAD
         webView.loadUrl(flow!!.startUrl)
+=======
+        val start = flow!!.startUrl
+        signInCleared = savedInstanceState?.getBoolean(KEY_SIGN_IN_CLEARED) == true
+        if (signInCleared) webView.loadUrl(start)
+        else flow!!.forgetSignIn {
+            signInCleared = true
+            if (!isDestroyed) webView.loadUrl(start)
+        }
+    }
+
+    private fun newFlow(state: String): Flow? {
+        val url = clientUrl
+        if (url != null) return com.droiddeck.launcher.stores.epic.EpicClient.loginFlow(url, chromeUa)
+        return store?.let { LoginFlows.forStore(it, state) }
+>>>>>>> upstream/main
     }
 
     override fun finish() {
@@ -130,6 +195,10 @@ class StoreLoginActivity : ComponentActivity() {
             contentDescription = getString(R.string.stores_login_close); layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
             setOnClickListener { finish() }
         }
+<<<<<<< HEAD
+=======
+        topBar = bar; reloadButton = reload; closeButton = close
+>>>>>>> upstream/main
         bar.addView(titleText); bar.addView(reload); bar.addView(close)
         progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100; isIndeterminate = false
@@ -144,6 +213,10 @@ class StoreLoginActivity : ComponentActivity() {
         }
         errorText = TextView(this).apply { setTextColor(0xFFF2F4F7.toInt()); textSize = 15f; gravity = Gravity.CENTER }
         val retry = Button(this).apply { text = getString(R.string.stores_login_retry); setOnClickListener { reloadLogin() } }
+<<<<<<< HEAD
+=======
+        retryButton = retry
+>>>>>>> upstream/main
         errorPanel.addView(errorText)
         errorPanel.addView(retry, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) })
         contentHost.addView(errorPanel, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
@@ -151,6 +224,27 @@ class StoreLoginActivity : ComponentActivity() {
         return root
     }
 
+<<<<<<< HEAD
+=======
+    /**
+     * The activity handles density changes itself so that folding between two displays of different
+     * density keeps the page and the sign-in in progress; the dp-based chrome sizes are applied again.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (!::topBar.isInitialized) return
+        topBar.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48))
+        titleText.setPadding(dp(16), 0, dp(8), 0)
+        titleText.textSize = 16f
+        errorText.textSize = 15f
+        reloadButton.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+        closeButton.layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+        progressBar.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3))
+        errorPanel.setPadding(dp(24), dp(24), dp(24), dp(24))
+        retryButton.layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) }
+    }
+
+>>>>>>> upstream/main
     private fun showError(message: String) {
         runOnUiThread { errorText.text = message; errorPanel.visibility = View.VISIBLE; errorPanel.bringToFront(); progressBar.visibility = View.GONE }
     }
@@ -162,7 +256,11 @@ class StoreLoginActivity : ComponentActivity() {
         captured.set(false)
         val fresh = generateState()
         oauthState = fresh
+<<<<<<< HEAD
         flow = store?.let { LoginFlows.forStore(it, fresh) } ?: return
+=======
+        flow = newFlow(fresh) ?: return
+>>>>>>> upstream/main
         webViewRef?.let { it.settings.userAgentString = flow!!.userAgent; it.loadUrl(flow!!.startUrl) }
     }
 
@@ -171,6 +269,12 @@ class StoreLoginActivity : ComponentActivity() {
         setBackgroundColor(0xFF0A0B0D.toInt())
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
+<<<<<<< HEAD
+=======
+        // Store sign-in pages are web pages; they never need to read local files or content:// URIs.
+        settings.allowFileAccess = false
+        settings.allowContentAccess = false
+>>>>>>> upstream/main
         settings.userAgentString = userAgent
         settings.setSupportMultipleWindows(true)
         settings.javaScriptCanOpenWindowsAutomatically = true
@@ -188,7 +292,11 @@ class StoreLoginActivity : ComponentActivity() {
         override fun onCreateWindow(view: WebView?, isDialog: Boolean, isUserGesture: Boolean, resultMsg: Message?): Boolean {
             if (resultMsg == null) return false
             dismissPopup()
+<<<<<<< HEAD
             val child = newWebView(CHROME_UA, isPopup = true)
+=======
+            val child = newWebView(chromeUa, isPopup = true)
+>>>>>>> upstream/main
             popupWebView = child
             popupHost.addView(child, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             popupHost.visibility = View.VISIBLE
@@ -218,6 +326,11 @@ class StoreLoginActivity : ComponentActivity() {
     }
 
     private inner class Client(private val isPopup: Boolean) : WebViewClient() {
+<<<<<<< HEAD
+=======
+        private var mainFrameUrl: String? = null
+
+>>>>>>> upstream/main
         override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
             Log.d(TAG, "page[popup=$isPopup]: ${StoreLog.redactUrl(url)}")
             if (url != null && view != null && flow?.isRedirect(url) == true && flow?.readsPage != true) complete(view, url)
@@ -240,10 +353,21 @@ class StoreLoginActivity : ComponentActivity() {
 
         override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
             handler?.cancel()
+<<<<<<< HEAD
             showError(getString(R.string.stores_login_error_ssl))
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean = route(view, request.url)
+=======
+            val url = error?.url
+            if (url == null || url == view?.url || url == mainFrameUrl) showError(getString(R.string.stores_login_error_ssl))
+        }
+
+        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+            if (request.isForMainFrame) mainFrameUrl = request.url.toString()
+            return route(view, request.url)
+        }
+>>>>>>> upstream/main
 
         @Suppress("DEPRECATION")
         override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean = route(view, Uri.parse(url))
@@ -254,8 +378,13 @@ class StoreLoginActivity : ComponentActivity() {
             if (f.isRedirect(url) && !f.readsPage) { complete(view, url); return true }
             if (!isPopup && store == Store.GOG) {
                 if (GogAuth.isGogHost(uri.host) && view.settings.userAgentString != f.userAgent) { view.settings.userAgentString = f.userAgent; return false }
+<<<<<<< HEAD
                 if (GogAuth.isIdentityProviderHost(uri.host) && view.settings.userAgentString != CHROME_UA) {
                     view.settings.userAgentString = CHROME_UA
+=======
+                if (GogAuth.isIdentityProviderHost(uri.host) && view.settings.userAgentString != chromeUa) {
+                    view.settings.userAgentString = chromeUa
+>>>>>>> upstream/main
                     CookieManager.getInstance().setAcceptThirdPartyCookies(view, true)
                     view.loadUrl(url)
                     return true
@@ -293,6 +422,20 @@ class StoreLoginActivity : ComponentActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         oauthState?.let { outState.putString(KEY_STATE, it) }
+<<<<<<< HEAD
+=======
+        outState.putBoolean(KEY_SIGN_IN_CLEARED, signInCleared)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (clientUrl != null && !isFinishing) com.droiddeck.launcher.session.SessionService.holdForSignIn(this, true)
+    }
+
+    override fun onStop() {
+        if (clientUrl != null && !isChangingConfigurations) com.droiddeck.launcher.session.SessionService.holdForSignIn(this, false)
+        super.onStop()
+>>>>>>> upstream/main
     }
 
     override fun onDestroy() {

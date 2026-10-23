@@ -47,6 +47,56 @@ object DesktopCatalog {
 
     private fun marker(context: Context, id: String) = File(LinuxRuntime.rootDir(context), ".droiddeck-pkg-$id")
 
+<<<<<<< HEAD
+=======
+    private const val JOURNAL_SUFFIX = ".installing"
+
+    private fun journal(root: File, id: String) = File(root, ".droiddeck-pkg-$id$JOURNAL_SUFFIX")
+
+    /** Packages whose extraction over the runtime started and never finished. */
+    fun interrupted(context: Context): List<Entry> = interrupted(LinuxRuntime.rootDir(context))
+
+    fun interrupted(root: File): List<Entry> =
+        root.listFiles { f -> f.name.startsWith(".droiddeck-pkg-") && f.name.endsWith(JOURNAL_SUFFIX) }.orEmpty()
+            .sortedBy { it.name }
+            .mapNotNull { f -> FileUtils.readString(f)?.let { runCatching { entryFrom(JSONObject(it)) }.getOrNull() } }
+
+    private val installLock = Any()
+
+    private fun downloadFile(context: Context, entry: Entry) = File(context.cacheDir, "pkg-${entry.id}-${entry.sha256.take(12)}.download")
+
+    /** Drops downloads kept for installs that no longer need finishing, such as after the runtime was reinstalled. */
+    fun pruneDownloads(context: Context) = synchronized(installLock) {
+        val keep = interrupted(context).map { downloadFile(context, it).name }.toSet()
+        context.cacheDir.listFiles { f -> f.name.startsWith("pkg-") && f.name.removeSuffix(".resume.properties").endsWith(".download") }
+            ?.filter { it.name.removeSuffix(".resume.properties") !in keep }?.forEach { it.delete() }
+    }
+
+    fun resumeInterrupted(context: Context, listener: LinuxRuntimeInstaller.ProgressListener?): String? = synchronized(installLock) {
+        for (entry in interrupted(context)) {
+            Log.w(TAG, "finishing the interrupted install of ${entry.id} ${entry.version}")
+            install(context, entry, listener)?.let { return it }
+        }
+        null
+    }
+
+    internal fun entryJson(e: Entry): JSONObject = JSONObject()
+        .put("id", e.id).put("name", e.name).put("tier", e.tier).put("version", e.version).put("kind", e.kind)
+        .put("url", e.url).put("sha256", e.sha256).put("size", e.size).put("notes", e.notes)
+        .put("icon", e.icon).put("category", e.category)
+
+    internal fun entryFrom(o: JSONObject) = Entry(
+        o.getString("id"), o.getString("name"), o.optInt("tier", 1), o.getString("version"), o.getString("kind"),
+        o.getString("url"), o.getString("sha256"), o.optLong("size", 0L), o.optString("notes", ""),
+        o.optString("icon", "applications-games"), o.optString("category", "Game"),
+    )
+
+    /** A finished download is kept until its extraction completes, so resuming does not fetch it again. */
+    private fun downloaded(file: File, entry: Entry): Boolean =
+        file.isFile && file.length() > 0 && !File(file.path + ".resume.properties").exists() &&
+            (entry.size <= 0 || file.length() == entry.size) && entry.sha256.equals(Hashes.sha256(file), ignoreCase = true)
+
+>>>>>>> upstream/main
     fun installed(context: Context, id: String): String? =
         FileUtils.readString(marker(context, id))?.trim()?.takeIf { it.isNotEmpty() }
 
@@ -64,6 +114,7 @@ object DesktopCatalog {
 
     fun desktopInstalled(context: Context): Boolean = desktopInstalled(LinuxRuntime.rootDir(context))
 
+<<<<<<< HEAD
     fun desktopInstalled(root: File): Boolean {
         if (File(root, DesktopRemoval.PENDING).exists()) return false
         // Accept either the upstream KDE package (kwin_wayland) or the LXQt/labwc package
@@ -83,6 +134,17 @@ object DesktopCatalog {
         return File(root, DesktopRemoval.PENDING).exists() ||
             marker(context, DESKTOP_ID).exists() ||
             marker(context, "desktop").exists()
+=======
+    fun desktopInstalled(root: File): Boolean =
+        !File(root, DesktopRemoval.PENDING).exists() &&
+        File(root, "usr/bin/kwin_wayland").isFile &&
+            FileUtils.readString(File(root, ".droiddeck-pkg-$DESKTOP_ID"))?.trim() == BuildConfig.DESKTOP_KDE_TAG
+
+    fun desktopPresent(context: Context): Boolean {
+        val root = LinuxRuntime.rootDir(context)
+        return File(root, DesktopRemoval.PENDING).exists() || marker(context, DESKTOP_ID).exists() ||
+            journal(root, DESKTOP_ID).exists()
+>>>>>>> upstream/main
     }
 
     fun desktopSize(context: Context): Long = DesktopRemoval.installedSize(context)
@@ -90,6 +152,7 @@ object DesktopCatalog {
     fun cleanLegacy(context: Context, listener: LinuxRuntimeInstaller.ProgressListener? = null) =
         DesktopRemoval.cleanLegacy(context, listener)
 
+<<<<<<< HEAD
     fun removeDesktop(context: Context, listener: LinuxRuntimeInstaller.ProgressListener): String? =
         DesktopRemoval.remove(context, listener)
 
@@ -130,12 +193,67 @@ object DesktopCatalog {
             val actual = Hashes.sha256(file)
             if (!entry.sha256.equals(actual, ignoreCase = true)) return context.getString(R.string.deskpkg_checksum_mismatch)
             listener?.onProgress(context.getString(R.string.deskpkg_installing, entry.name), -1)
+=======
+    fun removeDesktop(context: Context, listener: LinuxRuntimeInstaller.ProgressListener): String? = synchronized(installLock) {
+        DesktopRemoval.remove(context, listener)
+    }
+
+    internal fun discardDesktopInstall(context: Context) {
+        val entry = interrupted(context).firstOrNull { it.id == DESKTOP_ID }
+        val journal = journal(LinuxRuntime.rootDir(context), DESKTOP_ID)
+        entry?.let {
+            val download = downloadFile(context, it)
+            for (file in listOf(download, File(download.path + ".resume.properties"))) {
+                check(!file.exists() || file.delete()) { "Could not remove desktop download ${file.name}" }
+            }
+        }
+        check(!journal.exists() || journal.delete()) { "Could not clear desktop installation" }
+    }
+
+    fun install(context: Context, entry: Entry, listener: LinuxRuntimeInstaller.ProgressListener?): String? = synchronized(installLock) {
+        installLocked(context, entry, listener)
+    }
+
+    private fun installLocked(context: Context, entry: Entry, listener: LinuxRuntimeInstaller.ProgressListener?): String? {
+        val root = LinuxRuntime.rootDir(context)
+        if (!root.isDirectory) return context.getString(R.string.deskpkg_runtime_missing)
+        if (entry.sha256.isEmpty()) return context.getString(R.string.deskpkg_no_checksum, entry.name)
+        val download = downloadFile(context, entry)
+        val journal = journal(root, entry.id)
+        var keepDownload = false
+        val release = RuntimeInstallService.holdForPackage(context, context.getString(R.string.deskpkg_installing, entry.name))
+        val report = object : LinuxRuntimeInstaller.ProgressListener {
+            override fun onProgress(stage: String, percent: Int) = onProgress(LinuxRuntimeInstaller.Step.OTHER, stage, percent)
+            override fun onProgress(step: LinuxRuntimeInstaller.Step, stage: String, percent: Int) {
+                RuntimeInstallService.packageProgress(stage, percent)
+                listener?.onProgress(step, stage, percent)
+            }
+        }
+        try {
+            if (!downloaded(download, entry)) {
+                val downloading = context.getString(R.string.user_apps_downloading, entry.name)
+                report.onProgress(LinuxRuntimeInstaller.Step.DOWNLOADING, downloading, 0)
+                val ok = Downloader.downloadFile(entry.url, download, true, entry.sha256) { f ->
+                    report.onProgress(LinuxRuntimeInstaller.Step.DOWNLOADING, downloading, if (f < 0) -1 else Math.round(f * 100f))
+                }
+                if (!ok) return context.getString(R.string.user_apps_download_failed)
+                report.onProgress(LinuxRuntimeInstaller.Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1)
+                val actual = Hashes.sha256(download)
+                if (!entry.sha256.equals(actual, ignoreCase = true)) return context.getString(R.string.deskpkg_checksum_mismatch)
+            }
+            report.onProgress(context.getString(R.string.deskpkg_installing, entry.name), -1)
+>>>>>>> upstream/main
             when (entry.kind) {
                 "appimage" -> {
                     val dir = File(root, "opt/appimages").apply { mkdirs() }
                     val target = File(dir, "${entry.id}.AppImage")
+<<<<<<< HEAD
                     val placed = if (file.name.endsWith(".zip", ignoreCase = true)) unzipAppImage(file, target)
                                  else { file.copyTo(target, overwrite = true); true }
+=======
+                    val placed = if (entry.url.endsWith(".zip", ignoreCase = true)) unzipAppImage(download, target)
+                                 else download.renameTo(target)
+>>>>>>> upstream/main
                     if (!placed) return context.getString(R.string.deskpkg_place_failed)
                     target.setExecutable(true, false)
                     FileUtils.writeString(File(root, "usr/share/applications/droiddeck-${entry.id}.desktop"),
@@ -144,21 +262,44 @@ object DesktopCatalog {
                         "Icon=${entry.icon}\nTerminal=false\nCategories=${entry.category};\n")
                 }
                 else -> {
+<<<<<<< HEAD
                     marker(context, entry.id).delete()
                     if (!LinuxRuntimeInstaller.extract(context, file, root, listener)) return context.getString(R.string.deskpkg_extract_failed)
                 }
             }
             if (entry.id == DESKTOP_ID) {
                 cleanLegacy(context, listener)
+=======
+                    check(FileUtils.writeString(journal, entryJson(entry).toString())) { "Could not record the package installation" }
+                    keepDownload = true
+                    marker(context, entry.id).delete()
+                    if (!LinuxRuntimeInstaller.extract(context, download, root, report)) return context.getString(R.string.deskpkg_extract_failed)
+                }
+            }
+            if (entry.id == DESKTOP_ID) {
+                cleanLegacy(context, report)
+>>>>>>> upstream/main
                 val pending = File(root, DesktopRemoval.PENDING)
                 check(!pending.exists() || pending.delete()) { "Could not finish desktop installation" }
             }
             FileUtils.writeString(marker(context, entry.id), entry.version)
             check(installed(context, entry.id) == entry.version) { "Could not finish package installation" }
+<<<<<<< HEAD
             return null
         } catch (e: Exception) {
             Log.e(TAG, "installFromFile ${entry.id}", e)
             return e.message ?: context.getString(R.string.deskpkg_install_failed)
+=======
+            check(!journal.exists() || journal.delete()) { "Could not finish package installation" }
+            keepDownload = false
+            return null
+        } catch (e: Exception) {
+            Log.e(TAG, "install ${entry.id}", e)
+            return e.message ?: context.getString(R.string.deskpkg_install_failed)
+        } finally {
+            if (!keepDownload) download.delete()
+            release()
+>>>>>>> upstream/main
         }
     }
 

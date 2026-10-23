@@ -77,6 +77,10 @@ import com.droiddeck.launcher.frontend.Library
 import com.droiddeck.launcher.gpu.FrameGen
 import com.droiddeck.launcher.gpu.Lossless
 import com.droiddeck.launcher.input.SecondScreenDisplay
+<<<<<<< HEAD
+=======
+import com.droiddeck.launcher.core.DownloadSource
+>>>>>>> upstream/main
 import com.droiddeck.launcher.core.PhantomProcessLimit
 import com.droiddeck.launcher.core.PhantomProcessStatus
 import com.droiddeck.launcher.session.SessionPrefs
@@ -97,8 +101,15 @@ class FrontEndState(
     val frameGenLabel: String,
     val romsDir: String?,
     val logsEnabled: Boolean,
+<<<<<<< HEAD
     val agentCommands: Boolean = false,
     val steamGames: List<Library.SteamGame>,
+=======
+    val vacDiagnostics: Boolean = false,
+    val agentCommands: Boolean = false,
+    val steamGames: List<Library.SteamGame>,
+    val steamGamesX64: Boolean = false,
+>>>>>>> upstream/main
     val emulators: List<Library.Emulator>,
     val running: String?,
     val frameGen: FrameGen.Mode = FrameGen.Mode.OFF,
@@ -129,9 +140,19 @@ class FrontEndState(
     val controller: com.droiddeck.launcher.input.ControllerPrefs.Settings? = null,
     val phantomProcessStatus: PhantomProcessStatus = PhantomProcessStatus.NOT_APPLICABLE,
     val showPhantomGate: Boolean = false,
+<<<<<<< HEAD
     val orientation: Int = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE,
     val launcherFullscreen: Boolean = true,
     val animationsEnabled: Boolean = true,
+=======
+    val orientation: Int = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
+    val launcherFullscreen: Boolean = true,
+    val downloadSource: String = DownloadSource.MODE_AUTO,
+    val downloadMirror: String = "",
+    val downloadPrefix: String = "",
+    val animationsEnabled: Boolean = true,
+    val launcherIcon: String = com.droiddeck.launcher.LauncherIcon.DARK,
+>>>>>>> upstream/main
     val gameStoresEnabled: Boolean = true,
     val gameStoresSpeedTier: String = "fast",
     val storesOpenTab: String = SessionPrefs.STORES_OPEN_LIBRARY,
@@ -139,24 +160,46 @@ class FrontEndState(
     val addedGamesArt: Boolean = true,
     val sgdbUserKey: Boolean = false,
     val storesShowMature: Boolean = false,
+<<<<<<< HEAD
+=======
+    val storesSort: String = SessionPrefs.STORES_SORTS.first(),
+    val storesView: String = SessionPrefs.STORES_VIEWS.first(),
+>>>>>>> upstream/main
     val storeDownloadsActive: Int = 0,
     val updates: UpdatesState = UpdatesState(),
 )
 
 class FrontEndActions(
     val onPlay: () -> Unit,
+<<<<<<< HEAD
     val onPlayDesktopUi: () -> Unit,
+=======
+    val onPlaySteamVr: () -> Unit = {},
+    val onPlayDesktopUi: () -> Unit,
+    val onSteamUrl: (String) -> Unit = {},
+>>>>>>> upstream/main
     val onSteamGame: (Library.SteamGame) -> Unit,
     val onGameShortcut: (Library.SteamGame) -> Unit = {},
     val onExportGameFile: (Library.SteamGame) -> Unit = {},
     val onSyncGameFiles: () -> Unit = {},
     val onAddGameExe: (path: String) -> Unit = {},
     val onAddedGamesChanged: (folders: List<String>) -> Unit = {},
+<<<<<<< HEAD
     val onAddedGameRemoved: (folder: String, appId: Long?, name: String) -> Unit = { _, _, _ -> },
+=======
+    val onSteamGameArtChanged: (appId: Int) -> Unit = {},
+    val onAddedGameRemoved: (folder: String, appId: Long?, name: String) -> Unit = { _, _, _ -> },
+    val onGameRemoved: (Library.SteamGame) -> Unit = {},
+>>>>>>> upstream/main
     val onAddedGamesArt: (Boolean) -> Unit = {},
     val onSgdbKey: (String) -> Unit = {},
     val onStopGameFileSync: () -> Unit = {},
     val onCopyGameLink: (Library.SteamGame) -> Unit = {},
+<<<<<<< HEAD
+=======
+    val onEpicLauncher: () -> Unit = {},
+    val onUninstallEpicLauncher: () -> Unit = {},
+>>>>>>> upstream/main
     val onDesktop: () -> Unit,
     val onEmulator: (Library.Emulator) -> Unit,
     val onFlatpakApp: (String, String) -> Unit = { _, _ -> },
@@ -170,11 +213,18 @@ class FrontEndActions(
     val onInstallPackage: (String) -> Unit,
     val onRemovePackage: (String) -> Unit,
     val onRuntime: () -> Unit,
+<<<<<<< HEAD
     val onImportRuntime: () -> Unit = {},
+=======
+>>>>>>> upstream/main
     val onFrameGenPick: (FrameGen.Mode) -> Unit,
     val onImportLossless: () -> Unit,
     val onProtons: () -> Unit,
     val onComponents: (focusContent: Boolean) -> Unit,
+<<<<<<< HEAD
+=======
+    val onGameComponents: (Library.SteamGame) -> Unit = { onComponents(true) },
+>>>>>>> upstream/main
     val onComponentsTab: (String) -> Unit = {},
     val onSaveImport: (Library.SteamGame) -> Unit = {},
     val onSaveExport: (Library.SteamGame, com.droiddeck.launcher.session.GameSaves.Layout) -> Unit = { _, _ -> },
@@ -183,6 +233,10 @@ class FrontEndActions(
     val onFiles: () -> Unit,
     val onBrowseFiles: (File) -> Unit = {},
     val onLogs: () -> Unit,
+<<<<<<< HEAD
+=======
+    val onVacDiagnostics: () -> Unit = {},
+>>>>>>> upstream/main
     val onAgentCommands: () -> Unit = {},
     val onShareLogs: () -> Unit = {},
     val onClearLogs: () -> Unit = {},
@@ -192,14 +246,29 @@ class FrontEndActions(
     val onTheme: (String) -> Unit = {},
     val onLanguage: (String) -> Unit = {},
     val onAppScale: (Int) -> Unit = {},
+<<<<<<< HEAD
     val onOrientation: (Int) -> Unit = {},
     val onLauncherFullscreen: (Boolean) -> Unit = {},
     val onAnimationsEnabled: (Boolean) -> Unit = {},
+=======
+    val onLauncherIcon: (String) -> Unit = {},
+    val onOrientation: (Int) -> Unit = {},
+    val onLauncherFullscreen: (Boolean) -> Unit = {},
+    val onAnimationsEnabled: (Boolean) -> Unit = {},
+    val onDownloadSource: (String) -> Unit = {},
+    val onDownloadMirror: (String) -> Unit = {},
+    val onDownloadPrefix: (String) -> Unit = {},
+>>>>>>> upstream/main
     val onGameStoresEnabled: (Boolean) -> Unit = {},
     val onGameStoresSpeedTier: (String) -> Unit = {},
     val onStoresOpenTab: (String) -> Unit = {},
     val onNavigated: () -> Unit = {},
     val onStoresShowMature: (Boolean) -> Unit = {},
+<<<<<<< HEAD
+=======
+    val onStoresSort: (String) -> Unit = {},
+    val onStoresView: (String) -> Unit = {},
+>>>>>>> upstream/main
     val onLibraryChanged: () -> Unit = {},
     val onHomeApp: () -> Unit = {},
     val onHomeScreen: (Boolean) -> Unit = {},
@@ -365,7 +434,16 @@ private fun FrontEndScreenBody(s: FrontEndState, a: FrontEndActions, page: (@Com
     LaunchedEffect(s.shortcutPicker) { if (s.shortcutPicker) selected = "games" }
     LaunchedEffect(s.navigate) {
         val target = s.navigate ?: return@LaunchedEffect
+<<<<<<< HEAD
         if (target == "stores:downloads") { com.droiddeck.launcher.stores.StoresState.openDownloads = true; selected = "stores" } else selected = target
+=======
+        when (target) {
+            "stores:downloads" -> { com.droiddeck.launcher.stores.StoresState.openDownloads = true; selected = "stores" }
+            "components" -> a.onComponents(true)
+            "setup:launcher" -> { SetupTabs.openLauncher = true; selected = "setup" }
+            else -> selected = target
+        }
+>>>>>>> upstream/main
         a.onNavigated()
     }
     var showWirelessAdbFix by rememberSaveable { mutableStateOf(false) }
@@ -433,6 +511,12 @@ private fun FrontEndScreenBody(s: FrontEndState, a: FrontEndActions, page: (@Com
             selected = key
         }
     }
+<<<<<<< HEAD
+=======
+    LaunchedEffect(com.droiddeck.launcher.storage.StorageState.openRequests) {
+        if (com.droiddeck.launcher.storage.StorageState.openPending) showRailPage("setup", true)
+    }
+>>>>>>> upstream/main
     val onRailFocus: (String) -> Unit = { key ->
         if (key != railSelection) showRailPage(key, false)
     }

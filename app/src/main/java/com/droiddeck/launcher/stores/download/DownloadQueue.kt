@@ -335,7 +335,11 @@ object DownloadQueue {
                 StoresState.logLine("installed \"${item.entry.name}\" → ${result}")
                 StoresState.notifyLibraryChanged(context)
                 val games = runCatching {
+<<<<<<< HEAD
                     com.droiddeck.launcher.frontend.Library.launchableGames(context).firstOrNull { it.gameFiles?.absolutePath == result }?.let { "app:${it.appId}" }
+=======
+                    com.droiddeck.launcher.frontend.LibraryCache.load(context).firstOrNull { it.gameFiles?.absolutePath == result }?.let { "app:${it.appId}" }
+>>>>>>> upstream/main
                 }.getOrNull()
                 StoreDownloadService.ended(context, item.entry, installed = true, gamesKey = games)
             }

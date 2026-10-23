@@ -17,12 +17,22 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+<<<<<<< HEAD
+=======
+import android.widget.HorizontalScrollView
+>>>>>>> upstream/main
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.droiddeck.launcher.input.DeckControls
 import com.droiddeck.launcher.input.PadBridge
 import com.droiddeck.launcher.input.PadState
+<<<<<<< HEAD
 import com.droiddeck.launcher.session.SessionPrefs
+=======
+import com.droiddeck.launcher.session.SessionService
+import com.droiddeck.launcher.session.SessionPrefs
+import com.droiddeck.launcher.session.SessionState
+>>>>>>> upstream/main
 import kotlin.math.atan2
 import kotlin.math.hypot
 import kotlin.math.min
@@ -49,6 +59,7 @@ class DeckControlsPanel(
         select(if (pad != null) selectedWithPad else selected)
     }
 
+<<<<<<< HEAD
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         if (pad != null && selectedWithPad != Tab.GAMEPAD && !GamepadGeometry.tall(w.toFloat(), h.toFloat())) {
@@ -56,6 +67,8 @@ class DeckControlsPanel(
         }
     }
 
+=======
+>>>>>>> upstream/main
     override fun onDetachedFromWindow() {
         DeckControls.releaseAll()
         super.onDetachedFromWindow()
@@ -85,6 +98,7 @@ class DeckControlsPanel(
                 addView(view, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT))
             }
         }
+<<<<<<< HEAD
         val centre = FrameLayout(context).apply {
             addView(tabs, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, dp(44), Gravity.CENTER))
         }
@@ -92,6 +106,19 @@ class DeckControlsPanel(
         addView(roundButton("STEAM", context.getString(R.string.deck_open_steam_menu), onSteamMenu, wide = true))
         addView(space(dp(8)))
         addView(roundButton("•••", context.getString(R.string.drawer_open_qam), onQam, wide = true))
+=======
+        val centre = HorizontalScrollView(context).apply {
+            isHorizontalScrollBarEnabled = false
+            overScrollMode = View.OVER_SCROLL_NEVER
+            addView(tabs, FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, dp(44)))
+        }
+        addView(centre, LayoutParams(0, LayoutParams.MATCH_PARENT, 1f))
+        if (SessionState.mode == SessionService.MODE_STEAM) {
+            addView(roundButton("STEAM", context.getString(R.string.deck_open_steam_menu), onSteamMenu, wide = true))
+            addView(space(dp(8)))
+            addView(roundButton("•••", context.getString(R.string.drawer_open_qam), onQam, wide = true))
+        }
+>>>>>>> upstream/main
     }
 
     private fun select(tab: Tab) {
@@ -102,6 +129,20 @@ class DeckControlsPanel(
             view.background = if (on) filled(CORNER_PILL, ACCENT) else null
             view.setTextColor(if (on) ON_ACCENT else TEXT_DIM)
         }
+<<<<<<< HEAD
+=======
+        tabViews[tab]?.let { selectedView ->
+            (selectedView.parent?.parent as? HorizontalScrollView)?.post {
+                val left = selectedView.left
+                val right = selectedView.right
+                val scroll = selectedView.parent?.parent as? HorizontalScrollView ?: return@post
+                when {
+                    left < scroll.scrollX -> scroll.smoothScrollTo(left, 0)
+                    right > scroll.scrollX + scroll.width -> scroll.smoothScrollTo(right - scroll.width, 0)
+                }
+            }
+        }
+>>>>>>> upstream/main
         content.removeAllViews()
         topBar.visibility = if (tab == Tab.GAMEPAD) View.GONE else View.VISIBLE
         content.addView(
@@ -170,8 +211,15 @@ class DeckControlsPanel(
         place(pill("RB") { st, d -> st.press(PadState.RB, d) }, GamepadGeometry.Slot.RIGHT_INNER_SHOULDER)
         place(pill("RT") { st, d -> st.rightTrigger = if (d) 1f else 0f }, GamepadGeometry.Slot.RIGHT_OUTER_SHOULDER)
         place(pill("VIEW") { st, d -> st.press(PadState.SELECT, d) }, GamepadGeometry.Slot.VIEW)
+<<<<<<< HEAD
         place(centreTap("STEAM", context.getString(R.string.deck_open_steam_menu), onSteamMenu), GamepadGeometry.Slot.STEAM)
         place(centreTap("\u2022\u2022\u2022", context.getString(R.string.drawer_open_qam), onQam), GamepadGeometry.Slot.QAM)
+=======
+        if (SessionState.mode == SessionService.MODE_STEAM) {
+            place(centreTap("STEAM", context.getString(R.string.deck_open_steam_menu), onSteamMenu), GamepadGeometry.Slot.STEAM)
+            place(centreTap("\u2022\u2022\u2022", context.getString(R.string.drawer_open_qam), onQam), GamepadGeometry.Slot.QAM)
+        }
+>>>>>>> upstream/main
         place(pill("MENU") { st, d -> st.press(PadState.START, d) }, GamepadGeometry.Slot.MENU)
         place(centreTap("\u25a6 " + context.getString(R.string.deck_panels), context.getString(R.string.deck_more_controls)) { select(Tab.BOTH) },
             GamepadGeometry.Slot.PANELS)
@@ -643,7 +691,11 @@ class DeckControlsPanel(
         private const val CLICK_MS = 300L
 
         private var selected = Tab.BOTH
+<<<<<<< HEAD
         private var selectedWithPad = Tab.GAMEPAD
+=======
+        private var selectedWithPad = Tab.BOTH
+>>>>>>> upstream/main
 
         private const val CORNER = 20f
         private const val CORNER_PILL = 22f

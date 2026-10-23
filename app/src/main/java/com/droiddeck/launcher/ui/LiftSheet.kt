@@ -18,11 +18,20 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.hoverable
+<<<<<<< HEAD
+=======
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+>>>>>>> upstream/main
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+<<<<<<< HEAD
+=======
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
+>>>>>>> upstream/main
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,6 +51,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+<<<<<<< HEAD
+=======
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+>>>>>>> upstream/main
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.ui.platform.testTag
 import kotlinx.coroutines.Job
@@ -52,6 +65,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+<<<<<<< HEAD
+=======
+import androidx.compose.runtime.compositionLocalOf
+>>>>>>> upstream/main
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -81,6 +98,10 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+<<<<<<< HEAD
+=======
+import androidx.compose.ui.graphics.drawscope.scale
+>>>>>>> upstream/main
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.input.InputMode
@@ -102,6 +123,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+<<<<<<< HEAD
+=======
+import androidx.compose.ui.unit.isSpecified
+>>>>>>> upstream/main
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
 import com.droiddeck.launcher.R
@@ -138,6 +163,18 @@ internal class SheetBeat(private val pieces: List<Animatable<Float, AnimationVec
 
 internal val LocalSheetBeat = staticCompositionLocalOf<SheetBeat?> { null }
 
+<<<<<<< HEAD
+=======
+internal val LocalSheetChipWidth = compositionLocalOf { Dp.Unspecified }
+
+internal val LocalPlayRect = compositionLocalOf<Rect?> { null }
+
+private val ChipGap = 6.dp
+
+internal fun sheetChipWidth(row: Dp, count: Int): Dp =
+    if (count > 0 && row / count >= 96.dp) (row - ChipGap * (count - 1)) / count else 0.dp
+
+>>>>>>> upstream/main
 @Composable
 internal fun Modifier.sheetPiece(): Modifier {
     val beat = LocalSheetBeat.current ?: return this
@@ -173,6 +210,11 @@ internal fun LiftHero(
     onOpenChange: (Boolean) -> Unit = {},
     start: Dp = 44.dp,
     bottom: Dp = 44.dp,
+<<<<<<< HEAD
+=======
+    drop: DropSheetState? = null,
+    overlay: @Composable BoxWithConstraintsScope.(lifted: () -> Float) -> Unit = {},
+>>>>>>> upstream/main
 ) {
     val density = LocalDensity.current
     val inputMode = LocalInputModeManager.current
@@ -306,7 +348,11 @@ internal fun LiftHero(
     val lipFocus = remember { FocusRequester() }
     val settingsLabel = stringResource(R.string.drawer_page_settings)
     var lipFocused by remember { mutableStateOf(false) }
+<<<<<<< HEAD
     val lipWanted = !open && (!shown || lipBack) && (playFocused || playHovered || touchOnly || lipFocused)
+=======
+    val lipWanted = !open && (!shown || lipBack) && (playFocused || playHovered || touchOnly || lipFocused) && drop?.let { it.open || it.shown } != true
+>>>>>>> upstream/main
     LaunchedEffect(lipWanted) {
         if (lipWanted) {
             if (!lipBack) delay(Motion.ms(160).toLong())
@@ -385,6 +431,7 @@ internal fun LiftHero(
     }
     BoxWithConstraints(
         modifier.fillMaxSize().onGloballyPositioned { heroAt = it.boundsInRoot().topLeft }
+<<<<<<< HEAD
             .pointerInput(Unit) {
                 val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
                 var decided = false
@@ -392,11 +439,41 @@ internal fun LiftHero(
                     onDragStart = { tracker.resetTracking(); decided = false; drag.engaged = false },
                     onDragEnd = { if (drag.engaged) settleDrag(tracker.calculateVelocity().y) },
                     onDragCancel = { if (drag.engaged) settleDrag(0f) },
+=======
+            .pointerInput(drop) {
+                val tracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                var decided = false
+                val dropFlick = 600.dp.toPx()
+                detectVerticalDragGestures(
+                    onDragStart = { tracker.resetTracking(); decided = false; drag.engaged = false },
+                    onDragEnd = {
+                        if (drag.engaged) settleDrag(tracker.calculateVelocity().y)
+                        else if (drop?.engaged == true) drop.settle(tracker.calculateVelocity().y, dropFlick)
+                    },
+                    onDragCancel = {
+                        if (drag.engaged) settleDrag(0f)
+                        else if (drop?.engaged == true) drop.settle(0f, dropFlick)
+                    },
+>>>>>>> upstream/main
                 ) { change, amount ->
                     if (launching) return@detectVerticalDragGestures
                     if (!decided) {
                         decided = true
+<<<<<<< HEAD
                         if (if (open) amount > 0f else amount < 0f) beginDrag()
+=======
+                        when {
+                            drop != null && (drop.open || drop.shown) -> if (drop.open && amount < 0f) drop.beginDrag()
+                            open || shown || amount < 0f -> if (if (open) amount > 0f else amount < 0f) beginDrag()
+                            drop != null && amount > 0f -> drop.beginDrag()
+                        }
+                    }
+                    if (drop?.engaged == true) {
+                        change.consume()
+                        tracker.addPosition(change.uptimeMillis, change.position)
+                        drop.drag(amount)
+                        return@detectVerticalDragGestures
+>>>>>>> upstream/main
                     }
                     if (!drag.engaged) return@detectVerticalDragGestures
                     change.consume()
@@ -413,9 +490,21 @@ internal fun LiftHero(
         val openTop = sheetTop(h, buttonH, with(density) { 16.dp.toPx() }, with(density) { 3.dp.toPx() })
         val raise = restRect?.let { (openTop + with(density) { 3.dp.toPx() } - buttonH / 2f) - it.top } ?: 0f
         travelPx[0] = (h - openTop).coerceAtLeast(1f)
+<<<<<<< HEAD
 
         val foot = h
         Box(Modifier.fillMaxSize().clipToBounds().graphicsLayer { val k = 1f - 0.05f * sink.value; scaleX = k; scaleY = k }) { background() }
+=======
+        val pill = restRect?.translate(0f, raise)
+        val chipsX = with(density) {
+            if (narrow || pill == null) 16.dp.toPx() else pill.right + 20.dp.toPx() - inset
+        }
+        val chipWidth = with(density) { sheetChipWidth((w - 2 * inset - chipsX - 64.dp.toPx()).coerceAtLeast(0f).toDp(), tabs.size) }
+
+        val foot = h
+        val wallSink = { maxOf(sink.value, drop?.sink?.value ?: 0f) }
+        Box(Modifier.fillMaxSize().clipToBounds().graphicsLayer { val k = 1f - 0.05f * wallSink(); scaleX = k; scaleY = k }) { background() }
+>>>>>>> upstream/main
         scrim { sink.value }
         if (shown || open) Box(
             Modifier.fillMaxSize()
@@ -432,7 +521,10 @@ internal fun LiftHero(
             val rimPath = remember { Path() }
             val corner = with(density) { SheetCorner.toPx() }
             val rim = with(density) { 1.4.dp.toPx() }
+<<<<<<< HEAD
             val pill = restRect?.translate(0f, raise)
+=======
+>>>>>>> upstream/main
             Canvas(Modifier.fillMaxSize()) {
                 val f = fold.value
                 val ft = foldTop.value
@@ -459,9 +551,12 @@ internal fun LiftHero(
                     drawPath(rimPath, rimColor, style = Stroke(rim))
                 }
             }
+<<<<<<< HEAD
             val chipsX = with(density) {
                 if (narrow || pill == null) 16.dp.toPx() else pill.right + 20.dp.toPx() - sheetLeft
             }
+=======
+>>>>>>> upstream/main
             val chipsY = with(density) { if (narrow && pill != null) (pill.bottom - openTop) + 10.dp.toPx() else ChipsTop.toPx() }
             val rowsY = with(density) { maxOf(RowsTop.toPx(), chipsY + 52.dp.toPx()) }
             val sheetW = sheetRight - sheetLeft
@@ -537,13 +632,21 @@ internal fun LiftHero(
         }
 
         Column(Modifier.align(Alignment.BottomStart).padding(start = start, bottom = bottom, end = 20.dp)) {
+<<<<<<< HEAD
             Box(Modifier.graphicsLayer { alpha = 1f - sink.value }) { words() }
+=======
+            Box(Modifier.graphicsLayer { alpha = 1f - wallSink() }) { words() }
+>>>>>>> upstream/main
             Spacer(Modifier.height(18.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(
                 Modifier
                     .onGloballyPositioned { rest = it.boundsInRoot() }
+<<<<<<< HEAD
                     .graphicsLayer { translationY = raise * ride.value }
+=======
+                    .graphicsLayer { translationY = raise * ride.value; alpha = 1f - (drop?.sink?.value ?: 0f) }
+>>>>>>> upstream/main
                     .onFocusChanged {
                         if (it.hasFocus && leftForPlay[0]) { leftForPlay[0] = false; if (openState.value && !launchingState.value) close() }
                         playFocused = it.hasFocus
@@ -570,7 +673,11 @@ internal fun LiftHero(
             val besideShown = !(open || shown)
             Row(
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+<<<<<<< HEAD
                 modifier = Modifier.graphicsLayer { alpha = 1f - sink.value }
+=======
+                modifier = Modifier.graphicsLayer { alpha = 1f - wallSink() }
+>>>>>>> upstream/main
                     .focusProperties { canFocus = besideShown },
             ) { if (besideShown || sink.value < 0.99f) beside() }
             }
@@ -585,7 +692,11 @@ internal fun LiftHero(
                 Modifier
                     .offset { IntOffset((r0.center.x - handleW / 2f).roundToInt(), (r0.bottom + raise * ride.value + (lipShow.value - 1f) * 8.dp.toPx()).roundToInt()) }
                     .onSizeChanged { handleW = it.width.toFloat() }
+<<<<<<< HEAD
                     .graphicsLayer { alpha = lipShow.value * (1f - lipGone.value) }
+=======
+                    .graphicsLayer { alpha = lipShow.value * (1f - lipGone.value) * (1f - (drop?.sink?.value ?: 0f)) }
+>>>>>>> upstream/main
                     .heightIn(min = 44.dp).testTag("sheet-open")
                     .semantics { contentDescription = settingsLabel }
                     .then(
@@ -599,14 +710,25 @@ internal fun LiftHero(
                 }
             }
         }
+<<<<<<< HEAD
+=======
+        CompositionLocalProvider(LocalSheetChipWidth provides chipWidth, LocalPlayRect provides restRect) { overlay { sink.value } }
+>>>>>>> upstream/main
     }
 }
 
 @Composable
+<<<<<<< HEAD
 private fun Handle(height: Dp) {
     val colors = MaterialTheme.colorScheme
     val pal = LocalPalette.current
     val shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
+=======
+internal fun Handle(height: Dp, above: Boolean = false) {
+    val colors = MaterialTheme.colorScheme
+    val pal = LocalPalette.current
+    val shape = if (above) RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp) else RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp)
+>>>>>>> upstream/main
     val still = Motion.scale == 0f
     val bob = androidx.compose.animation.core.rememberInfiniteTransition(label = "handle")
     val lift by bob.animateFloat(
@@ -625,18 +747,31 @@ private fun Handle(height: Dp) {
     Row(
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.height(height).clip(shape).background(colors.surface)
+<<<<<<< HEAD
             .drawBorderSidesAndFoot(pal.line, 12.dp)
+=======
+            .drawBorderSidesAndFoot(pal.line, 12.dp, flip = above)
+>>>>>>> upstream/main
             .padding(start = 14.dp, end = 10.dp),
     ) {
         Text(stringResource(R.string.drawer_page_settings), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.onSurfaceVariant, maxLines = 1)
         Icon(
+<<<<<<< HEAD
             Icons.Filled.KeyboardArrowUp, null, tint = colors.onSurfaceVariant,
             modifier = Modifier.size(16.dp).graphicsLayer { translationY = if (still) 0f else -3.dp.toPx() * lift },
+=======
+            if (above) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowUp, null, tint = colors.onSurfaceVariant,
+            modifier = Modifier.size(16.dp).graphicsLayer { translationY = if (still) 0f else (if (above) 3.dp else -3.dp).toPx() * lift },
+>>>>>>> upstream/main
         )
     }
 }
 
+<<<<<<< HEAD
 private fun Modifier.drawBorderSidesAndFoot(color: Color, corner: Dp): Modifier =
+=======
+private fun Modifier.drawBorderSidesAndFoot(color: Color, corner: Dp, flip: Boolean = false): Modifier =
+>>>>>>> upstream/main
     this.drawWithContent {
         drawContent()
         val c = corner.toPx()
@@ -649,18 +784,33 @@ private fun Modifier.drawBorderSidesAndFoot(color: Color, corner: Dp): Modifier 
             arcTo(Rect(size.width - 2 * c, size.height - 2 * c + sw / 2, size.width - sw / 2, size.height - sw / 2), 90f, -90f, false)
             lineTo(size.width - sw / 2, 0f)
         }
+<<<<<<< HEAD
         drawPath(p, color, style = Stroke(sw))
+=======
+        if (flip) scale(1f, -1f) { drawPath(p, color, style = Stroke(sw)) } else drawPath(p, color, style = Stroke(sw))
+>>>>>>> upstream/main
     }
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
+<<<<<<< HEAD
 internal fun SheetChips(labels: List<String>, selected: Int, focus: List<FocusRequester>? = null, onPick: (Int) -> Unit) {
+=======
+internal fun SheetChips(
+    labels: List<String>,
+    selected: Int,
+    focus: List<FocusRequester>? = null,
+    width: Dp = Dp.Unspecified,
+    onPick: (Int) -> Unit,
+) {
+>>>>>>> upstream/main
     val pal = LocalPalette.current
     val bounds = remember { mutableStateMapOf<Int, Rect>() }
     val tint = rememberUpdatedState(pal.signal)
     val chips = focus ?: remember(labels.size) { List(labels.size) { FocusRequester() } }
     var within by remember { mutableStateOf(false) }
     LaunchedEffect(selected) { if (within) runCatching { chips[selected].requestFocus() } }
+<<<<<<< HEAD
     BoxWithConstraints(Modifier.fillMaxWidth().onFocusChanged { within = it.hasFocus }) {
         val equal = maxWidth / labels.size.coerceAtLeast(1) >= 96.dp
         val scroll = rememberScrollState()
@@ -673,6 +823,24 @@ internal fun SheetChips(labels: List<String>, selected: Int, focus: List<FocusRe
             ) {
                 labels.forEachIndexed { i, label ->
                     val m = (if (equal) Modifier.weight(1f) else Modifier.widthIn(min = 64.dp))
+=======
+    BoxWithConstraints(
+        Modifier.fillMaxWidth().onFocusChanged { within = it.hasFocus },
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        val equal = !width.isSpecified && maxWidth / labels.size.coerceAtLeast(1) >= 96.dp
+        val least = if (width.isSpecified) maxOf(width, 64.dp) else 64.dp
+        val scroll = rememberScrollState()
+        Box(if (equal) Modifier.fillMaxWidth() else Modifier.edgeFade(scroll).horizontalScroll(scroll).padding(3.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(ChipGap),
+                modifier = (if (equal) Modifier.fillMaxWidth() else Modifier)
+                    .focusProperties { enter = { chips.getOrNull(selected) ?: FocusRequester.Default } }
+                    .focusGroup().selectableGroup(),
+            ) {
+                labels.forEachIndexed { i, label ->
+                    val m = (if (equal) Modifier.weight(1f) else Modifier.widthIn(min = least))
+>>>>>>> upstream/main
                         .onGloballyPositioned { bounds[i] = it.boundsInParent() }
                         .focusRequester(chips[i])
                     SheetChip(label, i == selected, m.onFocusChanged { if (it.isFocused && i != selected) onPick(i) }) { onPick(i) }
@@ -697,7 +865,11 @@ private fun SheetChip(label: String, on: Boolean, modifier: Modifier, onClick: (
             .background(if (under) Color.Transparent else colors.surfaceVariant.copy(alpha = 0.5f))
             .shownBar(on, pal.signal)
             .glideBorder(hot, shape, pal.signal, if (under) Color.Transparent else pal.line)
+<<<<<<< HEAD
             .hoverable(src).clickable(interactionSource = src, indication = LocalIndication.current, role = Role.Tab, onClick = onClick)
+=======
+            .hoverable(src).selectable(selected = on, interactionSource = src, indication = LocalIndication.current, role = Role.Tab, onClick = onClick)
+>>>>>>> upstream/main
             .controllerConfirm(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
     ) {

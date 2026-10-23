@@ -34,7 +34,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+<<<<<<< HEAD
 import androidx.compose.foundation.hoverable
+=======
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.input.pointer.pointerInput
+>>>>>>> upstream/main
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -141,6 +149,14 @@ internal fun Modifier.controllerBack(onBack: () -> Unit): Modifier = onPreviewKe
     }
 }
 
+<<<<<<< HEAD
+=======
+internal fun Modifier.blockTouches(): Modifier = pointerInput(Unit) { detectTapGestures { } }
+
+internal fun Modifier.tapOutside(onTap: () -> Unit): Modifier =
+    pointerInput(onTap) { detectTapGestures(onTap = { onTap() }) }
+
+>>>>>>> upstream/main
 internal fun Modifier.bumpers(onPrevious: () -> Unit, onNext: () -> Unit): Modifier = onPreviewKeyEvent { event ->
     val keyEvent = event.nativeKeyEvent
     val previous = keyEvent.keyCode == KeyEvent.KEYCODE_BUTTON_L1
@@ -157,6 +173,10 @@ internal fun Modifier.bumpers(onPrevious: () -> Unit, onNext: () -> Unit): Modif
 internal fun TabStrip(
     tabs: List<String>, selected: Int, onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier, focusRequesters: List<FocusRequester>? = null,
+<<<<<<< HEAD
+=======
+    bumpers: Boolean = true, compact: Boolean = false,
+>>>>>>> upstream/main
 ) {
     val colors = MaterialTheme.colorScheme
     val pal = LocalPalette.current
@@ -164,12 +184,21 @@ internal fun TabStrip(
     val scroll = rememberScrollState()
     var tight by remember(tabs) { mutableStateOf(false) }
     LaunchedEffect(scroll.maxValue) { if (scroll.maxValue in 1 until Int.MAX_VALUE) tight = true }
+<<<<<<< HEAD
     val tabPadding = if (tight) 10.dp else 16.dp
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier) {
         BumperKey("LB", stringResource(R.string.widgets_prev_tab)) { onSelect((selected + tabs.size - 1) % tabs.size) }
         Row(
             modifier = Modifier.weight(1f, fill = false).clip(shape).background(colors.surfaceVariant).border(1.dp, pal.line2, shape)
                 .horizontalScroll(scroll).padding(3.dp),
+=======
+    val tabPadding = if (compact) 10.dp else if (tight) 10.dp else 16.dp
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier) {
+        if (bumpers) BumperKey("LB", stringResource(R.string.widgets_prev_tab)) { onSelect((selected + tabs.size - 1) % tabs.size) }
+        Row(
+            modifier = Modifier.weight(1f, fill = false).clip(shape).background(colors.surfaceVariant).border(1.dp, pal.line2, shape)
+                .horizontalScroll(scroll).selectableGroup().padding(3.dp),
+>>>>>>> upstream/main
         ) {
             tabs.forEachIndexed { i, label ->
                 val on = i == selected
@@ -180,7 +209,11 @@ internal fun TabStrip(
                 val reveal = remember { androidx.compose.foundation.relocation.BringIntoViewRequester() }
                 if (on) LaunchedEffect(Unit) { reveal.bringIntoView() }
                 Text(
+<<<<<<< HEAD
                     label, fontSize = 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, maxLines = 1,
+=======
+                    label, fontSize = if (compact) 12.sp else 14.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold, maxLines = 1,
+>>>>>>> upstream/main
                     color = if (on) pal.onSignal else if (hot) colors.onBackground else colors.onSurfaceVariant,
                     modifier = Modifier
                         .bringIntoViewRequester(reveal)
@@ -189,6 +222,7 @@ internal fun TabStrip(
                         .clip(tabShape)
                         .background(if (on) pal.signal else if (hot) pal.signal.copy(alpha = 0.16f) else Color.Transparent)
                         .glideBorder(hot, tabShape, if (on) colors.onBackground else pal.signal)
+<<<<<<< HEAD
                         .hoverable(src).clickable(interactionSource = src, indication = null, role = Role.Tab, onClick = pick)
                         .controllerConfirm(onClick = pick)
                         .padding(horizontal = tabPadding, vertical = 12.dp),
@@ -196,6 +230,15 @@ internal fun TabStrip(
             }
         }
         BumperKey("RB", stringResource(R.string.widgets_next_tab)) { onSelect((selected + 1) % tabs.size) }
+=======
+                        .hoverable(src).selectable(selected = on, interactionSource = src, indication = null, role = Role.Tab, onClick = pick)
+                        .controllerConfirm(onClick = pick)
+                        .padding(horizontal = tabPadding, vertical = if (compact) 6.dp else 12.dp),
+                )
+            }
+        }
+        if (bumpers) BumperKey("RB", stringResource(R.string.widgets_next_tab)) { onSelect((selected + 1) % tabs.size) }
+>>>>>>> upstream/main
     }
 }
 
@@ -359,7 +402,11 @@ fun MenuItem(
             .clip(RoundedCornerShape(8.dp))
             .background(if (hot && enabled) Color.White.copy(alpha = 0.07f) else Color.Transparent)
             .alpha(if (enabled) 1f else 0.4f)
+<<<<<<< HEAD
             .hoverable(src).clickable(interactionSource = src, indication = LocalIndication.current, enabled = enabled, onClick = onClick)
+=======
+            .hoverable(src).clickable(role = androidx.compose.ui.semantics.Role.Button, interactionSource = src, indication = LocalIndication.current, enabled = enabled, onClick = onClick)
+>>>>>>> upstream/main
             .controllerConfirm(enabled = enabled, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 9.dp),
     ) {
@@ -392,7 +439,11 @@ fun ValueChip(text: String, open: Boolean, enabled: Boolean = true, modifier: Mo
             .background(colors.surfaceVariant)
             .glideBorder(hot, RoundedCornerShape(10.dp), pal.signal, if (open) pal.signal else pal.line2)
             .alpha(if (enabled) 1f else 0.5f)
+<<<<<<< HEAD
             .hoverable(src).clickable(interactionSource = src, indication = LocalIndication.current, enabled = enabled, onClick = onClick)
+=======
+            .hoverable(src).clickable(role = androidx.compose.ui.semantics.Role.Button, interactionSource = src, indication = LocalIndication.current, enabled = enabled, onClick = onClick)
+>>>>>>> upstream/main
             .controllerConfirm(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
@@ -648,8 +699,13 @@ fun MultiRow(
 }
 
 @Composable
+<<<<<<< HEAD
 fun ActionRow(label: String, hint: String?, button: String, onClick: () -> Unit, progress: Float? = null) {
     SettingsRow(label, hint) { SecondaryButton(button, progress = progress, onClick = onClick) }
+=======
+fun ActionRow(label: String, hint: String?, button: String, onClick: () -> Unit, progress: Float? = null, modifier: Modifier = Modifier) {
+    SettingsRow(label, hint) { SecondaryButton(button, modifier = modifier, progress = progress, onClick = onClick) }
+>>>>>>> upstream/main
 }
 
 @Composable
@@ -761,7 +817,12 @@ fun SettingsPage(
 }
 
 @Composable
+<<<<<<< HEAD
 fun <T> SegmentedTabs(options: List<Pair<T, String>>, selected: T?, modifier: Modifier = Modifier, onPick: (T) -> Unit) {
+=======
+fun <T> SegmentedTabs(options: List<Pair<T, String>>, selected: T?, modifier: Modifier = Modifier,
+    tabModifier: (T) -> Modifier = { Modifier }, onPick: (T) -> Unit) {
+>>>>>>> upstream/main
     val colors = MaterialTheme.colorScheme
     val pal = LocalPalette.current
     val index = options.indexOfFirst { it.first == selected }
@@ -782,7 +843,11 @@ fun <T> SegmentedTabs(options: List<Pair<T, String>>, selected: T?, modifier: Mo
                     .graphicsLayer { alpha = shown }
                     .clip(pillShape).background(pal.signal),
             )
+<<<<<<< HEAD
             Row {
+=======
+            Row(Modifier.selectableGroup()) {
+>>>>>>> upstream/main
                 options.forEachIndexed { i, (value, label) ->
                     val src = remember { MutableInteractionSource() }
                     val hot = src.collectIsFocusedAsState().value || src.collectIsHoveredAsState().value
@@ -798,12 +863,20 @@ fun <T> SegmentedTabs(options: List<Pair<T, String>>, selected: T?, modifier: Mo
                     val pick = { onPick(value) }
                     Box(
                         contentAlignment = Alignment.Center,
+<<<<<<< HEAD
                         modifier = Modifier.width(segment).fillMaxHeight()
                             .clip(pillShape)
                             .glideBorder(hot, pillShape, if (chosen) pal.onSignal else pal.signal)
                             .semantics { role = Role.Tab; this.selected = chosen }
                             .hoverable(src)
                             .clickable(interactionSource = src, indication = LocalIndication.current, onClick = pick)
+=======
+                        modifier = tabModifier(value).width(segment).fillMaxHeight()
+                            .clip(pillShape)
+                            .glideBorder(hot, pillShape, if (chosen) pal.onSignal else pal.signal)
+                            .hoverable(src)
+                            .selectable(selected = chosen, role = Role.Tab, interactionSource = src, indication = LocalIndication.current, onClick = pick)
+>>>>>>> upstream/main
                             .controllerConfirm(onClick = pick),
                     ) {
                         Text(label, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = ink, maxLines = 1, softWrap = false)

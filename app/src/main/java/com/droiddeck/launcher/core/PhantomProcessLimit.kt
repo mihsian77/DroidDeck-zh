@@ -26,10 +26,18 @@ object PhantomProcessLimit {
         usesDeviceConfig(sdk) && enabled -> listOf(
             "device_config delete activity_manager max_phantom_processes",
             "device_config set_sync_disabled_for_tests none",
+<<<<<<< HEAD
+=======
+            "settings put global $SETTING true",
+>>>>>>> upstream/main
         )
         usesDeviceConfig(sdk) -> listOf(
             "device_config set_sync_disabled_for_tests persistent",
             "device_config put activity_manager max_phantom_processes $MAX_PHANTOM",
+<<<<<<< HEAD
+=======
+            "settings put global $SETTING false",
+>>>>>>> upstream/main
         )
         else -> listOf("settings put global $SETTING ${if (enabled) "true" else "false"}")
     }
@@ -57,7 +65,16 @@ object PhantomProcessLimit {
         if (sdk < Build.VERSION_CODES.S) return PhantomProcessStatus.NOT_APPLICABLE
         if (usesDeviceConfig(sdk)) {
             val off = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(PREF_ANDROID_12_OFF, false)
+<<<<<<< HEAD
             return if (off) PhantomProcessStatus.DISABLED else PhantomProcessStatus.UNREADABLE
+=======
+            val global = try {
+                Settings.Global.getString(context.contentResolver, SETTING)
+            } catch (_: Exception) {
+                null
+            }
+            return android12Status(off, global, systemProperty(OVERRIDE_PROPERTY))
+>>>>>>> upstream/main
         }
         val global = try {
             Settings.Global.getString(context.contentResolver, SETTING)
@@ -67,6 +84,13 @@ object PhantomProcessLimit {
         return status(global, systemProperty(OVERRIDE_PROPERTY))
     }
 
+<<<<<<< HEAD
+=======
+    fun android12Status(rememberedOff: Boolean, global: String?, override: String?): PhantomProcessStatus =
+        if (rememberedOff || status(global, override) == PhantomProcessStatus.DISABLED) PhantomProcessStatus.DISABLED
+        else PhantomProcessStatus.UNREADABLE
+
+>>>>>>> upstream/main
     fun status(global: String?, override: String?): PhantomProcessStatus {
         val value = global?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
             ?: override?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }

@@ -27,24 +27,53 @@ class SettingsResetTest {
 
     @Test fun settingsGoBackToTheirDefaults() {
         SessionPrefs.setTheme(app, "ocean")
+<<<<<<< HEAD
+=======
+        SessionPrefs.setUnfoldedControlsWithController(app, true)
+>>>>>>> upstream/main
         SessionPrefs.setNoXalia(app, false)
         SessionPrefs.setFpsLimit(app, SessionService.MODE_STEAM, 30)
         SessionPrefs.setHdr(app, SessionService.MODE_DESKTOP, true)
         SessionPrefs.setResolutionChoice(app, SessionService.MODE_STEAM, "1280x800")
         SessionPrefs.setGuestHostname(app, "MyDeck")
+<<<<<<< HEAD
         ControllerPrefs.setOpacity(app, 40)
         AppUiPrefs.setScale(app, 150)
         FrameGen.set(app, FrameGen.Mode(FrameGen.ENGINE_WINFG, 3))
+=======
+        SessionPrefs.setHudShowFps(app, false)
+        SessionPrefs.setHudShowBattery(app, false)
+        SessionPrefs.setHudShowGraph(app, false)
+        SessionPrefs.setHudColor(app, "amber")
+        SessionPrefs.setHudOpacity(app, 40)
+        ControllerPrefs.setOpacity(app, 40)
+        AppUiPrefs.setScale(app, 150)
+        FrameGen.set(app, FrameGen.Mode(FrameGen.ENGINE_DDFG, 3))
+>>>>>>> upstream/main
         prefs("steam_touch").edit().putBoolean("gyro", false).commit()
 
         assertTrue(SettingsReset.resetAll(app, gameProfiles = false))
 
         assertEquals("graphite", SessionPrefs.theme(app))
+<<<<<<< HEAD
+=======
+        assertFalse(SessionPrefs.unfoldedControlsWithController(app))
+>>>>>>> upstream/main
         assertTrue(SessionPrefs.noXalia(app))
         assertEquals(0, SessionPrefs.fpsLimit(app, SessionService.MODE_STEAM))
         assertFalse(SessionPrefs.hdr(app, SessionService.MODE_DESKTOP))
         assertFalse(SessionPrefs.resolutionChosen(app, SessionService.MODE_STEAM))
         assertEquals(SessionPrefs.DEFAULT_GUEST_HOSTNAME, SessionPrefs.guestHostname(app))
+<<<<<<< HEAD
+=======
+        assertTrue(SessionPrefs.hudShowFps(app))
+        assertTrue(SessionPrefs.hudShowBattery(app))
+        assertTrue(SessionPrefs.hudShowGraph(app))
+        assertEquals(SessionPrefs.HUD_COLOR_MINT, SessionPrefs.hudColor(app))
+        assertEquals(SessionPrefs.HUD_OPACITY_DEFAULT, SessionPrefs.hudOpacity(app))
+        assertEquals("32.4°C", PerfHud.batteryCelsius(324))
+        assertNull(PerfHud.batteryCelsius(0))
+>>>>>>> upstream/main
         assertEquals(100, ControllerPrefs.read(app).opacity)
         assertEquals(AppUiPrefs.DEFAULT_SCALE, AppUiPrefs.scale(app))
         assertEquals(FrameGen.Mode.OFF.engine, FrameGen.engine(app))

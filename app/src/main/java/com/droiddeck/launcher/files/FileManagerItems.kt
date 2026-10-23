@@ -193,7 +193,11 @@ internal fun FileItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
+<<<<<<< HEAD
             .combinedClickable(
+=======
+            .combinedClickable(role = androidx.compose.ui.semantics.Role.Button, 
+>>>>>>> upstream/main
                 onClick = { if (selectionMode) onToggleSelect() else onTap() },
                 onLongClick = onLongPress,
             ),
@@ -302,7 +306,11 @@ internal fun ParentFolderRow(compact: Boolean = false, onTap: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
+<<<<<<< HEAD
             .clickable(onClick = onTap),
+=======
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onTap),
+>>>>>>> upstream/main
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -422,7 +430,11 @@ private fun FavoriteCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 3.dp)
+<<<<<<< HEAD
             .clickable(onClick = onJump),
+=======
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onJump),
+>>>>>>> upstream/main
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
@@ -526,7 +538,11 @@ internal fun FileGridTile(
         Card(
             modifier = Modifier
                 .padding(4.dp)
+<<<<<<< HEAD
                 .combinedClickable(
+=======
+                .combinedClickable(role = androidx.compose.ui.semantics.Role.Button, 
+>>>>>>> upstream/main
                     onClick = { if (selectionMode) onToggleSelect() else onTap() },
                     onLongClick = onLongPress,
                 ),

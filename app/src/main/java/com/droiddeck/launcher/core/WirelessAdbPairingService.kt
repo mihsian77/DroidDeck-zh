@@ -14,7 +14,11 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+<<<<<<< HEAD
 import com.droiddeck.launcher.MainActivity
+=======
+import com.droiddeck.launcher.FrontEndActivity
+>>>>>>> upstream/main
 import com.droiddeck.launcher.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -185,7 +189,11 @@ class WirelessAdbPairingService : Service() {
             enableVibration(false)
         })
         val open = PendingIntent.getActivity(this, 0,
+<<<<<<< HEAD
             Intent(this, MainActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+=======
+            Intent(this, FrontEndActivity::class.java).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT),
+>>>>>>> upstream/main
             PendingIntent.FLAG_IMMUTABLE)
         val cancel = PendingIntent.getService(this, 1,
             Intent(this, WirelessAdbPairingService::class.java).setAction(ACTION_CANCEL), PendingIntent.FLAG_IMMUTABLE)

@@ -32,6 +32,10 @@ object GameEnvironmentOptions {
         Option("MESA_EXTENSION_MAX_YEAR", "", 0, Type.TEXT),
         Option("MESA_GL_VERSION_OVERRIDE", "", 0, Type.TEXT),
         Option("PULSE_LATENCY_MSEC", "", 0, Type.NUMBER),
+<<<<<<< HEAD
+=======
+        Option("DROIDDECK_ANTICHEAT_OFFLINE", "1", R.string.game_env_anticheat_offline, Type.TOGGLE, listOf("0", "1")),
+>>>>>>> upstream/main
         Option("WINE_LARGE_ADDRESS_AWARE", "0", 0, Type.TOGGLE, listOf("0", "1")),
         Option("WINEDLLOVERRIDES", "", 0, Type.TEXT),
         Option("GALLIUM_HUD", "simple", 0, Type.MULTIPLE, listOf("simple", "fps", "frametime")),

@@ -5,6 +5,11 @@ import com.droiddeck.launcher.agent.AgentGuest
 import org.json.JSONObject
 
 object SteamVr {
+<<<<<<< HEAD
+=======
+    const val APP_ID = "250820"
+
+>>>>>>> upstream/main
     enum class Status {
         UNAVAILABLE,
         NOT_INSTALLED,
@@ -13,6 +18,26 @@ object SteamVr {
         RUNNING,
     }
 
+<<<<<<< HEAD
+=======
+    internal fun shouldPoll(status: Status?, cardboardEnabled: Boolean, pictureSwitched: Boolean,
+                            glassesControl: Boolean, requested: Boolean): Boolean =
+        requested || cardboardEnabled || pictureSwitched || glassesControl ||
+            status == Status.RUNNING || status == Status.INSTALLING
+
+    internal fun autoAction(
+        status: Status, requested: Boolean, loading: Boolean, steamSession: Boolean,
+        startTried: Boolean, installTried: Boolean,
+    ): String? {
+        if (!requested || loading || !steamSession || startTried) return null
+        return when (status) {
+            Status.READY -> "start"
+            Status.NOT_INSTALLED -> if (installTried) null else "install"
+            else -> null
+        }
+    }
+
+>>>>>>> upstream/main
     fun status(context: Context): Status = runCatching {
         parse(AgentGuest.call(context, JSONObject().put("kind", "vr").put("action", "status"), STATUS_TIMEOUT_MS))
     }.getOrDefault(Status.UNAVAILABLE)

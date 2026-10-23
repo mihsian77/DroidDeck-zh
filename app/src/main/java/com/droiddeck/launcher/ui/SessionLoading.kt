@@ -27,6 +27,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Icon
+<<<<<<< HEAD
+=======
+import androidx.compose.foundation.Canvas
+>>>>>>> upstream/main
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -68,6 +72,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
+<<<<<<< HEAD
+=======
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+>>>>>>> upstream/main
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -78,6 +87,7 @@ import androidx.compose.ui.text.style.TextOverflow
 
 
 @Composable
+<<<<<<< HEAD
 fun HudText(text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
         Text(
@@ -93,6 +103,95 @@ fun HudText(text: String) {
     }
 }
 
+=======
+fun HudText(text: String, graph: FloatArray = FloatArray(0), color: String = "mint", opacity: Int = 70) {
+    if (text.isEmpty() && graph.size < 2) return
+    val accent = hudInk(color)
+    val wash = (opacity.coerceIn(30, 100) / 100f)
+    val ink = accent.copy(alpha = (0.5f + wash * 0.5f).coerceIn(0.62f, 1f))
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+        Column(
+            horizontalAlignment = Alignment.End,
+            modifier = Modifier
+                .padding(12.dp)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(accent.copy(alpha = wash * 0.28f), Color.Black.copy(alpha = wash * 0.72f)),
+                    ),
+                    RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 8.dp, vertical = 5.dp),
+        ) {
+            if (text.isNotEmpty()) Text(
+                text,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                color = ink,
+                textAlign = TextAlign.End,
+            )
+            if (graph.size >= 2) {
+                if (text.isNotEmpty()) Spacer(Modifier.height(4.dp))
+                HudGraph(graph, accent, wash)
+            }
+        }
+    }
+}
+
+@Composable
+private fun HudGraph(samples: FloatArray, accent: Color, wash: Float) {
+    Canvas(Modifier.width(148.dp).height(44.dp)) {
+        val maxMs = (samples.maxOrNull() ?: 16.7f).coerceAtLeast(16.7f)
+        val step = size.width / (samples.size - 1)
+        fun yOf(ms: Float) = size.height * (1f - (ms / maxMs).coerceIn(0f, 1f))
+        val fillAlpha = wash * 0.5f
+        val fill = Path().apply {
+            moveTo(0f, size.height)
+            samples.forEachIndexed { i, ms -> lineTo(i * step, yOf(ms)) }
+            lineTo(size.width, size.height)
+            close()
+        }
+        drawPath(
+            fill,
+            Brush.verticalGradient(listOf(HUD_SLOW.copy(alpha = fillAlpha), accent.copy(alpha = fillAlpha * 0.45f))),
+        )
+        val guide = yOf(16.7f)
+        drawLine(Color.White.copy(alpha = 0.32f), Offset(0f, guide), Offset(size.width, guide), strokeWidth = 1f)
+        for (i in 0 until samples.lastIndex) {
+            val tone = ((samples[i] - 8f) / 25f).coerceIn(0f, 1f)
+            drawLine(
+                mix(accent, HUD_SLOW, tone).copy(alpha = 0.55f + wash * 0.4f),
+                Offset(i * step, yOf(samples[i])),
+                Offset((i + 1) * step, yOf(samples[i + 1])),
+                strokeWidth = 2.5f,
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+}
+
+private fun hudInk(color: String): Color = Color(
+    when (color) {
+        "white" -> 0xFFF2F5F8
+        "sky" -> 0xFF66C0F4
+        "amber" -> 0xFFFFB74D
+        "violet" -> 0xFFD0A2FF
+        else -> 0xFF3DDC84
+    }.toInt(),
+)
+
+private fun mix(from: Color, to: Color, t: Float): Color {
+    val u = t.coerceIn(0f, 1f)
+    return Color(
+        red = from.red + (to.red - from.red) * u,
+        green = from.green + (to.green - from.green) * u,
+        blue = from.blue + (to.blue - from.blue) * u,
+        alpha = 1f,
+    )
+}
+
+private val HUD_SLOW = Color(0xFFFF5C6C.toInt())
+
+>>>>>>> upstream/main
 private class LoadStage(@androidx.annotation.StringRes val label: Int, @androidx.annotation.StringRes val detail: Int)
 
 private fun loadStages(steam: Boolean): List<LoadStage> = if (steam) listOf(
@@ -122,6 +221,10 @@ fun LoadingOverlay(
     title: String = stringResource(R.string.load_starting_steam), steam: Boolean = true, onCancel: (() -> Unit)? = null,
     endedDetail: String? = null,
     onRetry: (() -> Unit)? = null,
+<<<<<<< HEAD
+=======
+    onRepair: (() -> Unit)? = null,
+>>>>>>> upstream/main
     onShareLogs: (() -> Unit)? = null,
     onClose: (() -> Unit)? = null,
     flood: Color? = null,
@@ -145,7 +248,11 @@ fun LoadingOverlay(
         modifier = Modifier
             .fillMaxSize()
             .background(colors.background)
+<<<<<<< HEAD
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+=======
+            .blockTouches(),
+>>>>>>> upstream/main
     ) {
         CapsuleWall(games, driftMs = 65_000, modifier = Modifier.alpha(0.3f))
         Box(
@@ -187,7 +294,11 @@ fun LoadingOverlay(
                 textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 12.dp).widthIn(max = 520.dp),
             )
+<<<<<<< HEAD
             if (ended) EndedActions(onRetry, onShareLogs, onClose)
+=======
+            if (ended) EndedActions(onRetry, onRepair, onShareLogs, onClose)
+>>>>>>> upstream/main
         }
         if (!ended && hint.isNotEmpty()) Text(
             hint, fontSize = 13.sp, lineHeight = 18.sp, color = colors.onSurfaceVariant.copy(alpha = 0.8f), textAlign = TextAlign.Center,
@@ -200,7 +311,11 @@ fun LoadingOverlay(
 }
 
 @Composable
+<<<<<<< HEAD
 private fun EndedActions(onRetry: (() -> Unit)?, onShareLogs: (() -> Unit)?, onClose: (() -> Unit)?) {
+=======
+private fun EndedActions(onRetry: (() -> Unit)?, onRepair: (() -> Unit)?, onShareLogs: (() -> Unit)?, onClose: (() -> Unit)?) {
+>>>>>>> upstream/main
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         androidx.compose.runtime.withFrameNanos { }
@@ -209,7 +324,15 @@ private fun EndedActions(onRetry: (() -> Unit)?, onShareLogs: (() -> Unit)?, onC
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 22.dp)) {
         var firstUsed = false
         fun claim(): Modifier = if (firstUsed) Modifier else { firstUsed = true; Modifier.focusRequester(first) }
+<<<<<<< HEAD
         if (onRetry != null) PrimaryButton(stringResource(R.string.store_try_again), modifier = claim(), onClick = onRetry)
+=======
+        if (onRepair != null) PrimaryButton(stringResource(R.string.runtime_repair), modifier = claim(), onClick = onRepair)
+        if (onRetry != null) {
+            if (onRepair != null) SecondaryButton(stringResource(R.string.store_try_again), modifier = claim(), onClick = onRetry)
+            else PrimaryButton(stringResource(R.string.store_try_again), modifier = claim(), onClick = onRetry)
+        }
+>>>>>>> upstream/main
         if (onShareLogs != null) SecondaryButton(stringResource(R.string.drawer_share_logs), modifier = claim(),
             progress = com.droiddeck.launcher.session.SessionLogShare.progress, onClick = onShareLogs)
         if (onClose != null) SecondaryButton(stringResource(R.string.mode_back), modifier = claim(), onClick = onClose)
@@ -270,7 +393,10 @@ private fun CancelHint(onCancel: () -> Unit, modifier: Modifier = Modifier) {
 fun SessionPausedOverlay(title: String = stringResource(R.string.load_steam_paused), onResume: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val pal = LocalPalette.current
+<<<<<<< HEAD
     val interactionSource = remember { MutableInteractionSource() }
+=======
+>>>>>>> upstream/main
     val resumeFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) {
         androidx.compose.runtime.withFrameNanos { }
@@ -280,7 +406,11 @@ fun SessionPausedOverlay(title: String = stringResource(R.string.load_steam_paus
         modifier = Modifier
             .fillMaxSize()
             .background(pal.background.copy(alpha = 0.94f))
+<<<<<<< HEAD
             .clickable(interactionSource = interactionSource, indication = null) {},
+=======
+            .blockTouches(),
+>>>>>>> upstream/main
         contentAlignment = Alignment.Center,
     ) {
         Column(

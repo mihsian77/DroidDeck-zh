@@ -124,6 +124,10 @@ internal class AmazonInstaller(
             installVersion = versionId, installedAt = System.currentTimeMillis(),
             cover = cover, hero = item.imageUrl,
             extra = mapOf("entitlementId" to entitlementId, "sku" to sku),
+<<<<<<< HEAD
+=======
+            logo = item.logoUrl,
+>>>>>>> upstream/main
         )
         StoreInstalls.complete(app, folder, sidecar, onStep = { done, steps -> handle.stageProgress(done.toLong(), steps.toLong()) })
         return folder.path

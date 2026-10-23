@@ -36,19 +36,48 @@ object AddedGameEdits {
 
     fun setArt(context: Context, folder: String, slot: AddedGameArt.Slot, option: AddedGameArt.Option): Boolean {
         val game = game(context, folder) ?: return false
+<<<<<<< HEAD
         if (!AddedGameArt.choose(context, game, slot, option)) return false
         applyArt(context, game, slot)
         return true
+=======
+        return synchronized(SteamGrid.lock) {
+            if (!AddedGameArt.choose(context, game, slot, option)) return@synchronized false
+            applyArt(context, game, slot)
+            true
+        }
+>>>>>>> upstream/main
     }
 
     fun resetArt(context: Context, folder: String, slot: AddedGameArt.Slot) {
         val game = game(context, folder) ?: return
+<<<<<<< HEAD
         AddedGameArt.reset(context, game, slot)
         applyArt(context, game, slot)
+=======
+        synchronized(SteamGrid.lock) {
+            AddedGameArt.reset(context, game, slot)
+            applyArt(context, game, slot)
+        }
+    }
+
+    fun logoPosition(context: Context, folder: String): LogoPosition.Value? =
+        game(context, folder)?.let { SteamGrid.position(SteamGrid.target(it, context)) }
+
+    fun setLogoPosition(context: Context, folder: String, value: LogoPosition.Value?): Boolean {
+        val game = game(context, folder) ?: return false
+        if (!SteamGrid.writePosition(context, SteamGrid.target(game, context), value)) return false
+        publish(context) { SteamLiveShortcuts.setLogoPosition(context, game.appId, value) }
+        return true
+>>>>>>> upstream/main
     }
 
     private fun applyArt(context: Context, game: AddedGames.Game, slot: AddedGameArt.Slot) {
         val file = AddedGameArt.describe(context, game).first { it.slot == slot }.file
+<<<<<<< HEAD
+=======
+        if (slot != AddedGameArt.Slot.ICON) SteamGrid.write(context, SteamGrid.target(game, context), slot, AddedGameArt.chosen(AddedGameArt.cacheDir(context, game), slot))
+>>>>>>> upstream/main
         publish(context) {
             if (slot == AddedGameArt.Slot.ICON) SteamLiveShortcuts.setArt(context, game.appId, null, null, iconPath = file?.absolutePath.orEmpty())
             else SteamLiveShortcuts.setArt(context, game.appId, slot.assetType, file)

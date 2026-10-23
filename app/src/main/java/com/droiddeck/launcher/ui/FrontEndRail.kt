@@ -22,6 +22,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
+<<<<<<< HEAD
+=======
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+>>>>>>> upstream/main
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -119,7 +124,11 @@ internal fun SideRail(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
+<<<<<<< HEAD
             modifier = Modifier.fillMaxWidth(),
+=======
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
+>>>>>>> upstream/main
         ) {
             val place: (String) -> Modifier = { key ->
                 Modifier.onGloballyPositioned {
@@ -192,7 +201,11 @@ private fun RailItem(
             .background(fill)
             .glideBorder(focused, Shape14, pal.signal)
             .hoverable(src)
+<<<<<<< HEAD
             .clickable(interactionSource = src, indication = LocalIndication.current, role = Role.Tab, onClick = onClick)
+=======
+            .selectable(selected = current, interactionSource = src, indication = LocalIndication.current, role = Role.Tab, onClick = onClick)
+>>>>>>> upstream/main
             .then(if (iconOnly) Modifier.semantics { contentDescription = label } else Modifier),
     ) {
         if (iconOnly) Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))

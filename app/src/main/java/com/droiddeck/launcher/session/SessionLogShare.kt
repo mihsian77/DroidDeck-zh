@@ -66,6 +66,7 @@ object SessionLogShare {
         return zip
     }
 
+<<<<<<< HEAD
     private fun addEntry(z: ZipOutputStream, name: String, f: File) {
         z.putNextEntry(ZipEntry(name))
         if (LogRedactor.isText(f)) {
@@ -75,12 +76,24 @@ object SessionLogShare {
         } else {
             f.inputStream().use { it.copyTo(z) }
         }
+=======
+    /** Every entry is scrubbed line by line, whatever its size: a raw copy can carry tokens out of the device. */
+    private fun addEntry(z: ZipOutputStream, name: String, f: File) {
+        z.putNextEntry(ZipEntry(name))
+        val w = z.bufferedWriter()
+        LogRedactor.scrubForShare(f, w)
+        w.flush()
+>>>>>>> upstream/main
         z.closeEntry()
     }
 
     private fun liveSteamLogs(context: Context, folder: File): List<File> {
         if (folder != SessionPaths.current() || File(folder, "steam").exists()) return emptyList()
+<<<<<<< HEAD
         val logs = File(LinuxRuntime.rootDir(context), "root/.local/share/Steam/logs")
+=======
+        val logs = File(SessionPrefs.activeSteamRoot(context), "logs")
+>>>>>>> upstream/main
         return logs.listFiles()?.filter { it.isFile && it.length() <= STEAM_LOG_MAX_BYTES }.orEmpty()
     }
 

@@ -10,20 +10,33 @@ import android.graphics.BitmapFactory
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.widget.Toast
+<<<<<<< HEAD
 import com.droiddeck.launcher.MainActivity
+=======
+import com.droiddeck.launcher.LauncherIcon
+import com.droiddeck.launcher.FrontEndActivity
+>>>>>>> upstream/main
 import com.droiddeck.launcher.R
 import java.io.File
 
 object GameShortcuts {
     fun launchIntent(context: Context, gameId: String) = Intent(Intent.ACTION_VIEW,
+<<<<<<< HEAD
         Uri.parse(GameLaunchLink.uri(gameId)), context, MainActivity::class.java)
+=======
+        Uri.parse(GameLaunchLink.uri(gameId)), context, FrontEndActivity::class.java)
+>>>>>>> upstream/main
         .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
     private fun info(context: Context, game: Library.SteamGame): ShortcutInfo {
         val name = game.name.ifBlank { context.getString(R.string.app_name) }
         val icon = iconBitmap(game)?.let(Icon::createWithBitmap) ?: Icon.createWithResource(context, R.mipmap.ic_launcher)
         return ShortcutInfo.Builder(context, "game:${game.gameIdString}")
+<<<<<<< HEAD
             .setActivity(android.content.ComponentName(context, MainActivity::class.java))
+=======
+            .setActivity(LauncherIcon.activity(context))
+>>>>>>> upstream/main
             .setShortLabel(name.take(40)).setLongLabel(name).setIcon(icon)
             .setIntent(launchIntent(context, game.gameIdString)).build()
     }

@@ -37,6 +37,7 @@ internal class ProtonMenu(private val activity: android.app.Activity, private va
         }, "install-proton-$id").start()
     }
 
+<<<<<<< HEAD
     /** Installs a Proton build from a local archive the user picked, bypassing the network. */
     fun importProton(id: String, file: java.io.File) {
         val tool = ProtonExtras.tools.firstOrNull { it.id == id } ?: return
@@ -59,6 +60,8 @@ internal class ProtonMenu(private val activity: android.app.Activity, private va
     }
 
     /** Removes the build in [dir], or with [older] every build of it but the newest. */
+=======
+>>>>>>> upstream/main
     fun removeProton(id: String, dir: String? = null, older: Boolean = false) {
         val tool = ProtonExtras.tools.firstOrNull { it.id == id } ?: return
         if (protonBusyId != null || SessionState.running) return

@@ -179,7 +179,11 @@ class GameIdentifierTest {
 
     @Test
     fun isJunkPeName_flagsLaunchersNotGames() {
+<<<<<<< HEAD
         for (junk in listOf("Rockstar Games Launcher Redirector", "GSE", "Steam", "Launcher", "Epic Games Launcher")) {
+=======
+        for (junk in listOf("Rockstar Games Launcher Redirector", "GSE", "Steam", "Launcher", "Epic Games Launcher", "BootstrapPackagedGame")) {
+>>>>>>> upstream/main
             assertTrue("expected junk: $junk", GameIdentifier.isJunkPeName(junk))
         }
         for (real in listOf("God of War", "Grand Theft Auto V", "DARK SOULS: REMASTERED", "Hades")) {

@@ -3,6 +3,10 @@ package com.droiddeck.launcher.stores.gog;
 import android.content.Context;
 import android.util.Log;
 
+<<<<<<< HEAD
+=======
+import com.droiddeck.launcher.stores.StoreLanguage;
+>>>>>>> upstream/main
 import com.droiddeck.launcher.stores.StoreLog;
 import com.droiddeck.launcher.stores.download.StoreDownloadTier;
 
@@ -57,6 +61,11 @@ public final class GogDownloadManager {
         public final long bytes;
         public List<String> dependencies = new ArrayList<>();
         public boolean dependenciesRead = false;
+<<<<<<< HEAD
+=======
+        /** Language actually written, after the manifest's depot list resolved the request. Null for builds that have no language depots. */
+        public String language;
+>>>>>>> upstream/main
         Result(String exeRelative, String buildId, long bytes) { this.exeRelative = exeRelative; this.buildId = buildId; this.bytes = bytes; }
     }
 
@@ -67,17 +76,33 @@ public final class GogDownloadManager {
     private GogDownloadManager() {}
 
     public static Result install(Context ctx, GogGame game, File installPath, Callback cb, AtomicBoolean cancelled) throws InstallException {
+<<<<<<< HEAD
+=======
+        return install(ctx, game, installPath, cb, cancelled, null);
+    }
+
+    public static Result install(Context ctx, GogGame game, File installPath, Callback cb, AtomicBoolean cancelled, String language) throws InstallException {
+>>>>>>> upstream/main
         cb.onProgress("Checking sign-in…", 0);
         String token = GogAuth.validToken(ctx);
         if (token == null) throw new InstallException("Not signed in to GOG");
         if (cancelled.get()) return null;
+<<<<<<< HEAD
+=======
+        String lang = (language == null || language.isEmpty()) ? StoreLanguage.preferredCode(ctx) : language;
+        cb.onLog("gog: installing language " + lang);
+>>>>>>> upstream/main
         cb.onProgress("Fetching builds…", 2);
 
         String buildsUrl = "https://content-system.gog.com/products/" + game.gameId + "/os/windows/builds?generation=2";
         String buildsJson = httpGet(buildsUrl, null);
         if (buildsJson == null) buildsJson = httpGet(buildsUrl, token);
         if (buildsJson != null) {
+<<<<<<< HEAD
             Gen2Outcome out = runGen2(ctx, game, token, buildsJson, installPath, cb, cancelled);
+=======
+            Gen2Outcome out = runGen2(ctx, game, token, buildsJson, installPath, cb, cancelled, lang);
+>>>>>>> upstream/main
             if (out.result != null || cancelled.get()) return out.result;
             if (out.hardStop) throw new InstallException(out.error);
             cb.onLog("gen2 unavailable: " + out.error);
@@ -100,7 +125,11 @@ public final class GogDownloadManager {
         Result result; String error; boolean hardStop;
     }
 
+<<<<<<< HEAD
     private static Gen2Outcome runGen2(Context ctx, GogGame game, String token, String buildsJson, File installPath, Callback cb, AtomicBoolean cancelled) {
+=======
+    private static Gen2Outcome runGen2(Context ctx, GogGame game, String token, String buildsJson, File installPath, Callback cb, AtomicBoolean cancelled, String language) {
+>>>>>>> upstream/main
         Gen2Outcome out = new Gen2Outcome();
         try {
             cb.onProgress("Fetching manifest…", 5);
@@ -127,12 +156,30 @@ public final class GogDownloadManager {
             cb.onProgress("Reading depot manifests…", 10);
             List<DepotFile> files = new ArrayList<>();
             List<String> depotJsons = new ArrayList<>();
+<<<<<<< HEAD
             for (int i = 0; i < depots.length(); i++) {
                 if (cancelled.get()) return out;
                 JSONObject depot = depots.getJSONObject(i);
                 String depotPid = depot.optString("productId", "");
                 if (!depotPid.isEmpty() && !depotPid.equals(baseProductId)) continue;
                 if (!languageCompatible(depot)) continue;
+=======
+            JSONArray owned = new JSONArray();
+            List<JSONObject> ownedDepots = new ArrayList<>();
+            for (int i = 0; i < depots.length(); i++) {
+                JSONObject depot = depots.getJSONObject(i);
+                String depotPid = depot.optString("productId", "");
+                if (!depotPid.isEmpty() && !depotPid.equals(baseProductId)) continue;
+                owned.put(depot);
+                ownedDepots.add(depot);
+            }
+            String resolved = StoreLanguage.pick(StoreLanguage.codesFromDepots(owned), language);
+            cb.onLog("gog: language " + resolved);
+            for (int i = 0; i < ownedDepots.size(); i++) {
+                if (cancelled.get()) return out;
+                JSONObject depot = ownedDepots.get(i);
+                if (!depotSelected(depot, resolved)) continue;
+>>>>>>> upstream/main
                 String manifestHash = depot.optString("manifest");
                 if (manifestHash == null || manifestHash.isEmpty()) continue;
                 byte[] dmRaw = fetchBytes("https://gog-cdn-fastly.gog.com/content-system/v2/meta/" + buildCdnPath(manifestHash), null);
@@ -232,6 +279,10 @@ public final class GogDownloadManager {
             out.result = new Result(pickExe(installPath, tempExe, game.title), gm.buildId, planned);
             out.result.dependencies = dependencies;
             out.result.dependenciesRead = true;
+<<<<<<< HEAD
+=======
+            out.result.language = resolved;
+>>>>>>> upstream/main
             return out;
         } catch (Exception e) {
             out.error = "exception: " + e.getClass().getSimpleName() + (e.getMessage() != null ? ": " + e.getMessage() : "");
@@ -270,11 +321,39 @@ public final class GogDownloadManager {
         }
     }
 
+<<<<<<< HEAD
     private static boolean languageCompatible(JSONObject depot) {
         JSONArray languages = depot.optJSONArray("languages");
         if (languages == null || languages.length() == 0) return true;
         String s = languages.toString();
         return s.contains("*") || s.contains("en-US") || s.contains("\"en\"") || s.contains("english");
+=======
+    private static boolean depotSelected(JSONObject depot, String resolved) {
+        JSONArray languages = depot.optJSONArray("languages");
+        if (languages == null || languages.length() == 0) return true;
+        String[] listed = new String[languages.length()];
+        for (int i = 0; i < languages.length(); i++) listed[i] = languages.optString(i, "");
+        return StoreLanguage.depotMatchesResolved(listed, resolved);
+    }
+
+    /** Language codes listed on this product's Windows gen2 depots, excluding `*`. */
+    public static List<String> listLanguages(Context ctx, String gameId) {
+        try {
+            String token = GogAuth.validToken(ctx);
+            String buildsUrl = "https://content-system.gog.com/products/" + gameId + "/os/windows/builds?generation=2";
+            String buildsJson = httpGet(buildsUrl, null);
+            if (buildsJson == null) buildsJson = httpGet(buildsUrl, token);
+            if (buildsJson == null) return Collections.emptyList();
+            Callback silent = new Callback() {
+                @Override public void onProgress(String message, int pct) {}
+            };
+            Gen2Manifest gm = resolveGen2Manifest(buildsJson, token, silent);
+            if (gm == null) return Collections.emptyList();
+            return StoreLanguage.codesFromDepots(gm.manifest.optJSONArray("depots"));
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+>>>>>>> upstream/main
     }
 
 
@@ -1037,9 +1116,16 @@ public final class GogDownloadManager {
             JSONArray depots = new JSONObject(manifestStr).optJSONArray("depots");
             if (depots == null) return -1;
             long total = 0;
+<<<<<<< HEAD
             for (int i = 0; i < depots.length(); i++) {
                 JSONObject depot = depots.getJSONObject(i);
                 if (languageCompatible(depot)) total += depot.optLong("size", 0);
+=======
+            String resolved = StoreLanguage.pick(StoreLanguage.codesFromDepots(depots), StoreLanguage.preferredCode());
+            for (int i = 0; i < depots.length(); i++) {
+                JSONObject depot = depots.getJSONObject(i);
+                if (depotSelected(depot, resolved)) total += depot.optLong("size", 0);
+>>>>>>> upstream/main
             }
             return total > 0 ? total : -1;
         } catch (Exception e) {

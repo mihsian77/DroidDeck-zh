@@ -25,6 +25,10 @@ data class EpicGame(
     val releaseDate: String = "",
     val publisher: String = "",
     val isDlc: Boolean = false,
+<<<<<<< HEAD
+=======
+    val artLogo: String = "",
+>>>>>>> upstream/main
 )
 
 object EpicLibrary {
@@ -50,7 +54,12 @@ object EpicLibrary {
                 .put("title", g.title).put("artCover", g.artCover).put("artSquare", g.artSquare)
                 .put("developer", g.developer).put("description", g.description).put("version", g.version)
                 .put("installSize", g.installSize).put("canRunOffline", g.canRunOffline)
+<<<<<<< HEAD
                 .put("releaseDate", g.releaseDate).put("publisher", g.publisher),
+=======
+                .put("releaseDate", g.releaseDate).put("publisher", g.publisher)
+                .apply { if (g.artLogo.isNotEmpty()) put("artLogo", g.artLogo) },
+>>>>>>> upstream/main
         )
     }.toString()
 
@@ -73,6 +82,10 @@ object EpicLibrary {
                 canRunOffline = o.optBoolean("canRunOffline", true),
                 releaseDate = o.optString("releaseDate", ""),
                 publisher = o.optString("publisher", ""),
+<<<<<<< HEAD
+=======
+                artLogo = o.optString("artLogo", ""),
+>>>>>>> upstream/main
             )
         }
         return tidy(games)
@@ -106,6 +119,10 @@ object EpicLibrary {
             sizeBytes = prefs.getLong("size_${game.appName}", 0L).takeIf { it > 0 } ?: game.installSize,
             storeUrl = "https://store.epicgames.com/en-US/browse?q=" + URLEncoder.encode(title, "UTF-8"),
             extra = mapOf("namespace" to game.namespace, "catalogItemId" to game.catalogItemId, "version" to game.version),
+<<<<<<< HEAD
+=======
+            logoUrl = game.artLogo.ifEmpty { null },
+>>>>>>> upstream/main
         )
     }
 
@@ -128,6 +145,10 @@ object EpicLibrary {
             releaseDate = pick("releaseDate", before?.releaseDate.orEmpty()),
             publisher = pick("publisher", before?.publisher.orEmpty()),
             isDlc = d.optBoolean("dlc", false),
+<<<<<<< HEAD
+=======
+            artLogo = pick("logo", before?.artLogo.orEmpty()),
+>>>>>>> upstream/main
         )
     }
 

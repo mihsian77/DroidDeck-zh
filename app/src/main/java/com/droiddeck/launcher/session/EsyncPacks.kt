@@ -2,6 +2,10 @@ package com.droiddeck.launcher.session
 
 import android.content.Context
 import android.util.Log
+<<<<<<< HEAD
+=======
+import com.droiddeck.launcher.core.DownloadSource
+>>>>>>> upstream/main
 import com.droiddeck.launcher.core.FileUtils
 import com.droiddeck.launcher.core.Hashes
 import com.github.luben.zstd.ZstdInputStream
@@ -620,6 +624,7 @@ object EsyncPacks {
             val label = context.getString(com.droiddeck.launcher.R.string.esync_fetching)
             onProgress?.invoke(label, -1)
             var reported = -1
+<<<<<<< HEAD
             val fetched = FileOutputStream(part).use { output ->
                 fetch(entry.asset.url, entry.asset.size, output) { done ->
                     val percent = (done * 100 / entry.asset.size).toInt().coerceIn(0, 100)
@@ -630,6 +635,29 @@ object EsyncPacks {
                 }
             }
             if (!fetched) {
+=======
+            val sources = DownloadSource.candidates(entry.asset.url)
+            var fetched = false
+            for ((index, source) in sources.withIndex()) {
+                if (index > 0) Log.i(TAG, "retrying ${entry.asset.url} via $source")
+                reported = -1
+                fetched = FileOutputStream(part).use { output ->
+                    fetch(source, entry.asset.size, output) { done ->
+                        val percent = (done * 100 / entry.asset.size).toInt().coerceIn(0, 100)
+                        if (percent != reported) {
+                            reported = percent
+                            onProgress?.invoke(label, percent)
+                        }
+                    }
+                }
+                if (fetched) {
+                    DownloadSource.succeeded(source)
+                    break
+                }
+            }
+            if (!fetched) {
+                DownloadSource.failed()
+>>>>>>> upstream/main
                 SessionEvents.record("sync.pack", mapOf("id" to entry.id, "source" to "download", "result" to "failed", "reason" to "download"))
                 return false
             }
@@ -836,8 +864,22 @@ object EsyncPacks {
     }
 
     private fun fetchBytes(url: String, limit: Long): ByteArray? {
+<<<<<<< HEAD
         val out = ByteArrayOutputStream()
         return if (fetch(url, limit, out, null)) out.toByteArray() else null
+=======
+        val sources = DownloadSource.candidates(url)
+        for ((index, source) in sources.withIndex()) {
+            if (index > 0) Log.i(TAG, "retrying $url via $source")
+            val out = ByteArrayOutputStream()
+            if (fetch(source, limit, out, null)) {
+                DownloadSource.succeeded(source)
+                return out.toByteArray()
+            }
+        }
+        DownloadSource.failed()
+        return null
+>>>>>>> upstream/main
     }
 
     private fun fetch(url: String, limit: Long, out: OutputStream, progress: ((Long) -> Unit)?): Boolean =

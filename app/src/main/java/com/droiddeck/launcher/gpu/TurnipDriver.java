@@ -8,6 +8,10 @@ import android.util.Log;
 import com.droiddeck.launcher.R;
 import com.droiddeck.launcher.core.FileUtils;
 import com.droiddeck.launcher.core.TarZst;
+<<<<<<< HEAD
+=======
+import com.droiddeck.launcher.session.QuestExperimental;
+>>>>>>> upstream/main
 import com.droiddeck.launcher.session.SessionPrefs;
 
 import org.json.JSONObject;
@@ -281,6 +285,7 @@ public final class TurnipDriver {
             if (forced.startsWith("a7")) return DRIVER_A7XX;
             if (forced.startsWith("a6")) return DRIVER_A6XX;
         }
+<<<<<<< HEAD
         String model = gpuModel();
         Log.i(TAG, "gpu model: " + (model == null ? "unknown" : model));
         if (model != null) {
@@ -303,5 +308,19 @@ public final class TurnipDriver {
             if (value != null && !value.trim().isEmpty()) return value.trim();
         }
         return null;
+=======
+        String quest = QuestExperimental.INSTANCE.defaultAndroidDriver();
+        if (quest != null) return quest;
+        int model = GpuInfo.Companion.detect().getModel();
+        Log.i(TAG, "gpu model: " + (model == 0 ? "unknown" : model));
+        return chooseByModel(model, android.os.Build.VERSION.SDK_INT);
+    }
+
+    static String chooseByModel(int model, int sdk) {
+        if (model >= 800) return DRIVER_A8XX;
+        if (model >= 700) return DRIVER_A7XX;
+        if (model >= 600) return DRIVER_A6XX;
+        return sdk >= 36 ? DRIVER_A8XX : DRIVER_A7XX;
+>>>>>>> upstream/main
     }
 }

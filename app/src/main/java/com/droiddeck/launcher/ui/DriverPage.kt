@@ -15,6 +15,10 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+<<<<<<< HEAD
+=======
+import androidx.compose.foundation.selection.selectable
+>>>>>>> upstream/main
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +69,10 @@ fun DriverPage(
     status: String,
     checking: Boolean,
     importLabel: String,
+<<<<<<< HEAD
+=======
+    checkedAt: Long = Long.MAX_VALUE,
+>>>>>>> upstream/main
     canRestore: Boolean,
     onSelect: (String) -> Unit,
     onDelete: (String) -> Unit,
@@ -79,6 +87,12 @@ fun DriverPage(
     val pal = LocalPalette.current
     var confirm by remember { mutableStateOf<DriverRow?>(null) }
     BackHandler(onBack = onBack)
+<<<<<<< HEAD
+=======
+    LaunchedEffect(Unit) {
+        if (!checking && System.currentTimeMillis() - checkedAt > 6 * 3_600_000L) onRefresh()
+    }
+>>>>>>> upstream/main
     val refreshFocus = remember { FocusRequester() }
     val selectedFocus = remember { FocusRequester() }
     val inputMode = LocalInputModeManager.current
@@ -101,7 +115,11 @@ fun DriverPage(
                     .glideBorder(refreshHot, RoundedCornerShape(10.dp), pal.signal, pal.line)
                     .focusRequester(refreshFocus)
                     .hoverable(refreshSrc)
+<<<<<<< HEAD
                     .clickable(interactionSource = refreshSrc, indication = null, enabled = !checking, onClick = onRefresh),
+=======
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, interactionSource = refreshSrc, indication = null, enabled = !checking, onClick = onRefresh),
+>>>>>>> upstream/main
             ) {
                 if (checking) CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(18.dp))
                 else Icon(Icons.Outlined.Refresh, contentDescription = stringResource(R.string.comp_check_drivers), tint = colors.onBackground, modifier = Modifier.size(20.dp))
@@ -181,7 +199,11 @@ private fun InstalledRow(row: DriverRow, selected: Boolean, onSelect: () -> Unit
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f).then(modifier).focusRequester(mainFocus)
                 .then(if (row.removable) Modifier.focusProperties { right = delFocus } else Modifier)
+<<<<<<< HEAD
                 .hoverable(src).clickable(interactionSource = src, indication = null, onClick = onSelect)
+=======
+                .hoverable(src).selectable(selected = selected, role = androidx.compose.ui.semantics.Role.RadioButton, interactionSource = src, indication = null, onClick = onSelect)
+>>>>>>> upstream/main
                 .padding(horizontal = 11.dp, vertical = 8.dp),
         ) {
             Box(
@@ -214,7 +236,11 @@ private fun InstalledRow(row: DriverRow, selected: Boolean, onSelect: () -> Unit
                     .glideBorder(delHot, RoundedCornerShape(10.dp), colors.error)
                     .focusRequester(delFocus)
                     .focusProperties { left = mainFocus }
+<<<<<<< HEAD
                     .hoverable(delSrc).clickable(interactionSource = delSrc, indication = null, onClick = onDelete),
+=======
+                    .hoverable(delSrc).clickable(role = androidx.compose.ui.semantics.Role.Button, interactionSource = delSrc, indication = null, onClick = onDelete),
+>>>>>>> upstream/main
             ) { Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.common_delete_named, row.name), tint = if (delHot) colors.error else colors.onSurfaceVariant, modifier = Modifier.size(20.dp)) }
         }
     }
@@ -231,7 +257,11 @@ internal fun FocusText(text: String, color: Color, modifier: Modifier = Modifier
         modifier = modifier.clip(shape)
             .background(if (hot) color.copy(alpha = 0.14f) else Color.Transparent)
             .glideBorder(hot, shape, color)
+<<<<<<< HEAD
             .hoverable(src).clickable(interactionSource = src, indication = null, onClick = onClick)
+=======
+            .hoverable(src).clickable(role = androidx.compose.ui.semantics.Role.Button, interactionSource = src, indication = null, onClick = onClick)
+>>>>>>> upstream/main
             .padding(horizontal = 12.dp, vertical = 8.dp),
     )
 }

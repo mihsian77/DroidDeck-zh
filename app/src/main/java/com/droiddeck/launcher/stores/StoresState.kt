@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.droiddeck.launcher.stores.download.DownloadEntry
+<<<<<<< HEAD
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -19,11 +20,27 @@ object StoresState {
     private val main = Handler(Looper.getMainLooper())
 
     val accounts = mutableStateMapOf<Store, String>()
+=======
+
+object StoresState {
+    private const val TAG = "Stores"
+    private const val SEARCH_DELAY_MS = 400L
+    private val main = Handler(Looper.getMainLooper())
+
+    val accounts = mutableStateMapOf<Store, String>()
+    var accountsLoaded by mutableStateOf(false)
+        private set
+>>>>>>> upstream/main
 
     val library = mutableStateMapOf<Store, List<CatalogItem>>()
 
     val shelves = mutableStateMapOf<Store, StoreShelves>()
 
+<<<<<<< HEAD
+=======
+    val found = mutableStateMapOf<Store, List<CatalogItem>>()
+
+>>>>>>> upstream/main
     val status = mutableStateMapOf<Store, String>()
 
     val problems = mutableStateMapOf<Store, String>()
@@ -64,6 +81,11 @@ object StoresState {
 
     private val backends = HashMap<Store, StoreBackend>()
 
+<<<<<<< HEAD
+=======
+    private val searchSeq = java.util.concurrent.ConcurrentHashMap<Store, Int>()
+
+>>>>>>> upstream/main
     fun backend(store: Store): StoreBackend? = backends[store]
 
     fun register(backend: StoreBackend) { backends[backend.store] = backend }
@@ -71,14 +93,20 @@ object StoresState {
     fun refresh(context: Context) {
         val app = context.applicationContext
         com.droiddeck.launcher.stores.download.SavedQueue.restore(app)
+<<<<<<< HEAD
         Thread({
             val found = Store.entries.mapNotNull { store -> StoreAccounts.signedInAs(app, store)?.let { store to it } }
+=======
+        background("stores-refresh") {
+            val found = Store.entries.mapNotNull { store -> StoreAccounts.displayName(app, store)?.let { store to it } }
+>>>>>>> upstream/main
             val onDisk = StoreInstallRoot.gameFolders(app).mapNotNull { folder ->
                 StoreGameSidecar.read(folder)?.takeIf { it.isInstalled }?.let { InstalledStoreGame(it, folder) }
             }
             val partial = StoreInstallRoot.unfinished(app)
             val version = if (StoresNative.available) StoresNative.version ?: "" else ""
             main.post {
+<<<<<<< HEAD
                 accounts.clear()
                 found.forEach { (store, name) -> accounts[store] = name }
                 installed = onDisk
@@ -86,6 +114,19 @@ object StoresState {
                 engine = version
             }
         }, "stores-refresh").start()
+=======
+                androidx.compose.runtime.snapshots.Snapshot.withMutableSnapshot {
+                    val restored = found.toMap()
+                    accounts.keys.toList().filter { it !in restored }.forEach { accounts.remove(it) }
+                    accounts.putAll(restored)
+                    installed = onDisk
+                    unfinished = partial
+                    engine = version
+                    accountsLoaded = true
+                }
+            }
+        }
+>>>>>>> upstream/main
     }
 
     fun isSignedIn(store: Store): Boolean = accounts.containsKey(store)
@@ -117,6 +158,13 @@ object StoresState {
 
     fun installedGame(store: Store, id: String): InstalledStoreGame? = installed.firstOrNull { it.sidecar.store == store && it.sidecar.id == id }
 
+<<<<<<< HEAD
+=======
+    fun detailItem(store: Store, id: String): CatalogItem? = detailCatalogItem(
+        store, id, library[store].orEmpty(), found[store].orEmpty(), shelves[store],
+    )
+
+>>>>>>> upstream/main
     fun open(context: Context, store: Store, force: Boolean = false) {
         val backend = backends[store] ?: return
         val app = context.applicationContext
@@ -129,6 +177,29 @@ object StoresState {
         if (!shelves.containsKey(store)) backends[store]?.loadShelves(context.applicationContext, false)
     }
 
+<<<<<<< HEAD
+=======
+    fun search(context: Context, store: Store, query: String) {
+        val backend = backends[store] ?: return
+        val text = query.trim()
+        if (text.isEmpty()) {
+            searchSeq.remove(store)
+            found.remove(store)
+            return
+        }
+        val seq = (searchSeq[store] ?: 0) + 1
+        searchSeq[store] = seq
+        val app = context.applicationContext
+        Thread({
+            Thread.sleep(SEARCH_DELAY_MS)
+            if (searchSeq[store] != seq) return@Thread
+            val items = runCatching { backend.search(app, text) }.getOrDefault(emptyList())
+            if (searchSeq[store] != seq) return@Thread
+            main.post { found[store] = items }
+        }, "stores-search").start()
+    }
+
+>>>>>>> upstream/main
     fun signIn(context: Context, store: Store) {
         expired.remove(store)
         backends[store]?.signIn(context) ?: logLine("${store.label}: this build has no sign-in for it yet")
@@ -136,6 +207,7 @@ object StoresState {
 
     fun signOut(context: Context, store: Store) {
         val app = context.applicationContext
+<<<<<<< HEAD
         Thread({
             backends[store]?.signOut(app)
             if (store == Store.GOG) com.droiddeck.launcher.stores.gog.GogComet.replaceAccount { StoreAccounts.clear(app, store) }
@@ -145,6 +217,19 @@ object StoresState {
                 logLine("${store.label}: signed out")
             }
         }, "stores-signout").start()
+=======
+        background("stores-signout") {
+            val backend = backends[store]
+            backend?.signOut(app)
+            if (store == Store.GOG) com.droiddeck.launcher.stores.gog.GogComet.replaceAccount { StoreAccounts.clear(app, store) }
+            else if (store != Store.XBOX || backend == null) StoreAccounts.clear(app, store)
+            main.post {
+                if (store == Store.XBOX && StoreAccounts.signedInAs(app, store) != null) return@post
+                accounts.remove(store); library.remove(store); status.remove(store); problems.remove(store)
+                logLine("${store.label}: signed out")
+            }
+        }
+>>>>>>> upstream/main
     }
 
     var openDownloads by mutableStateOf(false)
@@ -165,6 +250,7 @@ object StoresState {
         askForNotifications(context)
         if (isUnfinished(item)) { install(context, item); return }
         val targets = StoreInstallRoot.targets(context)
+<<<<<<< HEAD
         if (targets.size > 1) pendingInstall = item else install(context, item, targets.first().root)
     }
 
@@ -191,6 +277,37 @@ object StoresState {
         }
         com.droiddeck.launcher.stores.download.SavedQueue.remember(app, item, target)
         backends[item.store]?.install(app, item, target) ?: logLine("${item.store.label}: this build cannot install yet")
+=======
+        if (targets.size > 1 || StoreLanguage.selectable(item.store)) pendingInstall = item
+        else install(context, item, targets.first().root)
+    }
+
+    fun install(context: Context, item: CatalogItem, root: java.io.File? = null, language: String? = null) {
+        val app = context.applicationContext
+        val folder = StoreInstallRoot.folderFor(app, item.store, item.id, item.title, root ?: StoreInstallRoot.installRoot(app))
+        val target = folder.parentFile!!.parentFile!!
+        val code = language?.takeIf { it.isNotBlank() } ?: StoreLanguage.preferredCode(app)
+        val tagged = if (StoreLanguage.selectable(item.store)) item.copy(extra = item.extra + (StoreLanguage.EXTRA to code)) else item
+        val check = StoreInstallRoot.checkStorage(app, tagged, target)
+        if (!check.enough) {
+            val errorMsg = check.errorMessage ?: app.getString(com.droiddeck.launcher.R.string.stores_storage_insufficient, formatBytes(check.requiredBytes), formatBytes(check.availableBytes))
+            val entry = com.droiddeck.launcher.stores.download.DownloadEntry(
+                tagged.store,
+                tagged.id,
+                tagged.title,
+                cover = tagged.imageUrl,
+                bytesTotal = tagged.sizeBytes,
+                location = StoreInstallRoot.labelFor(app, folder)
+            )
+            com.droiddeck.launcher.stores.download.SavedQueue.remember(app, tagged, target)
+            com.droiddeck.launcher.stores.download.DownloadQueue.recordFailed(app, entry, errorMsg) {
+                install(app, tagged, target, code)
+            }
+            return
+        }
+        com.droiddeck.launcher.stores.download.SavedQueue.remember(app, tagged, target)
+        backends[tagged.store]?.install(app, tagged, target) ?: logLine("${tagged.store.label}: this build cannot install yet")
+>>>>>>> upstream/main
     }
 
     val uninstalling = mutableStateMapOf<String, Float>()
@@ -199,7 +316,11 @@ object StoresState {
         val app = context.applicationContext
         val key = "${game.sidecar.store.id}:${game.sidecar.id}"
         uninstalling[key] = 0f
+<<<<<<< HEAD
         Thread({
+=======
+        background("stores-uninstall", onFailure = { main.post { uninstalling.remove(key); onDone() } }) {
+>>>>>>> upstream/main
             runCatching { backends[game.sidecar.store]?.uninstall(app, game) }
             StoreInstalls.uninstall(app, game, progress = { f -> main.post { if (key in uninstalling) uninstalling[key] = f } }, removed = {
                 main.post {
@@ -208,7 +329,11 @@ object StoresState {
                 }
             })
             main.post(onDone)
+<<<<<<< HEAD
         }, "stores-uninstall").start()
+=======
+        }
+>>>>>>> upstream/main
     }
 
     @Volatile var libraryListener: (() -> Unit)? = null
@@ -222,7 +347,11 @@ object StoresState {
         val text = StoreLog.redactLine(raw)
         Log.i(TAG, text)
         val app = appContext ?: return
+<<<<<<< HEAD
         StoreLogFiles.append(app, "${synchronized(CLOCK) { CLOCK.format(Date()) }}  $text")
+=======
+        StoreLogFiles.stamped(app, text)
+>>>>>>> upstream/main
     }
 
     private var appContext: Context? = null
@@ -231,7 +360,11 @@ object StoresState {
         appContext = context.applicationContext
         StoreLogFiles.prune(context)
         val overlay = java.io.File(com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(context), "root/.local/share/droiddeck/epic-overlay")
+<<<<<<< HEAD
         if (overlay.exists()) Thread({ overlay.deleteRecursively(); Log.i(TAG, "removed the old EOS overlay download") }, "epic-overlay-cleanup").start()
+=======
+        if (overlay.exists()) background("epic-overlay-cleanup") { overlay.deleteRecursively(); Log.i(TAG, "removed the old EOS overlay download") }
+>>>>>>> upstream/main
         val app = context.applicationContext
         Thread({
             runCatching { CloudSaves.uploadAllDirty(app, "recovery") }
@@ -241,7 +374,24 @@ object StoresState {
 
     internal fun post(block: () -> Unit) = main.post(block)
 
+<<<<<<< HEAD
     private val CLOCK = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+=======
+    /**
+     * A worker thread whose failure is logged. An uncaught exception on a plain Thread reaches the crash
+     * handler, which ends the whole app, and none of these jobs is worth that.
+     */
+    private fun background(name: String, onFailure: () -> Unit = {}, block: () -> Unit) {
+        Thread({
+            try {
+                block()
+            } catch (e: Throwable) {
+                Log.w(TAG, "$name failed", e)
+                runCatching(onFailure)
+            }
+        }, name).start()
+    }
+>>>>>>> upstream/main
 }
 
 interface StoreBackend {
@@ -250,6 +400,10 @@ interface StoreBackend {
     fun signOut(context: Context)
     fun syncLibrary(context: Context, force: Boolean)
     fun loadShelves(context: Context, force: Boolean)
+<<<<<<< HEAD
+=======
+    fun search(context: Context, query: String): List<CatalogItem> = emptyList()
+>>>>>>> upstream/main
     fun install(context: Context, item: CatalogItem, root: java.io.File)
     fun uninstall(context: Context, game: InstalledStoreGame)
 }

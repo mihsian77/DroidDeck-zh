@@ -1,14 +1,18 @@
+<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_vkd.cpp
 #include "winfg_vkd.h"
+========
+#include "ddfg_vkd.h"
+>>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_vkd.cpp
 #include "../VulkanRendererContext.h"
 #include <android/log.h>
 
-bool winfgVkdInit(const VkTable& table, winfg::DeviceDispatch& dd, winfg::InstanceDispatch& id) {
+bool ddfgVkdInit(const VkTable& table, ddfg::DeviceDispatch& dd, ddfg::InstanceDispatch& id) {
     bool ok = true;
 #define COPY(dst, fn)                                                                     \
     do {                                                                                  \
         dst.fn = table.fn;                                                                \
         if (!dst.fn) {                                                                    \
-            __android_log_print(ANDROID_LOG_ERROR, "WinFgVkd",                            \
+            __android_log_print(ANDROID_LOG_ERROR, "DdFgVkd",                            \
                                 "entry point vk" #fn " did not resolve");                 \
             ok = false;                                                                   \
         }                                                                                 \

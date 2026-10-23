@@ -33,6 +33,11 @@ object EpicBackend : StoreBackend, EpicLaunchSupport {
 
     override fun signOut(context: Context) {
         runCatching { EpicLibrary.forget(context) }
+<<<<<<< HEAD
+=======
+        runCatching { EpicClient.signOut(context) }
+        EpicClient.forgetWebSignIn()
+>>>>>>> upstream/main
     }
 
     override fun syncLibrary(context: Context, force: Boolean) {

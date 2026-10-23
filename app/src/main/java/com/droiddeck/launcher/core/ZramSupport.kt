@@ -1,5 +1,6 @@
 package com.droiddeck.launcher.core
 
+<<<<<<< HEAD
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
@@ -21,6 +22,13 @@ object ZramSupport {
     fun belowTwelveGb(advertisedBytes: Long, totalBytes: Long): Boolean =
         if (advertisedBytes > 0) advertisedBytes < 11 * GIB else totalBytes < 10 * GIB
 
+=======
+import java.io.File
+
+object ZramSupport {
+    fun supported(): Boolean = kernelAtLeast(System.getProperty("os.version").orEmpty(), 5, 4) && swapTotalKb() > 0
+
+>>>>>>> upstream/main
     fun kernelAtLeast(release: String, major: Int, minor: Int): Boolean {
         val parts = Regex("^(\\d+)\\.(\\d+)").find(release)?.groupValues ?: return false
         val ma = parts[1].toInt()

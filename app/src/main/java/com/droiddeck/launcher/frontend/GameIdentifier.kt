@@ -185,7 +185,11 @@ object GameIdentifier {
     }
 
     private val JUNK_NAME_RE = Regex(
+<<<<<<< HEAD
         """(?i)^(gse|steam|steam client|goldberg.*|launcher|game|play|start|setup|.* launcher.*|.*launcher redirector|.* redirector|rockstar games launcher.*|epic games launcher|smartsteamemu|coldclient.*|steamemu.*)$"""
+=======
+        """(?i)^(gse|steam|steam client|goldberg.*|launcher|game|play|start|setup|.* launcher.*|.*launcher redirector|.* redirector|rockstar games launcher.*|epic games launcher|smartsteamemu|coldclient.*|steamemu.*|bootstrappackagedgame)$"""
+>>>>>>> upstream/main
     )
 
     fun isJunkPeName(name: String): Boolean {

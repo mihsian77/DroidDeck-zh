@@ -1,10 +1,15 @@
+<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_engine.cpp
 #include "winfg_engine.h"
 #include "winfg_vkd.h"
+========
+#include "ddfg_engine.h"
+#include "ddfg_vkd.h"
+>>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_engine.cpp
 #include "log.hpp"
 #include <algorithm>
 #include <cstring>
 
-namespace winfg {
+namespace ddfg {
 namespace {
 
 float alphaFor(uint32_t k, uint32_t n) {
@@ -31,18 +36,18 @@ Engine::~Engine() { destroyRing(); fg_.destroy(); }
 
 bool Engine::init(const VkTable& table, VkPhysicalDevice phys, VkDevice dev,
                   uint32_t queueFamily, VkQueue queue) {
-    if (!winfgVkdInit(table, dd_, id_)) {
-        WFG_LOGE("native: dispatch incomplete; frame generation unavailable");
+    if (!ddfgVkdInit(table, dd_, id_)) {
+        DDFG_LOGE("native: dispatch incomplete; frame generation unavailable");
         return false;
     }
     phys_ = phys; dev_ = dev; qf_ = queueFamily; queue_ = queue;
     id_.GetPhysicalDeviceMemoryProperties(phys_, &memProps_);
     if (!fg_.init(&dd_, &id_, phys_, dev_, qf_, queue_)) {
-        WFG_LOGE("native: FrameGen::init failed");
+        DDFG_LOGE("native: FrameGen::init failed");
         unavailable_ = true;
         return false;
     }
-    WFG_LOGI("native: chain ready (10 pipelines, embedded shaders)");
+    DDFG_LOGI("native: chain ready (10 pipelines, embedded shaders)");
     return true;
 }
 
@@ -61,7 +66,11 @@ bool Engine::prepare(uint32_t w, uint32_t h, VkFormat fmt) {
 
 
     if (!fg_.onResize(VkExtent2D{w, h}, fmt,  false)) {
+<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_engine.cpp
         WFG_LOGE("native: onResize %ux%u failed; frame generation unavailable", w, h);
+========
+        DDFG_LOGE("native: onResize %ux%u failed; frame generation unavailable", w, h);
+>>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_engine.cpp
         unavailable_ = true;
         return false;
     }
@@ -71,10 +80,12 @@ bool Engine::prepare(uint32_t w, uint32_t h, VkFormat fmt) {
     }
     builtW_ = w; builtH_ = h; builtFmt_ = fmt;
     history_ = 0; curr_ = 0; frames_ = 0;
-    WFG_LOGI("native: built %ux%u fmt=%d model=%d preset=%d flow=%.2f",
+    DDFG_LOGI("native: built %ux%u fmt=%d model=%d preset=%d flow=%.2f",
              w, h, (int)fmt, cfg_.model, cfg_.perfPreset, (double)cfg_.flowScale);
     return true;
 }
+
+static_assert(kMaxGenerations <= (uint32_t)FrameGen::kSynthSlots, "each generation needs its own synth slot");
 
 uint32_t Engine::plan(uint32_t capacity) const {
     if (!valid() || history_ < 2) return 0;
@@ -131,7 +142,12 @@ void Engine::generateInto(VkCommandBuffer cmd, uint32_t generation, uint32_t cou
     dd_.CmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toWrite);
 
+<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_engine.cpp
     fg_.record(cmd, prev.view, curr.view, targetView, alphaFor(generation, count), gmSlot_);
+========
+    fg_.record(cmd, prev.view, curr.view, targetView, alphaFor(generation, count), gmSlot_,
+               generation, generation > 0);
+>>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_engine.cpp
     if (generation + 1 == count) gmSlot_ = (gmSlot_ + 1) % (uint32_t)FrameGen::kGmSlots;
 
     (void)w; (void)h;

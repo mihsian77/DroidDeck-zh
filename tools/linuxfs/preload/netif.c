@@ -406,6 +406,14 @@ int bl_kgsl_poll(int (*real)(int, unsigned long, void *), int fd, unsigned long 
                  void *arg, int *rc) __attribute__((visibility("hidden")));
 int bl_ntsync_ioctl(int fd, unsigned long request, void *arg, int *rc) __attribute__((visibility("hidden")));
 int bl_drm_gem_close(int fd, unsigned long request, void *arg, int *rc) __attribute__((visibility("hidden")));
+<<<<<<< HEAD
+=======
+int bl_venc_ioctl(int fd, unsigned long request, void *arg, int *rc) __attribute__((visibility("hidden")));
+int bl_winebus_rumble_ioctl(int (*real)(int, unsigned long, void *), int fd, unsigned long request,
+                            void *arg, void *caller, int *rc) __attribute__((visibility("hidden")));
+int bl_writewatch_ioctl(int (*real)(int, unsigned long, void *), int fd, unsigned long request, void *arg,
+                        int *rc) __attribute__((visibility("hidden")));
+>>>>>>> upstream/main
 
 int ioctl(int fd, unsigned long request, ...) {
     typedef int (*ioctl_fn)(int, unsigned long, void *);
@@ -417,8 +425,16 @@ int ioctl(int fd, unsigned long request, ...) {
 
     int rc;
     if (bl_ntsync_ioctl(fd, request, arg, &rc)) return rc;
+<<<<<<< HEAD
     if (bl_drm_gem_close(fd, request, arg, &rc)) return rc;
     if (real == NULL) real = (ioctl_fn) dlsym(RTLD_NEXT, "ioctl");
+=======
+    if (bl_venc_ioctl(fd, request, arg, &rc)) return rc;
+    if (bl_drm_gem_close(fd, request, arg, &rc)) return rc;
+    if (real == NULL) real = (ioctl_fn) dlsym(RTLD_NEXT, "ioctl");
+    if (bl_winebus_rumble_ioctl(real, fd, request, arg, __builtin_return_address(0), &rc)) return rc;
+    if (bl_writewatch_ioctl(real, fd, request, arg, &rc)) return rc;
+>>>>>>> upstream/main
     if (!bl_kgsl_poll(real, fd, request, arg, &rc)) rc = quest_kgsl_ioctl(real, fd, request, arg);
     bl_kgsl_chip_id_fixup(request, arg, rc);
     if (arg == NULL || !is_link_query(request)) return rc;
@@ -501,19 +517,55 @@ static void write_table(FILE *out, const char *table, const struct link *link) {
     }
 }
 
-static const char *denied_table(const char *path) {
-    static const char *const tables[] = { "route", "ipv6_route", "if_inet6", "dev", "arp" };
+#define CARRIER_TABLE 5
+
+static const char *const net_tables[] = { "route", "ipv6_route", "if_inet6", "dev", "arp", "carrier" };
+static long long net_denied_at[sizeof(net_tables) / sizeof(net_tables[0])];
+
+#define CARRIER_SLOTS 8
+
+static struct { char path[64]; long long at; } carrier_denied[CARRIER_SLOTS];
+
+static int denied_recently(int table, const char *path) {
+    if (table != CARRIER_TABLE) return fresh(&net_denied_at[table]);
+    int hit = 0;
+    pthread_mutex_lock(&link_lock);
+    for (int i = 0; i < CARRIER_SLOTS && !hit; i++) {
+        hit = strcmp(carrier_denied[i].path, path) == 0 && fresh(&carrier_denied[i].at);
+    }
+    pthread_mutex_unlock(&link_lock);
+    return hit;
+}
+
+static void remember_denial(int table, const char *path) {
+    if (table != CARRIER_TABLE) {
+        __atomic_store_n(&net_denied_at[table], now_ns(), __ATOMIC_RELAXED);
+        return;
+    }
+    if (strlen(path) >= sizeof(carrier_denied[0].path)) return;
+    pthread_mutex_lock(&link_lock);
+    int slot = 0;
+    for (int i = 0; i < CARRIER_SLOTS; i++) {
+        if (strcmp(carrier_denied[i].path, path) == 0) { slot = i; break; }
+        if (carrier_denied[i].at < carrier_denied[slot].at) slot = i;
+    }
+    snprintf(carrier_denied[slot].path, sizeof(carrier_denied[slot].path), "%s", path);
+    carrier_denied[slot].at = now_ns();
+    pthread_mutex_unlock(&link_lock);
+}
+
+static int denied_table(const char *path) {
     if (strncmp(path, "/proc/net/", 10) == 0) {
-        for (size_t i = 0; i < sizeof(tables) / sizeof(tables[0]); i++) {
-            if (strcmp(path + 10, tables[i]) == 0) return tables[i];
+        for (int i = 0; i < CARRIER_TABLE; i++) {
+            if (strcmp(path + 10, net_tables[i]) == 0) return i;
         }
-        return NULL;
+        return -1;
     }
     size_t len = strlen(path);
     if (strncmp(path, "/sys/class/net/", 15) == 0 && len > 8 && strcmp(path + len - 8, "/carrier") == 0) {
-        return "carrier";
+        return CARRIER_TABLE;
     }
-    return NULL;
+    return -1;
 }
 
 static FILE *synthesize(const char *table) {
@@ -535,21 +587,37 @@ static FILE *synthesize(const char *table) {
     return out;
 }
 
+<<<<<<< HEAD
 int bl_status_without_tracer(const char *path, int flags) __attribute__((visibility("hidden")));
 
 static FILE *open_stream(fopen_fn real, const char *path, const char *mode) {
+=======
+int bl_status_without_tracer(const char *path, int flags, const void *caller) __attribute__((visibility("hidden")));
+
+static FILE *open_stream(fopen_fn real, const char *path, const char *mode, const void *caller) {
+>>>>>>> upstream/main
     int status = mode && mode[0] == 'r' && !strchr(mode, '+')
-            ? bl_status_without_tracer(path, O_RDONLY | O_CLOEXEC) : -1;
+            ? bl_status_without_tracer(path, O_RDONLY | O_CLOEXEC, caller) : -1;
     if (status >= 0) {
         FILE *copy = fdopen(status, "r");
         if (copy == NULL) close(status);
         return copy;
     }
+<<<<<<< HEAD
     FILE *f = real(path, mode);
     if (f || path == NULL || mode == NULL || mode[0] != 'r') return f;
+=======
+    int table = path && mode && mode[0] == 'r' ? denied_table(path) : -1;
+    FILE *f;
+    if (table >= 0 && denied_recently(table, path) && (f = synthesize(net_tables[table])) != NULL) return f;
+    f = real(path, mode);
+    if (f || table < 0) return f;
+>>>>>>> upstream/main
     int saved = errno;
-    const char *table = denied_table(path);
-    if (table && (f = synthesize(table)) != NULL) return f;
+    if ((f = synthesize(net_tables[table])) != NULL) {
+        if (saved == EACCES) remember_denial(table, path);
+        return f;
+    }
     errno = saved;
     return NULL;
 }
@@ -557,11 +625,19 @@ static FILE *open_stream(fopen_fn real, const char *path, const char *mode) {
 FILE *fopen(const char *path, const char *mode) {
     static fopen_fn real;
     if (real == NULL) real = (fopen_fn) dlsym(RTLD_NEXT, "fopen");
+<<<<<<< HEAD
     return open_stream(real, path, mode);
+=======
+    return open_stream(real, path, mode, __builtin_return_address(0));
+>>>>>>> upstream/main
 }
 
 FILE *fopen64(const char *path, const char *mode) {
     static fopen_fn real;
     if (real == NULL) real = (fopen_fn) dlsym(RTLD_NEXT, "fopen64");
+<<<<<<< HEAD
     return open_stream(real, path, mode);
+=======
+    return open_stream(real, path, mode, __builtin_return_address(0));
+>>>>>>> upstream/main
 }

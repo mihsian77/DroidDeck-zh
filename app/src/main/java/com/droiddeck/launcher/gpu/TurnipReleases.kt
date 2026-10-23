@@ -1,21 +1,41 @@
 package com.droiddeck.launcher.gpu
 
+<<<<<<< HEAD
 import com.droiddeck.launcher.core.Hashes
 import com.droiddeck.launcher.R
 import android.content.Context
+=======
+import com.droiddeck.launcher.core.DownloadSource
+import com.droiddeck.launcher.core.Downloader
+import com.droiddeck.launcher.core.Hashes
+import com.droiddeck.launcher.R
+import android.content.Context
+import android.util.Log
+>>>>>>> upstream/main
 import com.droiddeck.launcher.core.FileUtils
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+<<<<<<< HEAD
 import java.io.FileOutputStream
+=======
+>>>>>>> upstream/main
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
 object TurnipReleases {
+<<<<<<< HEAD
     private const val PREFS = "turnip_releases"
     private const val KEY_RELEASE = "latest"
     private const val KEY_DOWNLOADS = "downloads"
+=======
+    private const val TAG = "TurnipReleases"
+    private const val PREFS = "turnip_releases"
+    private const val KEY_RELEASE = "latest"
+    private const val KEY_DOWNLOADS = "downloads"
+    private const val KEY_PICKS = "autoPicks"
+>>>>>>> upstream/main
 
     class Asset(val source: String, val tag: String, val name: String, val url: String, val size: Long, val linux: Boolean, val label: String,
                 val sha256: String = "", val pair: String = "", val bundle: Boolean = false)
@@ -54,6 +74,12 @@ object TurnipReleases {
         },
     )
 
+<<<<<<< HEAD
+=======
+    fun autoPicks(context: Context): List<AutoPicks.Rule> =
+        AutoPicks.parse(prefs(context).getString(KEY_PICKS, null)) ?: AutoPicks.BUILT_IN
+
+>>>>>>> upstream/main
     fun cached(context: Context): Check? {
         val raw = prefs(context).getString(KEY_RELEASE, null) ?: return null
         return runCatching { parse(JSONObject(raw)) }.getOrNull()
@@ -97,6 +123,13 @@ object TurnipReleases {
             }
         }
         if (failed.size == SOURCES.size) throw lastError ?: IOException("no source answered")
+<<<<<<< HEAD
+=======
+        runCatching { get(context, AutoPicks.URL, AutoPicks.URL) }
+            .onFailure { Log.i(TAG, "auto picks: ${it.message}") }
+            .getOrNull()?.takeIf { AutoPicks.parse(it) != null }
+            ?.let { prefs(context).edit().putString(KEY_PICKS, it).apply() }
+>>>>>>> upstream/main
         val stored = JSONObject().put("assets", assets).put("latest", latest)
             .put("failed", JSONArray(failed)).put("checkedAt", System.currentTimeMillis())
         prefs(context).edit().putString(KEY_RELEASE, stored.toString()).apply()
@@ -104,7 +137,28 @@ object TurnipReleases {
     }
 
     private fun get(context: Context, url: String): String {
+<<<<<<< HEAD
         val c = URL(url).openConnection() as HttpURLConnection
+=======
+        val sources = DownloadSource.candidates(url)
+        var last: IOException? = null
+        for ((index, source) in sources.withIndex()) {
+            try {
+                val body = get(context, source, url)
+                DownloadSource.succeeded(source)
+                return body
+            } catch (e: IOException) {
+                last = e
+                if (index < sources.lastIndex) Log.i(TAG, "retrying $url via $source")
+            }
+        }
+        DownloadSource.failed()
+        throw last ?: IOException(context.getString(R.string.turnip_github_http, 0))
+    }
+
+    private fun get(context: Context, source: String, url: String): String {
+        val c = URL(source).openConnection() as HttpURLConnection
+>>>>>>> upstream/main
         c.connectTimeout = 15_000
         c.readTimeout = 20_000
         c.setRequestProperty("Accept", "application/vnd.github+json")
@@ -160,6 +214,7 @@ object TurnipReleases {
     fun download(context: Context, asset: Asset, progress: (Int) -> Unit): File {
         if (asset.sha256.isEmpty()) throw IOException(context.getString(R.string.turnip_list_predates_checksums))
         val target = File(context.cacheDir, asset.name)
+<<<<<<< HEAD
         val c = URL(asset.url).openConnection() as HttpURLConnection
         c.connectTimeout = 15_000
         c.readTimeout = 60_000
@@ -193,6 +248,15 @@ object TurnipReleases {
         } finally {
             c.disconnect()
         }
+=======
+        val ok = Downloader.downloadFile(asset.url, target, true, asset.sha256) { f -> progress(if (f < 0) -1 else (f * 100).toInt()) }
+        if (!ok) throw IOException(context.getString(R.string.turnip_download_failed))
+        if (!asset.sha256.equals(Hashes.sha256(target), ignoreCase = true)) {
+            FileUtils.delete(target)
+            throw IOException(context.getString(R.string.turnip_checksum_mismatch))
+        }
+        return target
+>>>>>>> upstream/main
     }
 
     private fun downloads(context: Context): JSONObject =

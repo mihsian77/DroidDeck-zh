@@ -1,5 +1,9 @@
 package com.droiddeck.launcher.runtime;
 
+<<<<<<< HEAD
+=======
+import com.droiddeck.launcher.core.AddonPack;
+>>>>>>> upstream/main
 import android.content.Context;
 import android.util.Log;
 
@@ -9,7 +13,10 @@ import com.droiddeck.launcher.core.ArchivePaths;
 import com.droiddeck.launcher.core.Downloader;
 import com.droiddeck.launcher.core.Hashes;
 import com.droiddeck.launcher.core.FileUtils;
+<<<<<<< HEAD
 import com.droiddeck.launcher.core.MirrorHub;
+=======
+>>>>>>> upstream/main
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -38,9 +45,12 @@ public final class LinuxRuntimeInstaller {
 
     private static final String VERSION_FILE = ".version";
 
+<<<<<<< HEAD
     /** Decompression bomb guard for bundle imports: cap expanded bytes well above any real bundle. */
     private static final long MAX_BUNDLE_BYTES = 8L * 1024 * 1024 * 1024;
 
+=======
+>>>>>>> upstream/main
     public enum Step { DOWNLOADING, VERIFYING, OTHER }
 
     public interface ProgressListener {
@@ -256,6 +266,10 @@ public final class LinuxRuntimeInstaller {
         File archive = new File(context.getCacheDir(), archiveName(release));
         // A failed download keeps what it fetched so the next attempt resumes it; anything that
         // reached verification and failed is not trusted and is removed.
+<<<<<<< HEAD
+=======
+        boolean keepPartial = false;
+>>>>>>> upstream/main
         try {
             deleteOtherArchives(context.getCacheDir(), archive.getName());
             File pendingRemoval = removalDirectory(LinuxRuntime.rootDir(context));
@@ -264,6 +278,7 @@ public final class LinuxRuntimeInstaller {
             emptyTrash(LinuxRuntime.rootDir(context).getParentFile());
             String downloading = context.getString(R.string.rtinst_downloading);
             if (listener != null) listener.onProgress(Step.DOWNLOADING, downloading, 0);
+<<<<<<< HEAD
 
             // Build candidate source list: probes direct + every MirrorHub node concurrently,
             // keeps only sources that answered (range-capable first), up to MAX_SOURCES.
@@ -274,12 +289,18 @@ public final class LinuxRuntimeInstaller {
             // Downloader reports a 0..1 fraction. release.size is passed as the known total so the
             // bar moves even when a mirror node streams without a Content-Length header.
             boolean ok = Downloader.downloadFileWithSources(sources, archive, true, release.size, (fraction) -> {
+=======
+            if (!AddonPack.PROOT.await(context)) throw new IOException("Cannot download proot");
+            if (!AddonPack.DIRECTAUDIO.await(context)) throw new IOException("Cannot download DirectAudio");
+            boolean ok = Downloader.downloadFile(release.url, archive, true, release.sha256, (fraction) -> {
+>>>>>>> upstream/main
                 if (listener != null) {
                     listener.onProgress(Step.DOWNLOADING, downloading,
                             fraction < 0 ? -1 : Math.round(fraction * 100f));
                 }
             });
             if (!ok) {
+<<<<<<< HEAD
                 Log.w(TAG, "download failed; keeping partial archive for resume");
                 return false;
             }
@@ -490,20 +511,36 @@ public final class LinuxRuntimeInstaller {
     private static boolean unpackAndInstall(Context context, Release release, File archive,
                                             ProgressListener listener, boolean deleteOnSuccess) {
         try {
+=======
+                Log.w(TAG, "download failed");
+                keepPartial = true;
+                return false;
+            }
+
+>>>>>>> upstream/main
             if (listener != null) listener.onProgress(Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1);
             String actual = Hashes.sha256(archive);
             if (!release.sha256.equalsIgnoreCase(actual)) {
                 Log.w(TAG, "checksum mismatch: wanted " + release.sha256 + ", got " + actual);
+<<<<<<< HEAD
                 archive.delete();
                 return false;
             }
             // Unpack beside the live rootfs and swap, so a failure here cannot leave a half
             // runtime that isInstalled() would happily launch.
+=======
+                return false;
+            }
+
+>>>>>>> upstream/main
             File root = LinuxRuntime.rootDir(context);
             File staging = new File(root.getParentFile(), LinuxRuntime.DIR + ".new");
             File old = new File(root.getParentFile(), LinuxRuntime.DIR + ".old");
             recoverInterruptedSwap(root, staging, old);
+<<<<<<< HEAD
             // Upstream 0.3.2: discard() sets aside anything undeletable instead of stranding it.
+=======
+>>>>>>> upstream/main
             if (!discard(staging, null) || !staging.mkdirs()) return false;
             if (listener != null) listener.onProgress(context.getString(R.string.rtinst_extracting), -1);
             if (!extract(context, archive, staging, listener)) {
@@ -520,7 +557,11 @@ public final class LinuxRuntimeInstaller {
                 RuntimeFileTree.delete(staging, null);
                 return false;
             }
+<<<<<<< HEAD
             // Carry the user's home over before the new rootfs takes the name.
+=======
+
+>>>>>>> upstream/main
             try {
                 RuntimeFileTree.carryHome(old, staging);
             } catch (IOException e) {
@@ -530,6 +571,10 @@ public final class LinuxRuntimeInstaller {
                 catch (IOException cleanup) { Log.w(TAG, "could not clear the failed staging tree", cleanup); }
                 return false;
             }
+<<<<<<< HEAD
+=======
+
+>>>>>>> upstream/main
             if (!staging.renameTo(root)) {
                 File keptTo = new File(staging, USER_DATA);
                 if (keptTo.isDirectory() && old.isDirectory()) keptTo.renameTo(new File(old, USER_DATA));
@@ -537,6 +582,7 @@ public final class LinuxRuntimeInstaller {
                 return false;
             }
             discard(old, null);
+<<<<<<< HEAD
             // The downloaded archive is only kept for resume on failure; once the runtime is in
             // place it costs cache space, so drop it (local imports keep their source file).
             if (deleteOnSuccess) archive.delete();
@@ -544,6 +590,14 @@ public final class LinuxRuntimeInstaller {
         } catch (Exception e) {
             Log.e(TAG, "unpackAndInstall", e);
             return false;
+=======
+            return LinuxRuntime.isInstalled(context);
+        } catch (Exception e) {
+            Log.e(TAG, "install", e);
+            return false;
+        } finally {
+            if (!keepPartial) archive.delete();
+>>>>>>> upstream/main
         }
     }
 
@@ -587,12 +641,26 @@ public final class LinuxRuntimeInstaller {
     }
 
     public static Removal beginUninstall(Context context) {
+<<<<<<< HEAD
         if (com.droiddeck.launcher.session.SessionState.INSTANCE.getRunning()) return null;
         com.droiddeck.launcher.session.SessionPhase phase = com.droiddeck.launcher.session.SessionState.INSTANCE.getPhase();
         if (phase != com.droiddeck.launcher.session.SessionPhase.IDLE && phase != com.droiddeck.launcher.session.SessionPhase.FAILED) return null;
         return beginUninstall(context.getApplicationContext(), LinuxRuntime.rootDir(context));
     }
 
+=======
+        if (sessionInUse()) return null;
+        return beginUninstall(context.getApplicationContext(), LinuxRuntime.rootDir(context));
+    }
+
+    private static boolean sessionInUse() {
+        com.droiddeck.launcher.session.SessionState session = com.droiddeck.launcher.session.SessionState.INSTANCE;
+        com.droiddeck.launcher.session.SessionPhase phase = session.getPhase();
+        return session.getRunning() ||
+                (phase != com.droiddeck.launcher.session.SessionPhase.IDLE && phase != com.droiddeck.launcher.session.SessionPhase.FAILED);
+    }
+
+>>>>>>> upstream/main
     static Removal beginUninstall(Context app, File root) {
         synchronized (JOB_LOCK) {
             if (running != null) return null;
@@ -617,6 +685,10 @@ public final class LinuxRuntimeInstaller {
             if (!started.compareAndSet(false, true)) return join(job, listener);
             if (listener != null) job.listeners.add(listener);
             try {
+<<<<<<< HEAD
+=======
+                requireStopped();
+>>>>>>> upstream/main
                 report(text(app, R.string.rtinst_removing), -1);
                 final long[] removed = {0};
                 final long[] lastShown = {0};
@@ -643,6 +715,11 @@ public final class LinuxRuntimeInstaller {
                     if (!discard(leftover, progress)) throw new IOException("Cannot remove " + leftover);
                 }
                 emptyTrash(root.getParentFile());
+<<<<<<< HEAD
+=======
+                requireStopped();
+                if (app != null) RuntimeFileTree.delete(new File(app.getNoBackupFilesDir(), "guest-runtime"), null);
+>>>>>>> upstream/main
                 job.ok = true;
                 report(text(app, R.string.rtinst_removed), 100);
                 return true;
@@ -656,6 +733,14 @@ public final class LinuxRuntimeInstaller {
                 job.done.countDown();
             }
         }
+<<<<<<< HEAD
+=======
+
+        private void requireStopped() throws IOException {
+            if (Thread.currentThread().isInterrupted()) throw new IOException("Runtime removal was interrupted");
+            if (app != null && sessionInUse()) throw new IOException("A session is still using the runtime");
+        }
+>>>>>>> upstream/main
         private void report(String stage, int percent) {
             job.stage = stage;
             job.percent = percent;
@@ -663,9 +748,18 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
+<<<<<<< HEAD
     public static boolean extract(Context context, File archive, File destination, ProgressListener listener) {
         long entries = 0;
         String extracting = context.getString(R.string.rtinst_extracting);
+=======
+    // Packages extract over the live runtime and their archives list a link before the file it
+    // names, so a kill mid-way must leave neither a truncated file nor a link to a missing one.
+    public static boolean extract(Context context, File archive, File destination, ProgressListener listener) {
+        long entries = 0;
+        String extracting = context.getString(R.string.rtinst_extracting);
+        java.util.LinkedHashMap<File, String> links = new java.util.LinkedHashMap<>();
+>>>>>>> upstream/main
         try (InputStream in = new ZstdCompressorInputStream(
                 new BufferedInputStream(new FileInputStream(archive), 1 << 16));
              TarArchiveInputStream tar = new TarArchiveInputStream(in)) {
@@ -684,14 +778,20 @@ public final class LinuxRuntimeInstaller {
                 if (parent != null && !parent.isDirectory()) parent.mkdirs();
 
                 if (entry.isSymbolicLink()) {
+<<<<<<< HEAD
                     file.delete();
                     FileUtils.symlink(entry.getLinkName(), file.getAbsolutePath());
+=======
+                    links.remove(file);
+                    links.put(file, entry.getLinkName());
+>>>>>>> upstream/main
                 } else if (entry.isLink()) {
                     File target = ArchivePaths.inside(destination, entry.getLinkName());
                     if (target == null) {
                         Log.w(TAG, "skipping hard link outside the rootfs: " + entry.getLinkName());
                         continue;
                     }
+<<<<<<< HEAD
                     file.delete();
                     try {
                         Files.createLink(file.toPath(), target.toPath());
@@ -702,11 +802,33 @@ public final class LinuxRuntimeInstaller {
                     }
                 } else if (entry.isFile()) {
                     try (OutputStream out = new FileOutputStream(file)) {
+=======
+                    links.remove(file);
+                    File part = partFile(file);
+                    part.delete();
+                    try {
+                        Files.createLink(part.toPath(), target.toPath());
+                    } catch (IOException | UnsupportedOperationException e) {
+                        if (target.isFile()) {
+                            Files.copy(target.toPath(), part.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        }
+                    }
+                    if (part.exists()) place(part, file);
+                } else if (entry.isFile()) {
+                    links.remove(file);
+                    File part = partFile(file);
+                    try (OutputStream out = new FileOutputStream(part)) {
+>>>>>>> upstream/main
                         byte[] buffer = new byte[1 << 16];
                         int read;
                         while ((read = tar.read(buffer)) != -1) out.write(buffer, 0, read);
                     }
+<<<<<<< HEAD
                     if ((entry.getMode() & 0111) != 0) file.setExecutable(true, false);
+=======
+                    if ((entry.getMode() & 0111) != 0) part.setExecutable(true, false);
+                    place(part, file);
+>>>>>>> upstream/main
                 } else {
                     continue;
                 }
@@ -714,10 +836,38 @@ public final class LinuxRuntimeInstaller {
                     listener.onProgress(extracting, -1);
                 }
             }
+<<<<<<< HEAD
+=======
+            for (java.util.Map.Entry<File, String> link : links.entrySet()) {
+                File file = link.getKey();
+                File part = partFile(file);
+                try {
+                    Files.deleteIfExists(part.toPath());
+                    Files.createSymbolicLink(part.toPath(), java.nio.file.Paths.get(link.getValue()));
+                    place(part, file);
+                } catch (IOException e) {
+                    Log.w(TAG, "symlink " + file + " -> " + link.getValue() + ": " + e);
+                    part.delete();
+                }
+            }
+>>>>>>> upstream/main
             return true;
         } catch (Exception e) {
             Log.e(TAG, "extract", e);
             return false;
         }
     }
+<<<<<<< HEAD
+=======
+
+    static File partFile(File file) {
+        return new File(file.getParentFile(), ".dd-part-" + Integer.toHexString(file.getName().hashCode()));
+    }
+
+    private static void place(File part, File file) throws IOException {
+        java.nio.file.Path path = file.toPath();
+        if (Files.isDirectory(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)) Files.delete(path);
+        Files.move(part.toPath(), path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+    }
+>>>>>>> upstream/main
 }

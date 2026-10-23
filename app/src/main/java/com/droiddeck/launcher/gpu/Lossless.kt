@@ -154,7 +154,13 @@ object Lossless {
     private fun steamDll(context: Context): File? {
         val libraries = listOfNotNull(
             File(LinuxRuntime.rootDir(context), "root/.local/share/Steam"),
+<<<<<<< HEAD
             GameStorage.effective(context)?.path?.let(::File),
+=======
+            File(LinuxRuntime.rootDir(context), "root/.droiddeck-x64/.local/share/Steam"),
+            GameStorage.effective(context)?.path?.let(::File),
+            GameStorage.x64CardLibrary(context),
+>>>>>>> upstream/main
         ) + com.droiddeck.launcher.frontend.AddedGames.roots(context).map { it.host }
         return libraries.map { File(it, STEAM_DLL) }.filter { it.isFile }.maxByOrNull { it.lastModified() }
     }

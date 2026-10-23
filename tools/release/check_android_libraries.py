@@ -8,7 +8,11 @@ from zipfile import ZipFile
 
 
 SYSTEM = set('libc.so libm.so libdl.so liblog.so libandroid.so libz.so libvulkan.so libstdc++.so '
+<<<<<<< HEAD
              'libGLESv2.so libEGL.so libnativewindow.so libjnigraphics.so libaaudio.so '
+=======
+             'libGLESv2.so libGLESv3.so libEGL.so libnativewindow.so libjnigraphics.so libaaudio.so '
+>>>>>>> upstream/main
              'libOpenSLES.so libmediandk.so libcamera2ndk.so libsync.so libneuralnetworks.so'.split())
 EXPORTS = ['Java_com_droiddeck_launcher_stores_StoresNative_nativeVersion',
            'Java_com_droiddeck_launcher_stores_gog_GogNative_nativeStart',

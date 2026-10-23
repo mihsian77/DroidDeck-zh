@@ -234,7 +234,11 @@ private fun HeaderButton(text: String, onClick: () -> Unit) {
         modifier = Modifier.fillMaxHeight()
             .background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(7.dp))
             .glideBorder(focused, RoundedCornerShape(7.dp), pal.signal, Color.White.copy(alpha = 0.14f))
+<<<<<<< HEAD
             .clickable(interactionSource = src, indication = LocalIndication.current, onClick = onClick)
+=======
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, interactionSource = src, indication = LocalIndication.current, onClick = onClick)
+>>>>>>> upstream/main
             .padding(horizontal = 12.dp),
     ) { Text(text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White) }
 }

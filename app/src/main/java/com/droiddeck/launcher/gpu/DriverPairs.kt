@@ -61,6 +61,7 @@ object DriverPairs {
             }
     }
 
+<<<<<<< HEAD
     fun recommendedKey(gpu: GpuInfo, pairs: List<DriverPair>): String? = when (gpu.family) {
         Family.NOT_ADRENO -> null
         Family.A8XX -> if (gpu.model == 840) newestDdTurnip(pairs) ?: WN_BALANCED else WN_BALANCED
@@ -68,6 +69,19 @@ object DriverPairs {
         Family.A7XX -> if (gpu.oneUi8Gen2) BANNER_ONEUI else BANNER
         Family.A6XX -> BANNER
         Family.ADRENO_UNKNOWN -> if (android.os.Build.VERSION.SDK_INT >= 36) WN_BALANCED else BANNER
+=======
+    fun recommendedKey(
+        gpu: GpuInfo, pairs: List<DriverPair>,
+        rules: List<AutoPicks.Rule> = AutoPicks.BUILT_IN, bad: Set<String> = emptySet(),
+        sdk: Int = android.os.Build.VERSION.SDK_INT, blob: Int? = null,
+    ): String? {
+        if (gpu.family == Family.NOT_ADRENO) return null
+        val keys = AutoPicks.preferences(gpu, rules, sdk, blob)
+            .ifEmpty { AutoPicks.preferences(gpu, AutoPicks.BUILT_IN, sdk, blob) }
+            .mapNotNull { if (it == AutoPicks.NEWEST_DD_TURNIP) newestDdTurnip(pairs) else it }
+        return keys.firstOrNull { key -> pairs.any { it.key == key && it.complete && AutoDriverTrial.release(it) !in bad } }
+            ?: keys.firstOrNull()
+>>>>>>> upstream/main
     }
 
     fun newestDdTurnip(pairs: List<DriverPair>): String? = pairs

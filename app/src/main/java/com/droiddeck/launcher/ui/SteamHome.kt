@@ -1,6 +1,10 @@
 package com.droiddeck.launcher.ui
 
 import androidx.compose.ui.platform.testTag
+<<<<<<< HEAD
+=======
+import androidx.compose.foundation.layout.fillMaxWidth
+>>>>>>> upstream/main
 import com.droiddeck.launcher.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -27,6 +31,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+<<<<<<< HEAD
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
@@ -41,6 +46,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+=======
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+>>>>>>> upstream/main
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onPlaced
@@ -54,6 +69,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.droiddeck.launcher.frontend.Library
+<<<<<<< HEAD
+=======
+import com.droiddeck.launcher.glasses.GlassesMenuMirror
+>>>>>>> upstream/main
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
@@ -73,6 +92,11 @@ import coil.request.ImageRequest
 import coil.size.Scale
 import coil.transform.RoundedCornersTransformation
 import kotlin.math.roundToInt
+<<<<<<< HEAD
+=======
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+>>>>>>> upstream/main
 
 private const val WALL_MIN_GAMES = 4
 private const val WALL_DISTINCT = 40
@@ -81,6 +105,7 @@ private const val DRIFT_STEP_NS = 15_000_000L
 
 @Composable
 internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier) {
+<<<<<<< HEAD
     val context = LocalContext.current
     // A fixed order, ties included: the wall places each game by its position, so an order that
     // came out differently from one read of the library to the next moved every capsule.
@@ -94,6 +119,18 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
     var words by remember { mutableStateOf<Rect?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
+=======
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(Unit) { com.droiddeck.launcher.frontend.SteamFeatured.load(ctx) }
+    val featured = com.droiddeck.launcher.frontend.SteamFeatured.games
+    val signedIn = s.offlineAccount != null
+    val owned by produceState(emptyList<Pair<Int, java.io.File>>(), signedIn) {
+        value = if (!signedIn) emptyList() else withContext(Dispatchers.IO) { runCatching { Library.steamLibraryArt(ctx).shuffled() }.getOrDefault(emptyList()) }
+    }
+    val games = remember(s.steamGames) { s.steamGames.sortedWith(compareByDescending<Library.SteamGame> { it.lastPlayed }.thenBy { it.gameId }) }
+    val narrow = LocalNarrowPane.current
+    var words by remember { mutableStateOf<Rect?>(null) }
+>>>>>>> upstream/main
     val mode = com.droiddeck.launcher.session.SessionService.MODE_STEAM
     val tabs = modeSheetTabs(steam = true).map { it to sheetTabLabel(it) }
     val back = stringResource(R.string.hop_from_play)
@@ -111,8 +148,31 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
             }
         },
     )
+<<<<<<< HEAD
     LiftHero(
         key = "steam", tabs = tabs,
+=======
+    val (glasses, glassesSettings) = rememberGlasses()
+    val headset = glasses.present && glasses.canControl
+    val drop = rememberDropSheetState()
+    LaunchedEffect(headset) { if (!headset && (drop.open || drop.shown)) drop.reset() }
+    LiftHero(
+        key = "steam", tabs = tabs,
+        drop = drop.takeIf { headset },
+        overlay = { lifted ->
+            if (headset) DropSheet(
+                drop, glassesTabs(glasses) + (GlassesTab.CONTROLLERS to stringResource(R.string.vr_controllers_tab)), covered = lifted,
+                button = { enabled ->
+                    PrimaryButton(stringResource(R.string.games_play_steamvr), enabled = !s.busy && glasses.usable, large = true, icon = Icons.Filled.PlayArrow, fill = true,
+                        modifier = Modifier.fillMaxWidth().testTag("play-steamvr")) { if (enabled) { drop.open = false; a.onPlaySteamVr() } }
+                },
+            ) { tab ->
+                if (tab == GlassesTab.CONTROLLERS) VrControllerGroups(rememberMenuHost())
+                else GlassesGroups(rememberMenuHost(), glasses, glassesSettings,
+                    onRecenter = GlassesMenuMirror::recenter, inSession = false, tab = tab)
+            }
+        },
+>>>>>>> upstream/main
         onOpen = a.onSteamSettings, onPrimary = a.onPlay,
         modifier = modifier.clipToBounds(),
         start = if (narrow) 20.dp else 44.dp, bottom = if (narrow) 20.dp else 44.dp,
@@ -120,10 +180,17 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
             when {
                 games.isEmpty() -> EmptyLibrary(
                     avoid = words,
+<<<<<<< HEAD
                     wall = if (featured.isEmpty()) null else { { CapsuleWall(emptyList(), featured = featured) } },
                 ) { Box(Modifier.fillMaxSize().graphicsLayer { scaleX = 1.06f; scaleY = 1.06f }) { WallFade() } }
                 games.size < WALL_MIN_GAMES -> CapsuleFan(games)
                 else -> CapsuleWall(games, featured = featured)
+=======
+                    wall = if (owned.isEmpty() && featured.isEmpty()) null else { { CapsuleWall(emptyList(), owned = owned, featured = featured) } },
+                ) { Box(Modifier.fillMaxSize().graphicsLayer { scaleX = 1.06f; scaleY = 1.06f }) { WallFade() } }
+                games.size < WALL_MIN_GAMES -> CapsuleFan(games)
+                else -> CapsuleWall(games, owned = owned, featured = featured)
+>>>>>>> upstream/main
             }
         },
         scrim = { if (games.size >= WALL_MIN_GAMES) WallFade() },
@@ -136,17 +203,21 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
                 if (s.busy || !s.ready || (s.available != null && s.available != s.installed)) RuntimeChip(s)
             }
         },
+<<<<<<< HEAD
         beside = {
             // Log out of Steam on the next session: drop a flag the session script acts on.
             IconButton(onClick = { showLogoutDialog = true }) {
                 Icon(Icons.Filled.Logout, contentDescription = "退出 Steam 登录", tint = colors.onSurface)
             }
         },
+=======
+>>>>>>> upstream/main
         button = { click ->
             PrimaryButton(stringResource(R.string.games_play_steam), enabled = !s.busy, main = true, large = true, icon = Icons.Filled.PlayArrow, modifier = Modifier.testTag("play-steam"), onClick = click)
         },
         rows = { tab -> a.modeSheet(mode, tab, extras) },
     )
+<<<<<<< HEAD
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -166,6 +237,8 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
             },
         )
     }
+=======
+>>>>>>> upstream/main
 }
 
 @Composable
@@ -189,18 +262,34 @@ internal fun CapsuleWall(
     games: List<Library.SteamGame>,
     driftMs: Int = if (games.isEmpty()) 75_000 else 40_000,
     modifier: Modifier = Modifier,
+<<<<<<< HEAD
+=======
+    owned: List<Pair<Int, java.io.File>> = emptyList(),
+>>>>>>> upstream/main
     featured: List<com.droiddeck.launcher.frontend.SteamFeatured.Game> = emptyList(),
 ) {
     val pal = LocalPalette.current
     val blank = remember(pal) { WallCapsule(Brush.linearGradient(listOf(pal.surface, pal.background)), edge = pal.line) }
+<<<<<<< HEAD
     val padding = remember(games, featured) {
         val owned = games.map { it.appId }.toSet()
         featured.filter { it.appId !in owned }.take((WALL_DISTINCT - games.size).coerceAtLeast(0))
+=======
+    val padding = remember(games, owned, featured) {
+        val shown = games.map { it.appId }.toMutableSet()
+        val library = owned.filter { shown.add(it.first) }.map { (id, art) -> id.toString() to art }
+        val store = if (owned.isEmpty()) featured.filter { shown.add(it.appId) }.map { it.name to it.art } else emptyList()
+        (library + store).take((WALL_DISTINCT - games.size).coerceAtLeast(0))
+>>>>>>> upstream/main
     }
     TiltedWall(games.size + padding.size, driftMs, modifier) { i ->
         when {
             i < games.size -> WallCapsule(artBrush(hueOf(games[i].name)), games[i].art)
+<<<<<<< HEAD
             i - games.size < padding.size -> padding[i - games.size].let { WallCapsule(artBrush(hueOf(it.name)), it.art) }
+=======
+            i - games.size < padding.size -> padding[i - games.size].let { (seed, art) -> WallCapsule(artBrush(hueOf(seed)), art) }
+>>>>>>> upstream/main
             else -> blank
         }
     }

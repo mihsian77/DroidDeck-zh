@@ -71,6 +71,10 @@ pub fn details_of(entry: &Value) -> Value {
         "releaseDate": release,
         "tall": image(entry, &["DieselGameBoxTall"]),
         "wide": image(entry, &["DieselGameBox", "Thumbnail"]),
+<<<<<<< HEAD
+=======
+        "logo": image(entry, &["DieselGameBoxLogo"]),
+>>>>>>> upstream/main
         "canRunOffline": offline,
         "dlc": main_game.is_some_and(|m| !m.is_null()),
         "mainGameId": main_game.map(|m| net::str_of(m, "id")).unwrap_or(""),
@@ -102,7 +106,12 @@ mod tests {
                 "keyImages": [
                     {"type": "Thumbnail", "url": "thumb"},
                     {"type": "DieselGameBox", "url": ""},
+<<<<<<< HEAD
                     {"type": "DieselGameBoxTall", "url": "tall"}
+=======
+                    {"type": "DieselGameBoxTall", "url": "tall"},
+                    {"type": "DieselGameBoxLogo", "url": "logo"}
+>>>>>>> upstream/main
                 ],
                 "customAttributes": {"CanRunOffline": {"value": "FALSE"}, "publisherName": {"value": " Pub "}},
                 "seller": {"name": "Seller"},
@@ -113,6 +122,10 @@ mod tests {
         assert_eq!(d["title"], "Game");
         assert_eq!(d["tall"], "tall");
         assert_eq!(d["wide"], "thumb");
+<<<<<<< HEAD
+=======
+        assert_eq!(d["logo"], "logo");
+>>>>>>> upstream/main
         assert_eq!(d["publisher"], "Pub");
         assert_eq!(d["canRunOffline"], false);
         assert_eq!(d["releaseDate"], "2020-01-01T00:00:00.000Z");
@@ -123,6 +136,10 @@ mod tests {
         assert_eq!(dlc["publisher"], "S");
         assert_eq!(dlc["releaseDate"], "v");
         assert_eq!(dlc["canRunOffline"], true);
+<<<<<<< HEAD
+=======
+        assert_eq!(dlc["logo"], "");
+>>>>>>> upstream/main
         assert_eq!(pick_entry(&json!({"x": {"title": "Only"}}), "y").unwrap()["title"], "Only");
     }
 }

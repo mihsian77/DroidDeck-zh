@@ -76,7 +76,11 @@ object DependencyDetector {
 
         fun consider(f: File, isDir: Boolean, insideRedist: Boolean) {
             val name = f.name.lowercase(Locale.US)
+<<<<<<< HEAD
             val path = f.path.replace('\\', '/').lowercase(Locale.US)
+=======
+            val path = relativeReason(gameDir, f).lowercase(Locale.US)
+>>>>>>> upstream/main
             val kind = if (insideRedist || isDir || name.endsWith(".exe") || name.endsWith(".msi") || name.endsWith(".cab"))
                 Kind.BUNDLED else Kind.SHIPPED
             for (comp in classify(path, name, isDir)) {

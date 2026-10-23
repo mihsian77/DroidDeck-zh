@@ -26,6 +26,21 @@ class StoreInstallRootTest {
         assertFalse(StoreInstallRoot.targets(app).first().removable)
     }
 
+<<<<<<< HEAD
+=======
+    @Test fun theSteamLibraryFolderIsOfferedAsAnInstallTarget() {
+        val library = File(app.filesDir, "Documents/Games").apply { mkdirs() }
+        SessionPrefs.setGameStorage(app, library.path, "Games")
+        val targets = StoreInstallRoot.targets(app)
+        assertEquals(2, targets.size)
+        assertEquals(File(library, "Games").absolutePath, targets.last().root.absolutePath)
+        assertTrue(targets.last().folder)
+        assertTrue(targets.last().label.startsWith("Games"))
+        SessionPrefs.setGameStorage(app, SessionPrefs.GAME_STORAGE_OFF, "")
+        assertEquals(1, StoreInstallRoot.targets(app).size)
+    }
+
+>>>>>>> upstream/main
     @Test fun anExistingInstallWinsOverAFreshFolderUnderTheChosenRoot() {
         SessionPrefs.setGameStorage(app, SessionPrefs.GAME_STORAGE_OFF, "")
         val existing = File(StoreInstallRoot.storeDir(StoreInstallRoot.internalRoot(app), Store.GOG), "Old Name").apply { mkdirs() }

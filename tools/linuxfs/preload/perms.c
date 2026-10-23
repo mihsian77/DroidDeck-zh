@@ -7,7 +7,11 @@
 #include <unistd.h>
 
 static int in_steam_dirs(const char *path) {
+<<<<<<< HEAD
   return path != NULL && (strstr(path, "/Steam/steamrtarm64/") != NULL
+=======
+  return path != NULL && (strstr(path, "/Steam/steamrtarm64/") != NULL || strstr(path, "/Steam/steamrt64/") != NULL
+>>>>>>> upstream/main
       || strstr(path, "/Steam/ubuntu12_64/") != NULL || strstr(path, "/Steam/linuxarm64/") != NULL);
 }
 

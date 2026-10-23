@@ -104,7 +104,10 @@ class LinuxNetworkLinkComponent(
                 synchronized(lock) { writeNetworkState(currentProperties, currentCapabilities) }
             }
         }
+<<<<<<< HEAD
         wifiReceiver = receiver
+=======
+>>>>>>> upstream/main
         appContext.registerReceiver(receiver, IntentFilter().apply {
             addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
             addAction(WifiManager.RSSI_CHANGED_ACTION)
@@ -112,6 +115,10 @@ class LinuxNetworkLinkComponent(
             addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
             addAction(LocationManager.MODE_CHANGED_ACTION)
         })
+<<<<<<< HEAD
+=======
+        wifiReceiver = receiver
+>>>>>>> upstream/main
         scanRequestStamp = File(rootDir, "etc/droiddeck-wifi-scan-request").lastModified()
         scanHandler.post(scanRequests)
         requestWifiScan()
@@ -119,7 +126,17 @@ class LinuxNetworkLinkComponent(
 
     override fun stop() {
         scanHandler.removeCallbacks(scanRequests)
+<<<<<<< HEAD
         wifiReceiver?.let { appContext.unregisterReceiver(it) }
+=======
+        wifiReceiver?.let { receiver ->
+            try {
+                appContext.unregisterReceiver(receiver)
+            } catch (e: IllegalArgumentException) {
+                Log.w(TAG, "Wi-Fi receiver was already gone", e)
+            }
+        }
+>>>>>>> upstream/main
         wifiReceiver = null
         val registered = synchronized(lock) { callback.also { callback = null } } ?: return
         try {

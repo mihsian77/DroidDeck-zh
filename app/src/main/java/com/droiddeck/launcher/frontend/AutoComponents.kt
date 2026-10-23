@@ -332,7 +332,11 @@ object AutoComponents {
             caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
+<<<<<<< HEAD
     private fun constrained(context: Context): Boolean {
+=======
+    fun constrained(context: Context): Boolean {
+>>>>>>> upstream/main
         val power = context.getSystemService(PowerManager::class.java)
         if (power?.isPowerSaveMode == true) return true
         if (Build.VERSION.SDK_INT >= 29 && (power?.currentThermalStatus ?: 0) >= PowerManager.THERMAL_STATUS_MODERATE) return true

@@ -319,7 +319,11 @@ class FsyncPreloadTest(unittest.TestCase):
         source = base / "fsync-test.c"
         source.write_text(PROGRAM)
         subprocess.run(["cc", "-O2", "-Wall", "-fPIC", "-shared", "-pthread", "-o", str(cls.lib),
+<<<<<<< HEAD
                         str(PRELOAD / "fsync.c"), str(PRELOAD / "robust.c"), str(PRELOAD / "noexec.c"), "-ldl"], check=True)
+=======
+                        str(PRELOAD / "fsync.c"), str(PRELOAD / "robust.c"), str(PRELOAD / "noexec.c"), str(PRELOAD / "writewatch.c"), "-ldl"], check=True)
+>>>>>>> upstream/main
         subprocess.run(["cc", "-O2", "-Wall", "-pthread", "-o", str(cls.exe), str(source)], check=True)
 
     @classmethod

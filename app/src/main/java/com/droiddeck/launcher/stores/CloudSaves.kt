@@ -13,6 +13,10 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+<<<<<<< HEAD
+=======
+import java.util.concurrent.Executor
+>>>>>>> upstream/main
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import org.json.JSONObject
@@ -57,7 +61,11 @@ object CloudSaves {
                 val item = sidecar.extra["catalogItemId"].orEmpty()
                 if (ns.isEmpty() || item.isEmpty()) "" else EpicApiClient.getCustomAttribute(token, ns, item, "CloudSaveFolder")
             }
+<<<<<<< HEAD
             Store.AMAZON -> ""
+=======
+            Store.AMAZON, Store.ITCH, Store.XBOX -> ""
+>>>>>>> upstream/main
         } ?: return null
         p.edit().putString("cloud_template_$id", fetched).apply()
         Log.i(TAG, "cloud ${store.id} $id template ${if (fetched.isEmpty()) "none" else "found"}")
@@ -95,7 +103,11 @@ object CloudSaves {
         val dir = when (store) {
             Store.GOG -> CloudSavePaths.gog(template, pfx, folder)
             Store.EPIC -> CloudSavePaths.epic(template, pfx, folder, EpicCredentialStore.load(context)?.accountId.orEmpty(), id)
+<<<<<<< HEAD
             Store.AMAZON -> null
+=======
+            Store.AMAZON, Store.ITCH, Store.XBOX -> null
+>>>>>>> upstream/main
         }
         return dir to (if (dir == null) "unresolved" else "ok")
     }
@@ -120,7 +132,11 @@ object CloudSaves {
             val account = EpicCredentialStore.load(context)?.accountId.orEmpty()
             if (token == null || account.isEmpty()) null else EpicCloud(account, id, token)
         }
+<<<<<<< HEAD
         Store.AMAZON -> null
+=======
+        Store.AMAZON, Store.ITCH, Store.XBOX -> null
+>>>>>>> upstream/main
     }
 
     private fun gogScopedToken(context: Context, id: String, clientId: String): String? {
@@ -150,11 +166,19 @@ object CloudSaves {
     fun keepCloud(context: Context, store: Store, id: String): Result = download(context, store, id, force = true)
     fun keepLocal(context: Context, store: Store, id: String): Result = upload(context, store, id, force = true)
 
+<<<<<<< HEAD
     fun downloadOrDefer(context: Context, store: Store, id: String): Result {
+=======
+    fun downloadOrDefer(context: Context, store: Store, id: String): Result =
+        downloadOrDefer(context, store, id, Executor { Thread(it, "cloud-deferred").start() })
+
+    internal fun downloadOrDefer(context: Context, store: Store, id: String, executor: Executor): Result {
+>>>>>>> upstream/main
         val app = context.applicationContext
         val g = game(app, store, id) ?: return done(store, id, "down", Result("skipped", 0, 0, "not-installed"))
         if (!g.second.cloud) return done(store, id, "down", Result("skipped", 0, 0, "off"))
         if (prefix(app, g.first)?.let { CloudSavePaths.profile(it).isDirectory } == true) return download(app, store, id)
+<<<<<<< HEAD
         Thread({
             val end = System.currentTimeMillis() + PREFIX_WAIT_MS
             while (System.currentTimeMillis() < end) {
@@ -163,6 +187,16 @@ object CloudSaves {
             }
             done(store, id, "down", Result("skipped", 0, 0, "no-prefix"))
         }, "cloud-deferred").start()
+=======
+        executor.execute {
+            val end = System.currentTimeMillis() + PREFIX_WAIT_MS
+            while (System.currentTimeMillis() < end) {
+                if (prefix(app, g.first)?.let { CloudSavePaths.profile(it).isDirectory } == true) { download(app, store, id); return@execute }
+                Thread.sleep(2000)
+            }
+            done(store, id, "down", Result("skipped", 0, 0, "no-prefix"))
+        }
+>>>>>>> upstream/main
         return done(store, id, "down", Result("deferred", 0, 0, "no-prefix"))
     }
 

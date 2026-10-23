@@ -2,6 +2,10 @@ package com.droiddeck.launcher.stores
 
 import android.content.Context
 import android.util.Log
+<<<<<<< HEAD
+=======
+import androidx.compose.runtime.Immutable
+>>>>>>> upstream/main
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.droiddeck.launcher.stores.epic.EpicAchievements
@@ -15,6 +19,10 @@ import java.util.Locale
 
 abstract class StoreAchievements(val source: String, val label: String) {
 
+<<<<<<< HEAD
+=======
+    @Immutable
+>>>>>>> upstream/main
     data class Game(val source: String, val id: String, val extra: Map<String, String> = emptyMap()) {
         companion object {
             fun of(item: CatalogItem) = Game(item.store.id, item.id, item.extra)

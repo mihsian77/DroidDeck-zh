@@ -10,6 +10,7 @@ import android.os.Build
 import android.provider.Settings
 import com.droiddeck.launcher.BuildConfig
 import com.droiddeck.launcher.R
+<<<<<<< HEAD
 import com.droiddeck.launcher.core.FileUtils
 import com.droiddeck.launcher.core.Hashes
 import java.io.File
@@ -17,6 +18,13 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+=======
+import com.droiddeck.launcher.core.Downloader
+import com.droiddeck.launcher.core.FileUtils
+import com.droiddeck.launcher.core.Hashes
+import java.io.File
+import java.io.IOException
+>>>>>>> upstream/main
 import java.security.MessageDigest
 
 object SelfInstaller {
@@ -30,6 +38,7 @@ object SelfInstaller {
 
     fun download(context: Context, apk: AppUpdates.Apk, progress: (Int) -> Unit): File {
         val dir = File(context.cacheDir, "updates")
+<<<<<<< HEAD
         FileUtils.delete(dir)
         dir.mkdirs()
         val target = File(dir, apk.name)
@@ -56,6 +65,14 @@ object SelfInstaller {
                     }
                 }
             }
+=======
+        dir.listFiles()?.forEach { if (it.name != apk.name) FileUtils.delete(it) }
+        dir.mkdirs()
+        val target = File(dir, apk.name)
+        val ok = Downloader.downloadFile(apk.url, target, true, apk.sha256) { f -> progress(if (f < 0) -1 else (f * 100).toInt()) }
+        if (!ok) throw IOException(context.getString(R.string.selfinst_download_failed))
+        try {
+>>>>>>> upstream/main
             if (apk.size > 0 && target.length() != apk.size) {
                 throw IOException(context.getString(R.string.selfinst_size_mismatch))
             }
@@ -63,6 +80,7 @@ object SelfInstaller {
                 throw IOException(context.getString(R.string.selfinst_checksum_mismatch))
             }
             validateDownloaded(context, target, apk)
+<<<<<<< HEAD
             return target
         } catch (e: Exception) {
             FileUtils.delete(target)
@@ -70,6 +88,13 @@ object SelfInstaller {
         } finally {
             c.disconnect()
         }
+=======
+        } catch (e: Exception) {
+            FileUtils.delete(target)
+            throw e
+        }
+        return target
+>>>>>>> upstream/main
     }
 
     private fun validateDownloaded(context: Context, file: File, apk: AppUpdates.Apk) {
@@ -81,7 +106,12 @@ object SelfInstaller {
         }
         @Suppress("DEPRECATION")
         val flags = if (Build.VERSION.SDK_INT >= 28) {
+<<<<<<< HEAD
             PackageManager.GET_SIGNING_CERTIFICATES
+=======
+            // Android 9 and 10 only collect an archive's certificates when GET_SIGNATURES is set.
+            PackageManager.GET_SIGNING_CERTIFICATES or PackageManager.GET_SIGNATURES
+>>>>>>> upstream/main
         } else {
             PackageManager.GET_SIGNATURES
         }
@@ -99,6 +129,7 @@ object SelfInstaller {
             throw IOException(context.getString(R.string.selfinst_downgrade, code, BuildConfig.VERSION_CODE))
         }
 
+<<<<<<< HEAD
         if (Build.VERSION.SDK_INT >= 28) {
             val signing = info.signingInfo ?: throw IOException(context.getString(R.string.selfinst_no_signing))
             val digests = signing.apkContentsSigners.orEmpty().map { cert ->
@@ -108,6 +139,20 @@ object SelfInstaller {
             if (digests.none { it.equals(BuildConfig.RELEASE_SIGNER, ignoreCase = true) }) {
                 throw IOException(context.getString(R.string.selfinst_wrong_signer))
             }
+=======
+        val digests = archiveSignerDigests(info)
+        if (digests.isEmpty()) throw IOException(context.getString(R.string.selfinst_no_signing))
+        if (digests.none { it.equals(BuildConfig.RELEASE_SIGNER, ignoreCase = true) }) {
+            throw IOException(context.getString(R.string.selfinst_wrong_signer))
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    internal fun archiveSignerDigests(info: android.content.pm.PackageInfo): List<String> {
+        val certs = (if (Build.VERSION.SDK_INT >= 28) info.signingInfo?.apkContentsSigners else null) ?: info.signatures
+        return certs.orEmpty().map { cert ->
+            MessageDigest.getInstance("SHA-256").digest(cert.toByteArray()).joinToString("") { "%02x".format(it) }
+>>>>>>> upstream/main
         }
     }
 

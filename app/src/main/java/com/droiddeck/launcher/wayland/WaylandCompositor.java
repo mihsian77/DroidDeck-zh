@@ -45,6 +45,13 @@ public final class WaylandCompositor {
 
     private static volatile long lastFrameNanos;
     private static volatile long frameIntervalNanos;
+<<<<<<< HEAD
+=======
+    private static volatile long gameFrames; // written by the compositor thread only
+
+    /** Frames the game has presented since the app started; the rate is the difference over time. */
+    public static long gameFrameCount() { return gameFrames; }
+>>>>>>> upstream/main
 
     public static long recentFrameIntervalMs() {
         long last = lastFrameNanos;
@@ -57,6 +64,10 @@ public final class WaylandCompositor {
         long now = System.nanoTime();
         long previous = lastFrameNanos;
         lastFrameNanos = now;
+<<<<<<< HEAD
+=======
+        gameFrames++;
+>>>>>>> upstream/main
         if (previous != 0) {
             long interval = now - previous;
             long smoothed = frameIntervalNanos;
@@ -148,6 +159,10 @@ public final class WaylandCompositor {
                                                      String nativeLibDir);
 
     public static native void nativeSetSurface(Surface surface);
+<<<<<<< HEAD
+=======
+    public static native boolean nativeWaitSurface(int timeoutMs);
+>>>>>>> upstream/main
 
     public static native void nativeSendPointer(int action, int x, int y);
 
@@ -197,6 +212,11 @@ public final class WaylandCompositor {
 
     public static native void nativeSetOutputSize(int width, int height);
 
+<<<<<<< HEAD
+=======
+    public static native boolean nativeGamePictureRect(float[] out);
+
+>>>>>>> upstream/main
     public static native void nativeResizeOutput(int width, int height);
 
     public static native void nativeResetFirstFrame();
@@ -265,9 +285,18 @@ public final class WaylandCompositor {
 
     public static native void nativeSetCardboard(boolean enabled, int source, float ipdM, float screenDistM,
                                                  float screenWidthM, float k1, float k2, float fovDeg,
+<<<<<<< HEAD
                                                  float lensInset, float chroma);
 
     public static native void nativeSetCardboardPose(float[] rotation, boolean live);
+=======
+                                                 float lensInset, float chroma, boolean mono, float displayHz);
+
+    public static native void nativeSetCardboardPose(float[] rotation, boolean live);
+    public static native void nativeSetCardboardSpatialPose(float[] rotation, float[] position, boolean live);
+    public static native boolean nativeSetSpatialFile(String path);
+    public static native void nativePublishSpatial(java.nio.ByteBuffer snapshot);
+>>>>>>> upstream/main
 
     public static native void nativeSetCardboardPoseFile(String path);
 
@@ -279,7 +308,11 @@ public final class WaylandCompositor {
 
     public static native void nativeSendSceneInput(int type, int a, int b);
 
+<<<<<<< HEAD
     public static final int FG_ENGINE_LSFG = 0, FG_ENGINE_WINFG = 1;
+=======
+    public static final int FG_ENGINE_LSFG = 0, FG_ENGINE_DDFG = 1;
+>>>>>>> upstream/main
 
     public static native void nativeSetFrameGenEngine(int kind);
 
@@ -289,7 +322,11 @@ public final class WaylandCompositor {
 
     public static native void nativeSetFrameGenTuning(float flowScale, float refreshHz);
 
+<<<<<<< HEAD
     public static native void nativeSetWinFgTuning(int model, int perfPreset);
+=======
+    public static native void nativeSetDdFgTuning(int model, int perfPreset);
+>>>>>>> upstream/main
 
     public static native int nativeFrameGenProblem();
     public static native String nativeFrameGenCapsReason();

@@ -12,7 +12,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 
+<<<<<<< HEAD
 final class RuntimeFileTree {
+=======
+public final class RuntimeFileTree {
+>>>>>>> upstream/main
     private RuntimeFileTree() {}
 
     static volatile Predicate<Path> refuseForTest;
@@ -35,7 +39,11 @@ final class RuntimeFileTree {
         if (progress != null) progress.accept(++removed[0]);
     }
 
+<<<<<<< HEAD
     static boolean deleteWhatCan(File root, LongConsumer progress) {
+=======
+    public static boolean deleteWhatCan(File root, LongConsumer progress) {
+>>>>>>> upstream/main
         return deleteWhatCan(root.toPath(), progress, new long[]{0});
     }
 
