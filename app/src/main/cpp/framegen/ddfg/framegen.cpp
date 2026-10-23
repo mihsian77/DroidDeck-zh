@@ -153,15 +153,9 @@ bool FrameGen::init(const DeviceDispatch* dd, const InstanceDispatch* id,
     if (!makePipe(pGmReduce_,  embedded::OF3_GM_REDUCE,  unused)) return false;
     if (!makePipe(pGmPrewarp_, embedded::OF3_GM_PREWARP, unused)) return false;
     if (!makePipe(pFlowReg_,  embedded::OF3_FLOWREG, unused)) return false;
-<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/framegen.cpp
-    if (!makePipe(pSynth_,    embedded::WFG_SYNTH, unused)) return false;
-    if (!makeGmBuffers()) { WFG_LOGE("framegen: GM SSBO alloc failed - C1 disabled"); }
-    WFG_LOGI("framegen init ok (queueFamily=%u, 10 pipelines, model=%d, C1 gm=%d, C2 flow_reg=%d iters=%d)",
-========
     if (!makePipe(pSynth_,    embedded::DDFG_SYNTH, unused)) return false;
     if (!makeGmBuffers()) { DDFG_LOGE("framegen: GM SSBO alloc failed - C1 disabled"); }
     DDFG_LOGI("framegen init ok (queueFamily=%u, 10 pipelines, model=%d, C1 gm=%d, C2 flow_reg=%d iters=%d)",
->>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/framegen.cpp
              queueFamily_, cfg_.model, cfg_.gmMode, cfg_.frMode, cfg_.frIters);
     return true;
 }

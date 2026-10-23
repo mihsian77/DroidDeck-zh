@@ -1,8 +1,4 @@
-<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_vkd.cpp
-#include "winfg_vkd.h"
-========
 #include "ddfg_vkd.h"
->>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_vkd.cpp
 #include "../VulkanRendererContext.h"
 #include <android/log.h>
 

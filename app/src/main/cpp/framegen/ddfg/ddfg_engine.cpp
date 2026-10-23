@@ -1,10 +1,5 @@
-<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_engine.cpp
-#include "winfg_engine.h"
-#include "winfg_vkd.h"
-========
 #include "ddfg_engine.h"
 #include "ddfg_vkd.h"
->>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_engine.cpp
 #include "log.hpp"
 #include <algorithm>
 #include <cstring>
@@ -66,11 +61,7 @@ bool Engine::prepare(uint32_t w, uint32_t h, VkFormat fmt) {
 
 
     if (!fg_.onResize(VkExtent2D{w, h}, fmt,  false)) {
-<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_engine.cpp
-        WFG_LOGE("native: onResize %ux%u failed; frame generation unavailable", w, h);
-========
         DDFG_LOGE("native: onResize %ux%u failed; frame generation unavailable", w, h);
->>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_engine.cpp
         unavailable_ = true;
         return false;
     }
@@ -142,12 +133,8 @@ void Engine::generateInto(VkCommandBuffer cmd, uint32_t generation, uint32_t cou
     dd_.CmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &toWrite);
 
-<<<<<<<< HEAD:app/src/main/cpp/framegen/winfg/winfg_engine.cpp
-    fg_.record(cmd, prev.view, curr.view, targetView, alphaFor(generation, count), gmSlot_);
-========
     fg_.record(cmd, prev.view, curr.view, targetView, alphaFor(generation, count), gmSlot_,
                generation, generation > 0);
->>>>>>>> upstream/main:app/src/main/cpp/framegen/ddfg/ddfg_engine.cpp
     if (generation + 1 == count) gmSlot_ = (gmSlot_ + 1) % (uint32_t)FrameGen::kGmSlots;
 
     (void)w; (void)h;
