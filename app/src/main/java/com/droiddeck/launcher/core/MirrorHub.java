@@ -40,7 +40,7 @@ public final class MirrorHub {
     private static final String KEY_LAST_FETCH = "last_fetch";
     private static final long CACHE_TTL_MS = 6 * 3600_000L;
     private static final int PROBE_TIMEOUT_MS = 8_000;
-    private static final int MAX_SOURCES = 8;
+    private static final int MAX_NODES_TO_PROBE = 3;
 
     private MirrorHub() {}
 
@@ -65,12 +65,9 @@ public final class MirrorHub {
     private static final class ProbeResult {
         final String url;
         final long latencyMs;
-        /** True when the server answered 206 (Range honoured) - such a source can resume. */
-        final boolean range;
-        ProbeResult(String url, long latencyMs, boolean range) {
+        ProbeResult(String url, long latencyMs) {
             this.url = url;
             this.latencyMs = latencyMs;
-            this.range = range;
         }
     }
 
@@ -165,121 +162,29 @@ public final class MirrorHub {
     }
 
     /**
-     * Builds the ordered candidate source list for a GitHub URL: the fastest probed source
-     * first, then direct GitHub, then remaining nodes. All serve the same file so a download
-     * can fall through or resume across switches. Mirrors only GitHub-flavoured URLs; any other
-     * URL (an IPFS gateway, a generic http mirror) is returned as a single direct entry.
+     * Select the fastest download source for a GitHub URL.
+     * Probes direct connection and the top N universal_proxy nodes concurrently with a
+     * 1-byte Range request, returns the fastest. Falls back to the original URL if all fail.
      */
-    public static List<String> buildSourceList(Context context, String url) {
-        List<String> sources = new ArrayList<>();
-        if (!isGitHubUrl(url)) {
-            sources.add(url);
-            return sources;
-        }
-        // Probe direct + every node and trust only sources that actually answered, range-capable
-        // (206) first. The ping order in active-nodes.json is not the proxy order: some of the
-        // lowest-latency domains are not GitHub proxies at all and time out, while the usable
-        // proxies sit further down the list and never got tried when we only took the top few.
-        List<ProbeResult> probed = probeAll(context, url);
-        for (ProbeResult r : probed) {
-            if (!sources.contains(r.url)) sources.add(r.url);
-            if (sources.size() >= MAX_SOURCES) return sources;
-        }
-        // Fallbacks even if their probe failed (a probe can time out while the real download
-        // works): direct first, then the remaining nodes in cached latency order.
-        if (!sources.contains(url)) sources.add(url);
-        for (Node node : getNodes(context)) {
-            String mirrored = "https://" + node.domain + "/" + url;
-            if (!sources.contains(mirrored)) sources.add(mirrored);
-            if (sources.size() >= MAX_SOURCES) break;
-        }
-        return sources;
-    }
-
-    /**
-     * Lightweight candidate list for small fetches (catalog JSON, API calls): direct GitHub
-     * first, then the cached nodes in latency order. No probing - the caller applies a short
-     * timeout on the direct source and falls through quickly when it is blocked.
-     */
-    public static List<String> buildFallbackSources(Context context, String url) {
-        List<String> sources = new ArrayList<>();
-        if (!isGitHubUrl(url)) {
-            sources.add(url);
-            return sources;
-        }
-        sources.add(url);
-        for (Node node : getNodes(context)) {
-            String mirrored = "https://" + node.domain + "/" + url;
-            if (!sources.contains(mirrored)) sources.add(mirrored);
-            if (sources.size() >= 4) break;
-        }
-        return sources;
-    }
-
-    /** True for GitHub-flavoured URLs (github.com, raw.githubusercontent.com, api.github.com). */
-    public static boolean isGitHubUrl(String url) {
-        return url != null && (url.startsWith("https://github.com/")
-                || url.startsWith("https://raw.githubusercontent.com/")
-                || url.startsWith("https://api.github.com/")
-                || url.startsWith("http://github.com/")
-                || url.startsWith("http://raw.githubusercontent.com/")
-                || url.startsWith("http://api.github.com/"));
-    }
-
-    /**
-     * Measures real download speed (KiB/s) over a short window for the speed-test page.
-     * Downloads the first ~256 KiB of {@code url} and returns bytes/sec, or -1 on failure.
-     * A one-byte Range probe measures latency only; this actually reads the body.
-     */
-    public static long measureSpeed(Context context, String url) {
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setConnectTimeout(PROBE_TIMEOUT_MS);
-            conn.setReadTimeout(8_000); // a 256 KiB probe finishes in ~2 s on a usable node
-            conn.setRequestProperty("User-Agent", "DroidDeck-Android");
-            conn.setRequestProperty("Range", "bytes=0-262143"); // 256 KiB window
-            conn.setInstanceFollowRedirects(true);
-            if (conn.getResponseCode() / 100 != 2) return -1;
-            long start = System.currentTimeMillis();
-            long read = 0;
-            byte[] buf = new byte[8192];
-            try (java.io.InputStream in = conn.getInputStream()) {
-                int n;
-                while (read < 262144 && (n = in.read(buf)) > 0) read += n;
-            }
-            long elapsed = System.currentTimeMillis() - start;
-            if (elapsed <= 0 || read <= 0) return -1;
-            return read * 1000L / elapsed; // bytes per second
-        } catch (Exception e) {
-            Log.w(TAG, "speed probe " + url, e);
-            return -1;
-        } finally {
-            if (conn != null) conn.disconnect();
-        }
-    }
-
-    /**
-     * Probes direct GitHub and every universal_proxy node concurrently with a 1-byte Range
-     * request. Returns the sources that answered 2xx, range-capable (206) first, each group
-     * ordered by measured latency. Sources that time out or are not real proxies drop out.
-     */
-    private static List<ProbeResult> probeAll(Context context, String githubUrl) {
+    public static String selectFastestSource(Context context, String githubUrl) {
         List<Node> nodes = getNodes(context);
         List<String> candidates = new ArrayList<>();
         candidates.add(githubUrl); // direct first
-        for (Node node : nodes) candidates.add("https://" + node.domain + "/" + githubUrl);
+        int limit = Math.min(MAX_NODES_TO_PROBE, nodes.size());
+        for (int i = 0; i < limit; i++) {
+            candidates.add("https://" + nodes.get(i).domain + "/" + githubUrl);
+        }
 
         ExecutorService executor = Executors.newFixedThreadPool(candidates.size());
         List<Future<ProbeResult>> futures = new ArrayList<>();
-        for (String u : candidates) {
-            futures.add(executor.submit(new ProbeTask(u)));
+        for (String url : candidates) {
+            futures.add(executor.submit(new ProbeTask(url)));
         }
 
         List<ProbeResult> results = new ArrayList<>();
         for (Future<ProbeResult> f : futures) {
             try {
-                ProbeResult r = f.get(PROBE_TIMEOUT_MS + 3000, TimeUnit.MILLISECONDS);
+                ProbeResult r = f.get(PROBE_TIMEOUT_MS + 2000, TimeUnit.MILLISECONDS);
                 if (r != null && r.latencyMs > 0) results.add(r);
             } catch (InterruptedException | ExecutionException | TimeoutException e) {
                 // skip this source
@@ -287,24 +192,14 @@ public final class MirrorHub {
         }
         executor.shutdownNow();
 
-        results.sort(Comparator.comparing((ProbeResult r) -> r.range ? 0 : 1)
-                .thenComparingLong(r -> r.latencyMs));
-        return results;
-    }
-
-    /**
-     * Select the fastest download source for a GitHub URL. Probes direct and all nodes
-     * concurrently; returns the fastest range-capable source, or the original URL if all fail.
-     */
-    public static String selectFastestSource(Context context, String githubUrl) {
-        List<ProbeResult> results = probeAll(context, githubUrl);
         if (results.isEmpty()) {
             Log.w(TAG, "all probes failed, using direct");
             return githubUrl;
         }
+        results.sort(Comparator.comparingLong(r -> r.latencyMs));
         ProbeResult best = results.get(0);
         Log.i(TAG, "fastest source: " + best.url.substring(0, Math.min(60, best.url.length()))
-                + " (" + best.latencyMs + "ms, range=" + best.range + ") out of " + results.size() + " candidates");
+                + " (" + best.latencyMs + "ms) out of " + results.size() + " candidates");
         return best.url;
     }
 
@@ -336,11 +231,11 @@ public final class MirrorHub {
                 // 200 = full file (no range support), 206 = partial content (range supported)
                 if (code / 100 == 2) {
                     long latency = System.currentTimeMillis() - start;
-                    return new ProbeResult(url, latency, code == HttpURLConnection.HTTP_PARTIAL);
+                    return new ProbeResult(url, latency);
                 }
-                return new ProbeResult(url, -1, false);
+                return new ProbeResult(url, -1);
             } catch (Exception e) {
-                return new ProbeResult(url, -1, false);
+                return new ProbeResult(url, -1);
             } finally {
                 if (conn != null) conn.disconnect();
             }

@@ -30,9 +30,9 @@ import com.droiddeck.launcher.R
 import com.droiddeck.launcher.core.MirrorHub
 
 /**
- * DroidDeck-zh: a network speed-test page for the Setup screen. Probes GitHub direct and every
- * MirrorHub node concurrently, measures real download speed over a 256 KiB window, and shows
- * which source the downloader will prefer. Reads only; it never changes the node list.
+ * DroidDeck-zh: a network speed-test page for the Setup screen. Probes GitHub direct and the
+ * top MirrorHub nodes, measures real download speed over a 256 KiB window, and shows which
+ * source the downloader will prefer. Reads only; it never changes the node list.
  */
 @Composable
 internal fun SpeedTestPage(onBack: () -> Unit) {
@@ -41,8 +41,6 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
     var directSpeed by remember { mutableStateOf(-1L) }          // bytes/sec, -1 = not tested
     var nodeResults by remember { mutableStateOf<List<NodeSpeed>>(emptyList()) }
     var error by remember { mutableStateOf<String?>(null) }
-    var tested by remember { mutableStateOf(0) }
-    var total by remember { mutableStateOf(0) }
 
     // The same file the runtime downloader uses, so the test reflects a real 754 MB fetch.
     val target = remember {
@@ -54,38 +52,16 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
         error = null
         directSpeed = -1
         nodeResults = emptyList()
-        tested = 0
-        val appCtx = ctx.applicationContext
-        val nodes = MirrorHub.getNodes(appCtx)
-        total = nodes.size + 1
         // Fire the probes from a background thread and hand the results back on the main thread.
         Thread {
-            // Probe direct and every node concurrently so the page reflects the same candidate
-            // set the downloader ranks from; a serial sweep of the whole list would take minutes.
-            val pool = java.util.concurrent.Executors.newFixedThreadPool(nodes.size + 1)
-            val tick = { Handler(Looper.getMainLooper()).post { tested++ } }
-            val directFuture = pool.submit(java.util.concurrent.Callable {
-                val s = MirrorHub.measureSpeed(appCtx, target)
-                tick(); s
-            })
-            val futures = nodes.map { node ->
-                pool.submit(java.util.concurrent.Callable {
-                    val speed = MirrorHub.measureSpeed(appCtx, "https://" + node.domain + "/" + target)
-                    tick(); NodeSpeed(node.name, node.domain, speed)
-                })
+            val appCtx = ctx.applicationContext
+            val direct = MirrorHub.measureSpeed(appCtx, target)
+            val nodes = MirrorHub.getNodes(appCtx).take(3).map { node ->
+                NodeSpeed(node.name, node.domain, MirrorHub.measureSpeed(appCtx, "https://" + node.domain + "/" + target))
             }
-            val direct = try { directFuture.get() } catch (e: Exception) { -1L }
-            val measured = futures.mapNotNull {
-                try { it.get() } catch (e: Exception) { null }
-            }
-            pool.shutdownNow()
-            // Fastest first; failed probes (-1) sink to the bottom.
-            val sorted = measured.sortedWith(
-                compareByDescending<NodeSpeed> { it.speedBytesPerSec }.thenBy { it.name }
-            )
             Handler(Looper.getMainLooper()).post {
                 directSpeed = direct
-                nodeResults = sorted
+                nodeResults = nodes
                 running = false
             }
         }.start()
@@ -115,8 +91,7 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         )
         PrimaryButton(
-            if (running) stringResource(R.string.speed_test_running, tested, total)
-            else stringResource(R.string.speed_test_start),
+            if (running) stringResource(R.string.speed_test_running) else stringResource(R.string.speed_test_start),
             enabled = !running,
             main = true,
             onClick = runTest,
@@ -124,22 +99,20 @@ internal fun SpeedTestPage(onBack: () -> Unit) {
         error?.let {
             Text(it, fontSize = 14.sp, color = MaterialTheme.colorScheme.error)
         }
-        if (directSpeed >= 0 || nodeResults.isNotEmpty()) {
-            if (directSpeed >= 0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        stringResource(R.string.speed_test_direct),
-                        fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        speedLabel(directSpeed, ctx),
-                        fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+        if (directSpeed >= 0) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.speed_test_direct),
+                    fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    speedLabel(directSpeed, ctx),
+                    fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface,
+                )
             }
             Spacer(Modifier.height(4.dp))
             Text(

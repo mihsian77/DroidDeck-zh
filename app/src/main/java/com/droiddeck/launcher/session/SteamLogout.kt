@@ -20,12 +20,11 @@ import java.io.File
  */
 object SteamLogout {
     private const val TAG = "SteamLogout"
-    internal const val FLAG = ".droiddeck-steam-logout"
+    private const val FLAG = ".droiddeck-steam-logout"
     private val AUTOLOGIN = Regex("""^\s*"AutoLoginUser"\s*"([^"]*)"\s*$""")
 
     private fun loginUsers(root: File) = File(root, "root/.local/share/Steam/config/loginusers.vdf")
     private fun configVdf(root: File) = File(root, "root/.local/share/Steam/config/config.vdf")
-    private fun steamHome(root: File) = File(root, "root/.local/share/Steam")
 
     /** True when the Steam home asked for a logout. */
     fun requested(context: Context): Boolean = File(context.filesDir, FLAG).isFile
@@ -45,25 +44,6 @@ object SteamLogout {
                 val staged = File(config.parentFile, "config.vdf.staged")
                 staged.writeText(rewritten)
                 if (staged.renameTo(config)) done.add("config.vdf") else staged.delete()
-            }
-        }
-        // P0-8: the client also keeps login traces outside config/: ssfn* credential caches,
-        // the htmlcache web session, and per-account localconfig.vdf. A full logout removes them.
-        val home = steamHome(root)
-        home.listFiles { f -> f.isFile && f.name.startsWith("ssfn") }
-            ?.forEach { it.delete(); done.add(it.name) }
-        val htmlcache = File(home, "htmlcache")
-        if (htmlcache.isDirectory) {
-            htmlcache.deleteRecursively()
-            done.add("htmlcache")
-        }
-        val userdata = File(home, "userdata")
-        userdata.listFiles()?.forEach { account ->
-            if (!account.isDirectory) return@forEach
-            val local = File(File(account, "config"), "localconfig.vdf")
-            if (local.isFile) {
-                local.delete()
-                done.add("userdata/" + account.name + "/config/localconfig.vdf")
             }
         }
         return if (done.isEmpty()) "logout: nothing to clear" else "logout: cleared " + done.joinToString(", ")
