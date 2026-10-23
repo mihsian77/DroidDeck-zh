@@ -59,7 +59,7 @@ jobs:
         env:
           RELEASE_KEYSTORE_B64: ${{ secrets.DROIDDECK_KEYSTORE_B64 }}
           RELEASE_STORE_PASSWORD: ${{ secrets.DROIDDECK_KEYSTORE_PASS }}
-          RELEASE_KEY_ALIAS: droiddeck
+          RELEASE_KEY_ALIAS: ${{ secrets.DROIDDECK_KEY_ALIAS }}
           ENVIRONMENT: ${{ inputs.environment }}
           VARIANT: ${{ matrix.variant }}
           LABEL: ${{ inputs.label }}
