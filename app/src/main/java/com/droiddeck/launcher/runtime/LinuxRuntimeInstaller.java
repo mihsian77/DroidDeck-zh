@@ -1,5 +1,6 @@
 package com.droiddeck.launcher.runtime;
 
+import com.droiddeck.launcher.core.AddonPack;
 import android.content.Context;
 import android.util.Log;
 
@@ -9,7 +10,6 @@ import com.droiddeck.launcher.core.ArchivePaths;
 import com.droiddeck.launcher.core.Downloader;
 import com.droiddeck.launcher.core.Hashes;
 import com.droiddeck.launcher.core.FileUtils;
-import com.droiddeck.launcher.core.MirrorHub;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -37,9 +37,6 @@ public final class LinuxRuntimeInstaller {
             "https://raw.githubusercontent.com/Droid-Deck/DroidDeck-Components/main/linuxfs.json";
 
     private static final String VERSION_FILE = ".version";
-
-    /** Decompression bomb guard for bundle imports: cap expanded bytes well above any real bundle. */
-    private static final long MAX_BUNDLE_BYTES = 8L * 1024 * 1024 * 1024;
 
     public enum Step { DOWNLOADING, VERIFYING, OTHER }
 
@@ -256,6 +253,7 @@ public final class LinuxRuntimeInstaller {
         File archive = new File(context.getCacheDir(), archiveName(release));
         // A failed download keeps what it fetched so the next attempt resumes it; anything that
         // reached verification and failed is not trusted and is removed.
+        boolean keepPartial = false;
         try {
             deleteOtherArchives(context.getCacheDir(), archive.getName());
             File pendingRemoval = removalDirectory(LinuxRuntime.rootDir(context));
@@ -264,246 +262,31 @@ public final class LinuxRuntimeInstaller {
             emptyTrash(LinuxRuntime.rootDir(context).getParentFile());
             String downloading = context.getString(R.string.rtinst_downloading);
             if (listener != null) listener.onProgress(Step.DOWNLOADING, downloading, 0);
-
-            // Build candidate source list: probes direct + every MirrorHub node concurrently,
-            // keeps only sources that answered (range-capable first), up to MAX_SOURCES.
-            MirrorHub.refresh(context);
-            java.util.List<String> sources = MirrorHub.buildSourceList(context, release.url);
-            Log.i(TAG, "downloading from " + sources.size() + " candidate sources");
-
-            // Downloader reports a 0..1 fraction. release.size is passed as the known total so the
-            // bar moves even when a mirror node streams without a Content-Length header.
-            boolean ok = Downloader.downloadFileWithSources(sources, archive, true, release.size, (fraction) -> {
+            if (!AddonPack.PROOT.await(context)) throw new IOException("Cannot download proot");
+            if (!AddonPack.DIRECTAUDIO.await(context)) throw new IOException("Cannot download DirectAudio");
+            boolean ok = Downloader.downloadFile(release.url, archive, true, release.sha256, (fraction) -> {
                 if (listener != null) {
                     listener.onProgress(Step.DOWNLOADING, downloading,
                             fraction < 0 ? -1 : Math.round(fraction * 100f));
                 }
             });
             if (!ok) {
-                Log.w(TAG, "download failed; keeping partial archive for resume");
+                Log.w(TAG, "download failed");
+                keepPartial = true;
                 return false;
             }
-            return unpackAndInstall(context, release, archive, listener, true);
-        } catch (Exception e) {
-            Log.e(TAG, "install", e);
-            return false;
-        }
-        // Note: archive is NOT deleted on download failure so the next attempt can resume.
-        // It IS deleted on checksum mismatch (corrupted) and after successful unpack.
-    }
 
-    /**
-     * Installs from a local file instead of downloading. The file is copied into the cache
-     * directory, verified against {@code release.sha256}, then unpacked. Used by the "import
-     * local package" entry so users who already fetched the tarball on another device don't
-     * have to re-download it over a flaky connection.
-     */
-    public static boolean installFromFile(Context context, File source, Release release, ProgressListener listener) {
-        Job job;
-        boolean owner;
-        synchronized (JOB_LOCK) {
-            if (running != null && running.removal) return false;
-            owner = running == null;
-            if (owner) { running = new Job(false, context.getString(R.string.user_apps_starting)); removalError = null; }
-            job = running;
-            if (listener != null) job.listeners.add(listener);
-        }
-        if (!owner) return join(job, listener);
-        try {
-            job.ok = installFromFileOnce(context.getApplicationContext(), source, release, new ProgressListener() {
-                @Override public void onProgress(String stage, int percent) { onProgress(Step.OTHER, stage, percent); }
-                @Override public void onProgress(Step step, String stage, int percent) {
-                    job.step = step; job.stage = stage; job.percent = percent;
-                    for (ProgressListener l : job.listeners) l.onProgress(step, stage, percent);
-                }
-            });
-            return job.ok;
-        } finally {
-            synchronized (JOB_LOCK) { running = null; }
-            job.done.countDown();
-        }
-    }
-
-    private static boolean installFromFileOnce(Context context, File source, Release release, ProgressListener listener) {
-        File archive = new File(context.getCacheDir(), "linuxfs.tar.zst");
-        try {
-            File pendingRemoval = removalDirectory(LinuxRuntime.rootDir(context));
-            if (pendingRemoval.exists() && listener != null) listener.onProgress(context.getString(R.string.rtinst_removing_leftovers), -1);
-            RuntimeFileTree.delete(pendingRemoval, null);
-            if (listener != null) listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_copying), 0);
-            // Copy the picked file into our cache dir so the unpacker always reads from the same place.
-            try (InputStream in = new FileInputStream(source);
-                 OutputStream out = new FileOutputStream(archive)) {
-                byte[] buf = new byte[1 << 16];
-                long total = source.length();
-                long copied = 0;
-                int read;
-                long lastReport = 0;
-                while ((read = in.read(buf)) > 0) {
-                    out.write(buf, 0, read);
-                    copied += read;
-                    if (listener != null && total > 0 && copied - lastReport > (1 << 20)) {
-                        lastReport = copied;
-                        listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_copying),
-                                Math.round(copied * 100f / total));
-                    }
-                }
-            }
-            return unpackAndInstall(context, release, archive, listener, false);
-        } catch (Exception e) {
-            Log.e(TAG, "installFromFile", e);
-            return false;
-        }
-    }
-
-    /**
-     * Installs the all-in-one bundle (linuxfs + desktop) from a single zip picked by the user.
-     * The bundle layout is fixed by the sync-data-packages workflow:
-     * <pre>
-     *   manifest.json      { "format": "droiddeck-bundle", "linuxfs": {...}, "desktop": {...} }
-     *   linuxfs.tar.zst
-     *   desktop.tar.zst
-     * </pre>
-     * The zip is unpacked into the cache directory, then each payload is installed in order:
-     * linuxfs first (the rootfs the desktop tar needs to exist under), then the desktop build.
-     * A failure in either leaves the other already-applied; the user can re-import to retry.
-     */
-    public static boolean importBundle(Context context, File bundle, ProgressListener listener) {
-        Job job;
-        boolean owner;
-        synchronized (JOB_LOCK) {
-            if (running != null && running.removal) return false;
-            owner = running == null;
-            if (owner) { running = new Job(false, context.getString(R.string.user_apps_starting)); removalError = null; }
-            job = running;
-            if (listener != null) job.listeners.add(listener);
-        }
-        if (!owner) return join(job, listener);
-        try {
-            job.ok = importBundleOnce(context.getApplicationContext(), bundle, new ProgressListener() {
-                @Override public void onProgress(String stage, int percent) { onProgress(Step.OTHER, stage, percent); }
-                @Override public void onProgress(Step step, String stage, int percent) {
-                    job.step = step; job.stage = stage; job.percent = percent;
-                    for (ProgressListener l : job.listeners) l.onProgress(step, stage, percent);
-                }
-            });
-            return job.ok;
-        } finally {
-            synchronized (JOB_LOCK) { running = null; }
-            job.done.countDown();
-        }
-    }
-
-    private static boolean importBundleOnce(Context context, File bundle, ProgressListener listener) {
-        File work = new File(context.getCacheDir(), "bundle");
-        try {
-            RuntimeFileTree.delete(work, null);
-            if (!work.mkdirs()) return false;
-            if (listener != null) listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_copying), 0);
-            // Unzip in place; zip entries are streamed so a 1.2 GB bundle never sits in RAM.
-            try (java.util.zip.ZipInputStream zin = new java.util.zip.ZipInputStream(new BufferedInputStream(new FileInputStream(bundle), 1 << 16))) {
-                java.util.zip.ZipEntry entry;
-                byte[] buf = new byte[1 << 16];
-                long totalBytes = 0;
-                String workPath = work.getCanonicalPath();
-                while ((entry = zin.getNextEntry()) != null) {
-                    if (entry.isDirectory()) continue;
-                    File out = new File(work, entry.getName());
-                    // Zip Slip guard: reject entries that escape the bundle work dir.
-                    if (!out.getCanonicalPath().startsWith(workPath + File.separator)) {
-                        Log.w(TAG, "importBundle: entry escapes the bundle dir: " + entry.getName());
-                        return false;
-                    }
-                    File parent = out.getParentFile();
-                    if (parent != null && !parent.isDirectory() && !parent.mkdirs()) return false;
-                    try (OutputStream os = new FileOutputStream(out)) {
-                        for (int read = zin.read(buf); read > 0; read = zin.read(buf)) {
-                            os.write(buf, 0, read);
-                            totalBytes += read;
-                            if (totalBytes > MAX_BUNDLE_BYTES) {
-                                Log.w(TAG, "importBundle: expanded size exceeds the " + MAX_BUNDLE_BYTES + " cap");
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-            // Manifest drives everything; refuse a bundle that does not look like ours.
-            File manifestFile = new File(work, "manifest.json");
-            String manifestText = FileUtils.readString(manifestFile);
-            JSONObject manifest = manifestText != null ? new JSONObject(manifestText) : null;
-            if (manifest == null || !"droiddeck-bundle".equals(manifest.optString("format"))) {
-                Log.w(TAG, "importBundle: not a droiddeck bundle");
-                return false;
-            }
-            // linuxfs first: the desktop tar unpacks over the rootfs it provides.
-            JSONObject lf = manifest.optJSONObject("linuxfs");
-            File linuxArchive = new File(work, "linuxfs.tar.zst");
-            if (lf != null && linuxArchive.isFile()) {
-                Release release = new Release(
-                        lf.optString("version", "bundle"),
-                        "local://bundle/linuxfs.tar.zst",
-                        lf.optString("sha256", ""),
-                        lf.optLong("size", linuxArchive.length()));
-                if (listener != null) listener.onProgress(Step.OTHER, context.getString(R.string.rtinst_title_installing), -1);
-                if (!unpackAndInstall(context, release, linuxArchive, listener, false)) {
-                    Log.w(TAG, "importBundle: linuxfs step failed");
-                    return false;
-                }
-            } else {
-                Log.w(TAG, "importBundle: no linuxfs in manifest");
-                return false;
-            }
-            // Desktop over the fresh rootfs; its catalog row carries the same checksum.
-            JSONObject dt = manifest.optJSONObject("desktop");
-            File desktopArchive = new File(work, "desktop.tar.zst");
-            if (dt != null && desktopArchive.isFile()) {
-                // The desktop id comes from the manifest (desktop-kde for the KDE bundle) so the
-                // installed marker matches what the app looks up, instead of a hard-coded id.
-                String desktopId = dt.optString("id", "desktop");
-                DesktopCatalog.Entry entry = new DesktopCatalog.Entry(
-                        desktopId, dt.optString("name", "Desktop"), 1, dt.optString("version", "bundle"),
-                        "tar", "local://bundle/desktop.tar.zst", dt.optString("sha256", ""),
-                        dt.optLong("size", desktopArchive.length()), "", "applications-games", "Game");
-                String problem = DesktopCatalog.INSTANCE.installFromFile(context, entry, desktopArchive, listener);
-                if (problem != null) {
-                    Log.w(TAG, "importBundle: desktop step failed: " + problem);
-                    return false;
-                }
-            }
-            return true;
-        } catch (Exception e) {
-            Log.e(TAG, "importBundle", e);
-            return false;
-        } finally {
-            // The payload files may be re-imported; leave the cache tidy.
-            try { RuntimeFileTree.delete(work, null); }
-            catch (IOException e) { Log.w(TAG, "bundle cleanup", e); }
-        }
-    }
-
-    /**
-     * Shared verify + unpack + swap logic. When {@code deleteOnSuccess} is true the archive is
-     * deleted after a successful install (download path); when false it is left alone (import
-     * path, where the file lives in the cache and may be reused).
-     */
-    private static boolean unpackAndInstall(Context context, Release release, File archive,
-                                            ProgressListener listener, boolean deleteOnSuccess) {
-        try {
             if (listener != null) listener.onProgress(Step.VERIFYING, context.getString(R.string.rtinst_verifying), -1);
             String actual = Hashes.sha256(archive);
             if (!release.sha256.equalsIgnoreCase(actual)) {
                 Log.w(TAG, "checksum mismatch: wanted " + release.sha256 + ", got " + actual);
-                archive.delete();
                 return false;
             }
-            // Unpack beside the live rootfs and swap, so a failure here cannot leave a half
-            // runtime that isInstalled() would happily launch.
+
             File root = LinuxRuntime.rootDir(context);
             File staging = new File(root.getParentFile(), LinuxRuntime.DIR + ".new");
             File old = new File(root.getParentFile(), LinuxRuntime.DIR + ".old");
             recoverInterruptedSwap(root, staging, old);
-            // Upstream 0.3.2: discard() sets aside anything undeletable instead of stranding it.
             if (!discard(staging, null) || !staging.mkdirs()) return false;
             if (listener != null) listener.onProgress(context.getString(R.string.rtinst_extracting), -1);
             if (!extract(context, archive, staging, listener)) {
@@ -520,7 +303,7 @@ public final class LinuxRuntimeInstaller {
                 RuntimeFileTree.delete(staging, null);
                 return false;
             }
-            // Carry the user's home over before the new rootfs takes the name.
+
             try {
                 RuntimeFileTree.carryHome(old, staging);
             } catch (IOException e) {
@@ -530,6 +313,7 @@ public final class LinuxRuntimeInstaller {
                 catch (IOException cleanup) { Log.w(TAG, "could not clear the failed staging tree", cleanup); }
                 return false;
             }
+
             if (!staging.renameTo(root)) {
                 File keptTo = new File(staging, USER_DATA);
                 if (keptTo.isDirectory() && old.isDirectory()) keptTo.renameTo(new File(old, USER_DATA));
@@ -537,13 +321,12 @@ public final class LinuxRuntimeInstaller {
                 return false;
             }
             discard(old, null);
-            // The downloaded archive is only kept for resume on failure; once the runtime is in
-            // place it costs cache space, so drop it (local imports keep their source file).
-            if (deleteOnSuccess) archive.delete();
             return LinuxRuntime.isInstalled(context);
         } catch (Exception e) {
-            Log.e(TAG, "unpackAndInstall", e);
+            Log.e(TAG, "install", e);
             return false;
+        } finally {
+            if (!keepPartial) archive.delete();
         }
     }
 
@@ -587,10 +370,15 @@ public final class LinuxRuntimeInstaller {
     }
 
     public static Removal beginUninstall(Context context) {
-        if (com.droiddeck.launcher.session.SessionState.INSTANCE.getRunning()) return null;
-        com.droiddeck.launcher.session.SessionPhase phase = com.droiddeck.launcher.session.SessionState.INSTANCE.getPhase();
-        if (phase != com.droiddeck.launcher.session.SessionPhase.IDLE && phase != com.droiddeck.launcher.session.SessionPhase.FAILED) return null;
+        if (sessionInUse()) return null;
         return beginUninstall(context.getApplicationContext(), LinuxRuntime.rootDir(context));
+    }
+
+    private static boolean sessionInUse() {
+        com.droiddeck.launcher.session.SessionState session = com.droiddeck.launcher.session.SessionState.INSTANCE;
+        com.droiddeck.launcher.session.SessionPhase phase = session.getPhase();
+        return session.getRunning() ||
+                (phase != com.droiddeck.launcher.session.SessionPhase.IDLE && phase != com.droiddeck.launcher.session.SessionPhase.FAILED);
     }
 
     static Removal beginUninstall(Context app, File root) {
@@ -617,6 +405,7 @@ public final class LinuxRuntimeInstaller {
             if (!started.compareAndSet(false, true)) return join(job, listener);
             if (listener != null) job.listeners.add(listener);
             try {
+                requireStopped();
                 report(text(app, R.string.rtinst_removing), -1);
                 final long[] removed = {0};
                 final long[] lastShown = {0};
@@ -643,6 +432,8 @@ public final class LinuxRuntimeInstaller {
                     if (!discard(leftover, progress)) throw new IOException("Cannot remove " + leftover);
                 }
                 emptyTrash(root.getParentFile());
+                requireStopped();
+                if (app != null) RuntimeFileTree.delete(new File(app.getNoBackupFilesDir(), "guest-runtime"), null);
                 job.ok = true;
                 report(text(app, R.string.rtinst_removed), 100);
                 return true;
@@ -656,6 +447,11 @@ public final class LinuxRuntimeInstaller {
                 job.done.countDown();
             }
         }
+
+        private void requireStopped() throws IOException {
+            if (Thread.currentThread().isInterrupted()) throw new IOException("Runtime removal was interrupted");
+            if (app != null && sessionInUse()) throw new IOException("A session is still using the runtime");
+        }
         private void report(String stage, int percent) {
             job.stage = stage;
             job.percent = percent;
@@ -663,9 +459,12 @@ public final class LinuxRuntimeInstaller {
         }
     }
 
+    // Packages extract over the live runtime and their archives list a link before the file it
+    // names, so a kill mid-way must leave neither a truncated file nor a link to a missing one.
     public static boolean extract(Context context, File archive, File destination, ProgressListener listener) {
         long entries = 0;
         String extracting = context.getString(R.string.rtinst_extracting);
+        java.util.LinkedHashMap<File, String> links = new java.util.LinkedHashMap<>();
         try (InputStream in = new ZstdCompressorInputStream(
                 new BufferedInputStream(new FileInputStream(archive), 1 << 16));
              TarArchiveInputStream tar = new TarArchiveInputStream(in)) {
@@ -684,29 +483,35 @@ public final class LinuxRuntimeInstaller {
                 if (parent != null && !parent.isDirectory()) parent.mkdirs();
 
                 if (entry.isSymbolicLink()) {
-                    file.delete();
-                    FileUtils.symlink(entry.getLinkName(), file.getAbsolutePath());
+                    links.remove(file);
+                    links.put(file, entry.getLinkName());
                 } else if (entry.isLink()) {
                     File target = ArchivePaths.inside(destination, entry.getLinkName());
                     if (target == null) {
                         Log.w(TAG, "skipping hard link outside the rootfs: " + entry.getLinkName());
                         continue;
                     }
-                    file.delete();
+                    links.remove(file);
+                    File part = partFile(file);
+                    part.delete();
                     try {
-                        Files.createLink(file.toPath(), target.toPath());
+                        Files.createLink(part.toPath(), target.toPath());
                     } catch (IOException | UnsupportedOperationException e) {
                         if (target.isFile()) {
-                            Files.copy(target.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            Files.copy(target.toPath(), part.toPath(), StandardCopyOption.REPLACE_EXISTING);
                         }
                     }
+                    if (part.exists()) place(part, file);
                 } else if (entry.isFile()) {
-                    try (OutputStream out = new FileOutputStream(file)) {
+                    links.remove(file);
+                    File part = partFile(file);
+                    try (OutputStream out = new FileOutputStream(part)) {
                         byte[] buffer = new byte[1 << 16];
                         int read;
                         while ((read = tar.read(buffer)) != -1) out.write(buffer, 0, read);
                     }
-                    if ((entry.getMode() & 0111) != 0) file.setExecutable(true, false);
+                    if ((entry.getMode() & 0111) != 0) part.setExecutable(true, false);
+                    place(part, file);
                 } else {
                     continue;
                 }
@@ -714,10 +519,32 @@ public final class LinuxRuntimeInstaller {
                     listener.onProgress(extracting, -1);
                 }
             }
+            for (java.util.Map.Entry<File, String> link : links.entrySet()) {
+                File file = link.getKey();
+                File part = partFile(file);
+                try {
+                    Files.deleteIfExists(part.toPath());
+                    Files.createSymbolicLink(part.toPath(), java.nio.file.Paths.get(link.getValue()));
+                    place(part, file);
+                } catch (IOException e) {
+                    Log.w(TAG, "symlink " + file + " -> " + link.getValue() + ": " + e);
+                    part.delete();
+                }
+            }
             return true;
         } catch (Exception e) {
             Log.e(TAG, "extract", e);
             return false;
         }
+    }
+
+    static File partFile(File file) {
+        return new File(file.getParentFile(), ".dd-part-" + Integer.toHexString(file.getName().hashCode()));
+    }
+
+    private static void place(File part, File file) throws IOException {
+        java.nio.file.Path path = file.toPath();
+        if (Files.isDirectory(path, java.nio.file.LinkOption.NOFOLLOW_LINKS)) Files.delete(path);
+        Files.move(part.toPath(), path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 }

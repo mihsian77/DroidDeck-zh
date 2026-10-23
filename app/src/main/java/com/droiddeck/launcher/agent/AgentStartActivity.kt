@@ -13,6 +13,7 @@ import org.json.JSONObject
 class AgentStartActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = com.droiddeck.launcher.session.SessionPrefs.orientation(this)
         val request = decodeRequest(intent.getStringExtra(EXTRA_REQUEST))
         if (request == null) {
             finish()
@@ -96,6 +97,7 @@ class AgentStartActivity : Activity() {
                 request.optString("steamUrl").takeIf { it.startsWith("steam://") }?.let {
                     putExtra(SessionService.EXTRA_STEAM_URL, it)
                 }
+                if (request.optBoolean("steamVr")) putExtra(SessionActivity.EXTRA_STEAMVR, true)
             }
         }
         startActivity(sessionIntent)

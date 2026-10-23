@@ -15,8 +15,6 @@ import org.json.JSONObject
 object ProtonExtras {
     private const val TAG = "ProtonExtras"
     private const val NEED_BYTES = 4L * 1024 * 1024 * 1024
-    private const val PROTON_SEED_URL =
-        "https://raw.githubusercontent.com/mihsian77/DroidDeck-zh/main/proton-seed.json"
     private const val RELEASES = "https://api.github.com/repos/%s/releases?per_page=15"
     const val CHECK_EVERY_MS = 6L * 60 * 60 * 1000
     @Volatile
@@ -31,7 +29,7 @@ object ProtonExtras {
     val tools = listOf(
         Tool("ge", "GE-Proton", "GE-Proton", "GloriousEggroll/proton-ge-custom", Regex("aarch64\\.tar\\.(gz|xz)$")),
         Tool("cachyos", "proton-cachyos", "proton-cachyos", "CachyOS/proton-cachyos", Regex("arm64\\.tar\\.(gz|xz)$")),
-        Tool("droiddeck", "DroidDeck-Proton", "DroidDeck-Proton", "The412Banner/DroidDeck-Proton", Regex("aarch64\\.tar\\.(gz|xz)$")),
+        Tool("droiddeck", "DroidDeck-Proton", "DroidDeck-Proton", "Droid-Deck/DroidDeck-Proton", Regex("aarch64\\.tar\\.(gz|xz)$")),
     )
 
     private fun home(context: Context) = File(LinuxRuntime.rootDir(context), "root")
@@ -152,28 +150,6 @@ object ProtonExtras {
         return try { installNow(context, tool, onProgress) } finally { installInProgress = false }
     }
 
-    /**
-     * Installs a local Proton archive the user picked (import path). The file is copied into the
-     * download directory so the install logic always reads from the same place, then verified and
-     * registered exactly like a downloaded build. The caller owns the picked file's lifetime.
-     */
-    @Synchronized
-    fun importArchive(context: Context, tool: Tool, file: File, onProgress: (String, Int) -> Unit): String? {
-        if (installInProgress) return context.getString(R.string.pextra_busy)
-        installInProgress = true
-        try {
-            if (SessionState.running) return context.getString(R.string.pextra_stop_session)
-            if (!LinuxRuntime.isInstalled(context)) return context.getString(R.string.user_apps_runtime_required)
-            val downloads = File(context.filesDir, "proton-downloads").apply { mkdirs() }
-            val archive = File(downloads, "${tool.id}-local-${file.name}")
-            onProgress(context.getString(R.string.pextra_copying, tool.name), 0)
-            file.copyTo(archive, overwrite = true)
-            return installArchive(context, tool, archive, null, onProgress)
-        } finally {
-            installInProgress = false
-        }
-    }
-
     private fun installNow(context: Context, tool: Tool, onProgress: (String, Int) -> Unit): String? {
         if (SessionState.running) return context.getString(R.string.pextra_stop_session)
         if (!LinuxRuntime.isInstalled(context)) return context.getString(R.string.user_apps_runtime_required)
@@ -191,7 +167,7 @@ object ProtonExtras {
         onProgress(downloading, 0)
         var downloaded = false
         for (attempt in 0 until 5) {
-            downloaded = Downloader.downloadFile(asset.url, archive, true) { fraction ->
+            downloaded = Downloader.downloadFile(asset.url, archive, true, asset.sha256) { fraction ->
                 onProgress(downloading, if (fraction < 0) -1 else (fraction * 100f).toInt().coerceIn(0, 100))
             }
             if (downloaded) break
@@ -216,7 +192,7 @@ object ProtonExtras {
         val verified = when {
             asset.sha256 != null -> asset.sha256.equals(Hashes.sha256(archive), ignoreCase = true)
             asset.sha512 != null -> {
-                val expected = Downloader.downloadString(asset.sha512)?.let { Regex("(?i)\\b[0-9a-f]{128}\\b").find(it)?.value }
+                val expected = Downloader.downloadDirect(asset.sha512)?.let { Regex("(?i)\\b[0-9a-f]{128}\\b").find(it)?.value }
                     ?: return context.getString(R.string.pextra_checksum_unreadable)
                 expected.equals(Hashes.sha512(archive), ignoreCase = true)
             }
@@ -229,17 +205,7 @@ object ProtonExtras {
             archive.delete()
             return context.getString(R.string.pextra_checksum_mismatch)
         }
-        return installArchive(context, tool, archive, asset, onProgress)
-    }
 
-    /**
-     * Verifies (where possible) and registers one Proton archive: stage the session files, then
-     * ask the runtime's droiddeck-proton-extra shim to unpack it into compatibilitytools.d. The
-     * archive is deleted on success; on a checksum failure it is deleted before install too.
-     * Imported archives arrive here unverified (no release to vouch for them) and are installed
-     * as-is - the shim refuses an archive that does not look like a Proton build.
-     */
-    private fun installArchive(context: Context, tool: Tool, archive: File, asset: Asset?, onProgress: (String, Int) -> Unit): String? {
         if (SessionState.running) return context.getString(R.string.pextra_session_started)
         val installing = context.getString(R.string.pextra_installing, tool.name)
         onProgress(installing, -1)
@@ -259,7 +225,7 @@ object ProtonExtras {
                 .redirectErrorStream(true)
             val hostEnv = process.environment()
             hostEnv["PROOT_LOADER"] = LinuxRuntime.prootLoader(context).path
-            hostEnv["PROOT_TMP_DIR"] = context.cacheDir.path
+            hostEnv["PROOT_TMP_DIR"] = LinuxRuntime.prootTempDir(context).path
             LinuxRuntime.prootLibraryPath(context).takeIf { it.isNotEmpty() }?.let { hostEnv["LD_LIBRARY_PATH"] = it }
             val child = process.start()
             var placed: String? = null
@@ -277,7 +243,7 @@ object ProtonExtras {
             else {
                 archive.delete()
                 unqueue(context, tool)
-                record(context, tool, placed, asset?.tag ?: "local")
+                record(context, tool, placed, asset.tag)
                 if (EsyncPacks.enabled(context)) {
                     onProgress(context.getString(R.string.esync_fetching), -1)
                     try {
@@ -294,23 +260,12 @@ object ProtonExtras {
         }
     }
 
-    /**
-     * The latest build comes from this repo's proton-seed.json, not api.github.com: the API is
-     * blocked or throttled for users on CN networks and the mirror nodes cannot proxy it. A raw
-     * GitHub URL is served by the same MirrorHub sources as every other fetch.
-     */
     private fun findLatestAsset(tool: Tool): Asset? {
-        val json = Downloader.downloadString(PROTON_SEED_URL) ?: return null
+        val releases = Downloader.downloadString(RELEASES.format(tool.repo)) ?: return null
         return try {
-            val entry = JSONObject(json).optJSONObject("tools")?.optJSONObject(tool.id) ?: return null
-            Asset(
-                entry.optString("tag"), entry.optString("name"),
-                entry.optString("url").takeIf { it.startsWith("http") } ?: return null,
-                entry.optString("sha512").takeIf { it.startsWith("http") },
-                entry.optLong("size", 0L),
-            )
+            pickAsset(tool, JSONArray(releases))
         } catch (e: Exception) {
-            Log.w(TAG, "proton seed for ${tool.id}", e)
+            Log.w(TAG, "release metadata for ${tool.id}", e)
             null
         }
     }

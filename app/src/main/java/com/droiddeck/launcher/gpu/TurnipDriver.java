@@ -8,6 +8,7 @@ import android.util.Log;
 import com.droiddeck.launcher.R;
 import com.droiddeck.launcher.core.FileUtils;
 import com.droiddeck.launcher.core.TarZst;
+import com.droiddeck.launcher.session.QuestExperimental;
 import com.droiddeck.launcher.session.SessionPrefs;
 
 import org.json.JSONObject;
@@ -281,27 +282,17 @@ public final class TurnipDriver {
             if (forced.startsWith("a7")) return DRIVER_A7XX;
             if (forced.startsWith("a6")) return DRIVER_A6XX;
         }
-        String model = gpuModel();
-        Log.i(TAG, "gpu model: " + (model == null ? "unknown" : model));
-        if (model != null) {
-            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d)\\d\\d").matcher(model);
-            if (m.find()) {
-                char generation = m.group(1).charAt(0);
-                if (generation >= '8') return DRIVER_A8XX;
-                if (generation == '7') return DRIVER_A7XX;
-                if (generation == '6') return DRIVER_A6XX;
-            }
-        }
-        return android.os.Build.VERSION.SDK_INT >= 36 ? DRIVER_A8XX : DRIVER_A7XX;
+        String quest = QuestExperimental.INSTANCE.defaultAndroidDriver();
+        if (quest != null) return quest;
+        int model = GpuInfo.Companion.detect().getModel();
+        Log.i(TAG, "gpu model: " + (model == 0 ? "unknown" : model));
+        return chooseByModel(model, android.os.Build.VERSION.SDK_INT);
     }
 
-    private static String gpuModel() {
-        for (String path : new String[]{
-                "/sys/class/kgsl/kgsl-3d0/gpu_model",
-                "/sys/class/kgsl/kgsl-3d0/gpu_chipid"}) {
-            String value = FileUtils.readString(new File(path));
-            if (value != null && !value.trim().isEmpty()) return value.trim();
-        }
-        return null;
+    static String chooseByModel(int model, int sdk) {
+        if (model >= 800) return DRIVER_A8XX;
+        if (model >= 700) return DRIVER_A7XX;
+        if (model >= 600) return DRIVER_A6XX;
+        return sdk >= 36 ? DRIVER_A8XX : DRIVER_A7XX;
     }
 }

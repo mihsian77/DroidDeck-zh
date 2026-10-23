@@ -2,6 +2,7 @@ package com.droiddeck.launcher.session
 
 import android.content.Context
 import android.util.Log
+import com.droiddeck.launcher.core.DownloadSource
 import com.droiddeck.launcher.core.GameEnvironment
 import com.droiddeck.launcher.input.ControllerPrefs
 import com.droiddeck.launcher.runtime.LinuxRuntime
@@ -12,15 +13,18 @@ object SettingsReset {
     internal val SESSION_KEYS = setOf(
         "orientation", "launcherFullscreen", "animations", "theme", "runSteamAtStartup", "addedGamesArt",
         "gameStoresEnabled", "gameStoresSpeedTier", "gameStoresParallel", "storesOpenTab", "storesShowMature",
-        "hud", "hudDeck", "backActionsInverted", "touch", "osc", "shape", "steamController",
-        "gamepadLeft", "gamepadRight", "pipAutoEnter", "unfoldedControls", "stretch16x9",
+        "storesInstallLanguage",
+        "hud", "hudDeck", "hudFps", "hudBattery", "hudGraph", "hudColor", "hudOpacity", "backActionsInverted", "touch", "osc", "shape", "steamController",
+        "gamepadLeft", "gamepadRight", "pipAutoEnter", "unfoldedControls", "unfoldedControlsWithController",
+        "stretch16x9", "picturePosition",
         "gpuDriverMode", "androidDriver", "linuxDriver", "linuxDriver.steam", "linuxDriver.desktop",
         "tuSysmem", "glThread", "noGlError", "zinkLazy", "mangoapp", "gpuClockPin", "gamescopeRealtime",
         "directAudio", "mic", "wifiDiscovery", "clientCpusOverride", "clientCpus", "gameCpus",
         "noXalia", "fastSync", "fsyncFirst", "syncFallback", "prootNoSeccomp", "prootFastPath",
         "guestHostname", "fexPreset", "forceSsbs", "logs", "storageDiagnostics",
         "upscaler", "upscaleSharpness", "screenEffects", "textureAnisotropy", "textureLodBias",
-        "steamDownloadsInBackground", "steam_offline",
+        "steamDownloadsInBackground", "steam_offline", "bootMovie", "bootMovieSound", "bootMovieVolume", "bootMovieSeconds",
+        "bootMovieApplyNext", "bootMovieSteamSeen",
         "questDefaultsV1",
     )
 
@@ -41,6 +45,7 @@ object SettingsReset {
         context.getSharedPreferences("frame_gen", Context.MODE_PRIVATE).edit().clear().commit()
         context.getSharedPreferences("steam_touch", Context.MODE_PRIVATE).edit()
             .apply { STEAM_TOUCH_KEYS.forEach { remove(it) } }.commit()
+        DownloadSource.reset(context)
         com.droiddeck.launcher.agent.AgentAccess.setCommandsEnabled(context, false)
 
         if (gameProfiles) {

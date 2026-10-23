@@ -3,7 +3,7 @@ run-name: ${{ github.event_name == 'pull_request' && format('building pr {0} on 
 
 on:
   push:
-    branches: [ main, 'auto-sync/**' ]
+    branches: [ main ]
     paths-ignore:
       - '**/*.md'
       - 'LICENSE'
@@ -26,11 +26,68 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  PRELOAD_CACHE_VERSION: v3
+  PRELOAD_CACHE_VERSION: v6
 
 jobs:
+  xbox:
+    name: Xbox ARM64 backend
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    outputs:
+      base-sha: ${{ steps.merge.outputs.base-sha }}
+      tree-sha: ${{ steps.source.outputs.tree-sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Pin and merge the APK source
+        id: merge
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          echo "base-sha=$(git rev-parse origin/main)" >> "$GITHUB_OUTPUT"
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git merge --no-ff --no-edit origin/main
+      - name: Record backend source tree
+        id: source
+        run: echo "tree-sha=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: xbox-cache
+        with:
+          path: |
+            app/src/main/assets/linuxfs/usr/local/lib/droiddeck-xbox
+            app/build/xbox/xodus-droiddeck-source.tar.xz
+            app/build/xbox/runtime/*-source.tar.xz
+          key: xbox-arm64-${{ hashFiles('tools/xbox/**') }}
+      - name: Build Xbox backend
+        if: steps.xbox-cache.outputs.cache-hit != 'true'
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal
+          sudo apt-get update -qq
+          sudo apt-get install -y build-essential pkg-config libssl-dev protobuf-compiler cmake xz-utils
+          bash tools/xbox/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xbox-arm64
+          path: app/src/main/assets/linuxfs/usr/local/lib/droiddeck-xbox
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xbox-corresponding-source
+          path: |
+            app/build/xbox/xodus-droiddeck-source.tar.xz
+            app/build/xbox/runtime/*-source.tar.xz
+          if-no-files-found: error
+          retention-days: 14
+
   build:
-    name: Build APK
+    needs: xbox
+    name: Compile and test APK
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -41,18 +98,24 @@ jobs:
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Check co-authors
-        if: github.event_name == 'pull_request'
+      - name: Check human authorship
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          git fetch --no-tags origin main
-          base=$(git merge-base origin/main HEAD)
-          messages=$(git log --format=%B "$base..HEAD")
-          messages+=$'\n'"$(jq -r '.pull_request.title, (.pull_request.body // "")' "$GITHUB_EVENT_PATH")"
-          if grep -Eiq '^[[:space:]]*Co-authored-by:.*(Claude|Anthropic|OpenAI|ChatGPT|GPT|Copilot|Cursor|Gemini|Codex|Devin|Windsurf|Codeium|Amazon Q|Tabnine|Cody|\[bot\])' <<<"$messages"; then
-            echo "::error::AI and bot identities cannot be co-authors; remove the Co-authored-by trailer."
-            exit 1
+          if [ "$EVENT_NAME" = pull_request ]; then
+            git fetch --no-tags origin main
+            base=$(git merge-base origin/main HEAD)
+            checker="$RUNNER_TEMP/droiddeck-check-authorship.py"
+            git show origin/main:tools/release/check_authorship.py > "$checker"
+            python3 "$checker" "$base..HEAD" --event "$GITHUB_EVENT_PATH"
+          elif [ "$EVENT_NAME" = push ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            python3 tools/release/check_authorship.py "$BEFORE..HEAD"
+          else
+            python3 tools/release/check_authorship.py HEAD
           fi
 
       - name: The packages a signed build ships as
@@ -86,14 +149,17 @@ jobs:
 
       - name: Merge onto main, or say what conflicts
         if: github.event_name == 'pull_request'
+        env:
+          BUILD_BASE_SHA: ${{ needs.xbox.outputs.base-sha }}
         run: |
           set -uo pipefail
           git config user.name "ci"
           git config user.email "ci@users.noreply.github.com"
           git fetch --no-tags origin main
-          BASE=$(git rev-parse --short origin/main)
+          git fetch --no-tags origin "$BUILD_BASE_SHA"
+          BASE=$(git rev-parse --short FETCH_HEAD)
           HEAD=$(git rev-parse --short HEAD)
-          if git merge --no-ff --no-edit origin/main >/tmp/merge.out 2>&1; then
+          if git merge --no-ff --no-edit FETCH_HEAD >/tmp/merge.out 2>&1; then
             {
               echo "###  Mergeable"
               echo
@@ -140,6 +206,11 @@ jobs:
           echo "::error::the pull request conflicts with main: $(echo $FILES | tr '\n' ' ')"
           exit 1
 
+      - name: Verify backend and APK source match
+        env:
+          XBOX_SOURCE_TREE: ${{ needs.xbox.outputs.tree-sha }}
+        run: test "$(git rev-parse 'HEAD^{tree}')" = "$XBOX_SOURCE_TREE"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -184,16 +255,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: app/src/main/assets/linuxfs
-          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'app/src/main/cpp/adrenotools/src/hook/kgsl.h', 'tools/quest/*', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/overlay/usr/share/fonts/**', 'tools/linuxfs/overlay/etc/fonts/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**', 'tools/comet/**', 'tools/linuxfs/debian-image.env', 'tools/vr/**') }}
+          key: preloads-${{ env.PRELOAD_CACHE_VERSION }}-${{ hashFiles('app/src/main/cpp/fakeinput_steam.cpp', 'app/src/main/cpp/adrenotools/src/hook/kgsl.h', 'tools/quest/*', 'tools/linuxfs/preload/*.c', 'tools/linuxfs/build-x86-preloads.sh', 'tools/linuxfs/fex/*', 'tools/linuxfs/clipboard/*.c', 'tools/linuxfs/ssbs/*.c', 'tools/proot/fastpath/*.c', 'tools/linuxfs/overlay/usr/local/bin/*', 'tools/linuxfs/overlay/usr/bin/**', 'tools/linuxfs/desktop/*', 'tools/gamescope/release.env', 'tools/wlroots/release.env', 'tools/linuxfs/uruntime.env', 'tools/linuxfs/licenses/*', 'tools/mangoapp/*', 'tools/msitools/**', 'tools/comet/**', 'tools/xbox/**', 'tools/linuxfs/debian-image.env', 'tools/vr/**') }}
 
       - name: Build libfakeinput.so and libblsession.so (glibc aarch64)
         if: steps.preloads.outputs.cache-hit != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu >/dev/null
+          sudo apt-get -o Dir::Etc::sourcelist=sources.list.d/ubuntu.sources \
+            -o Dir::Etc::sourceparts=- -o Acquire::Retries=3 update -qq
+          sudo apt-get install -y -qq gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libvulkan1 mesa-vulkan-drivers >/dev/null
           D=app/src/main/assets/linuxfs
           mkdir -p "$D"
           aarch64-linux-gnu-g++ -shared -fPIC -O2 -Wall -Wno-attributes -Wno-nonnull-compare \
@@ -223,19 +293,14 @@ jobs:
           for f in tools/linuxfs/overlay/usr/bin/* tools/linuxfs/overlay/usr/bin/steamos-polkit-helpers/*; do
             [ -f "$f" ] && install -Dm644 "$f" "$D/${f#tools/linuxfs/overlay/}"
           done
-          # CJK font and fontconfig fallback (zh overlay)
-          for f in $(cd tools/linuxfs/overlay && find usr/share/fonts etc/fonts -type f 2>/dev/null); do
-            install -Dm644 "tools/linuxfs/overlay/$f" "$D/$f"
-          done
           if [ -f tools/gamescope/release.env ]; then
             . tools/gamescope/release.env
-            gh release download "${GAMESCOPE_TAG}" -R "${GAMESCOPE_REPO:-${GITHUB_REPOSITORY}}" -p gamescope.tzst -O gamescope.tzst
+            curl -fsSL --retry 3 -o gamescope.tzst "https://github.com/${GAMESCOPE_REPO:-${GITHUB_REPOSITORY}}/releases/download/${GAMESCOPE_TAG}/gamescope.tzst"
             echo "${GAMESCOPE_SHA256}  gamescope.tzst" | sha256sum -c -
             tar --use-compress-program=unzstd -xf gamescope.tzst -C "$D"
             test -f "$D/usr/local/bin/gamescope"
             rm gamescope.tzst
           fi
-
           . tools/linuxfs/uruntime.env
           curl -fsSL --retry 3 -o uruntime "https://github.com/VHSgunzo/uruntime/releases/download/${URUNTIME_VERSION}/${URUNTIME_ASSET}"
           echo "${URUNTIME_SHA256}  uruntime" | sha256sum -c -
@@ -261,6 +326,17 @@ jobs:
           install -Dm644 tools/mangoapp/mangoapp "$D/usr/local/bin/mangoapp"
           rm -rf mango-pkgs
           ls -l "$M"
+          mkdir -p pw-pkgs
+          grep -v '^#' tools/pipewire/packages.txt | while read -r sum url; do
+            [ -n "$url" ] || continue
+            curl -fsSL --retry 3 -o pw-pkgs/pkg.tar.zst "$url"
+            echo "$sum  pw-pkgs/pkg.tar.zst" | sha256sum -c -
+            tar --use-compress-program=unzstd -xf pw-pkgs/pkg.tar.zst -C pw-pkgs
+            rm pw-pkgs/pkg.tar.zst
+          done
+          tools/pipewire/assemble.sh pw-pkgs "$D/usr/local/lib/droiddeck-pipewire.tzst"
+          rm -rf pw-pkgs
+          ls -l "$D/usr/local/lib/droiddeck-pipewire.tzst"
           T="$D/usr/local/lib/droiddeck-msitools"
           mkdir -p "$T" msi-pkgs
           grep -v '^#' tools/msitools/packages.txt | while read -r sum url; do
@@ -318,27 +394,32 @@ jobs:
           set -euo pipefail
           docker run --rm -v "$PWD:/src" -w /src public.ecr.aws/docker/library/debian:bullseye bash -c '
             set -euo pipefail
-            printf "deb http://archive.debian.org/debian bullseye main\ndeb http://archive.debian.org/debian-security bullseye-security main\n" > /etc/apt/sources.list
-            apt-get -o Acquire::Check-Valid-Until=false update -qq
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gcc g++ gcc-multilib g++-multilib binutils >/dev/null
+            install_compilers() {
+              apt-get -o Acquire::Check-Valid-Until=false update -qq &&
+                DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends gcc g++ gcc-multilib g++-multilib binutils >/dev/null
+            }
+            printf "deb http://deb.debian.org/debian bullseye main\ndeb http://security.debian.org/debian-security bullseye-security main\n" > /etc/apt/sources.list
+            if ! install_compilers; then
+              printf "deb http://archive.debian.org/debian bullseye main\ndeb http://archive.debian.org/debian-security bullseye-security main\n" > /etc/apt/sources.list
+              install_compilers
+            fi
             tools/linuxfs/build-x86-preloads.sh app/src/main/assets/linuxfs
           '
           sudo chown -R "$(id -u):$(id -g)" app/src/main/assets/linuxfs
           ls -l app/src/main/assets/linuxfs/x86_64 app/src/main/assets/linuxfs/i386
 
       - name: Bundle the droiddeck-esync packs
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [ -f tools/droiddeck-esync/release.env ]; then
             . tools/droiddeck-esync/release.env
-            gh release download "$SYNC_BUNDLE_TAG" -R "$SYNC_BUNDLE_REPO" -p "$SYNC_BUNDLE_ASSET" -O sync-bundle.tzst
+            release_url="https://github.com/${SYNC_BUNDLE_REPO}/releases/download/${SYNC_BUNDLE_TAG}"
+            curl -fsSL --retry 3 -o sync-bundle.tzst "$release_url/$SYNC_BUNDLE_ASSET"
             echo "$SYNC_BUNDLE_SHA256  sync-bundle.tzst" | sha256sum -c -
             mkdir -p app/src/main/assets/droiddeck-esync
             tar --use-compress-program=unzstd -xf sync-bundle.tzst -C app/src/main/assets/droiddeck-esync
             rm sync-bundle.tzst
-            gh release download "$SYNC_BUNDLE_TAG" -R "$SYNC_BUNDLE_REPO" -p index.json -O sync-index.json
+            curl -fsSL --retry 3 -o sync-index.json "$release_url/index.json"
             revoked=$(python3 -c 'import json, sys; print(" ".join(p["id"] for p in json.load(open(sys.argv[1]))["packs"] if p.get("revoked") is True))' sync-index.json)
             for id in $revoked; do
               if [ -e "app/src/main/assets/droiddeck-esync/packs/$id.tzst" ]; then
@@ -401,6 +482,32 @@ jobs:
           set -euo pipefail
           bash tools/linuxfs/check-preloads.sh app/src/main/assets/linuxfs
 
+      - name: Check Quest tracking IPC
+        run: |
+          set -euo pipefail
+          NDK="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-$ANDROID_NDK_ROOT}}"
+          VK_INCLUDE=$(ls -d "$NDK"/toolchains/llvm/prebuilt/*/sysroot/usr/include | head -1)
+          mkdir -p build/vr/include
+          cp -R "$VK_INCLUDE/vulkan" build/vr/include/
+          if [ -d "$VK_INCLUDE/vk_video" ]; then cp -R "$VK_INCLUDE/vk_video" build/vr/include/; fi
+          g++ -std=c++17 -Wall -Wextra -Werror -pthread tools/vr/tests/test_xr_tracking.cpp -o /tmp/test-xr-tracking
+          /tmp/test-xr-tracking
+          g++ -std=c++17 -Wall -Wextra -Werror tools/vr/tests/test_xr_touch.cpp -o /tmp/test-xr-touch
+          /tmp/test-xr-touch
+          g++ -std=c++17 -Wall -Wextra -Werror tools/vr/tests/test_pad_controller_config.cpp -o /tmp/test-pad-controller-config
+          /tmp/test-pad-controller-config
+          g++ -std=c++17 -Wall -Wextra -Werror -pthread tools/vr/tests/test_xr_vsync.cpp -o /tmp/test-xr-vsync
+          /tmp/test-xr-vsync
+          g++ -std=c++17 -Wall -Wextra -Werror -pthread tools/vr/tests/test_xr_frames.cpp -o /tmp/test-xr-frames
+          /tmp/test-xr-frames
+          cc -Itools/vr/third_party/wayland -c tools/vr/src/wayland_client_stub.c -o /tmp/test-wayland-stub.o
+          cc -Itools/vr/third_party/wayland -c app/src/main/cpp/waylandcomp/generated/xdg-shell-protocol.c -o /tmp/test-xdg-shell.o
+          g++ -std=c++17 -Wall -Wextra -Werror -Wno-unused-parameter -Wno-missing-field-initializers -pthread -Ibuild/vr/include \
+            -Itools/vr/third_party/wayland -Iapp/src/main/cpp/waylandcomp/generated \
+            tools/vr/tests/test_presenter_shutdown.cpp tools/vr/src/presenter.cpp /tmp/test-wayland-stub.o /tmp/test-xdg-shell.o \
+            -ldl -o /tmp/test-presenter-shutdown
+          timeout 10 /tmp/test-presenter-shutdown
+
       - name: Rust toolchain for the store engines (aarch64-linux-android)
         id: rust
         run: |
@@ -434,9 +541,14 @@ jobs:
           path: |
             app/.cxx
             app/build/intermediates/cxx
-          key: cxx-${{ env.NDK_VERSION }}-${{ hashFiles('app/src/main/cpp/**') }}
+          key: cxx-${{ env.NDK_VERSION }}-${{ hashFiles('app/src/main/cpp/**', 'tools/vr/src/xr_*.h') }}
           restore-keys: |
             cxx-${{ env.NDK_VERSION }}-
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: xbox-arm64
+          path: app/src/main/assets/linuxfs/usr/local/lib/droiddeck-xbox
 
       - name: Build GOG Galaxy companion
         if: steps.preloads.outputs.cache-hit != 'true'
@@ -445,37 +557,18 @@ jobs:
           rustup target add --toolchain 1.90.0 aarch64-unknown-linux-gnu
           RUSTUP_TOOLCHAIN=1.90.0 bash tools/comet/build.sh
 
+      - name: Build the add-on packs
+        run: bash tools/packs/build.sh app/build/packs
+
       - name: Build
         id: build
         env:
           DROIDDECK_BUILD_LABEL: ${{ steps.build-label.outputs.label }}
           SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
-          DROIDDECK_KEYSTORE_B64: ${{ secrets.DROIDDECK_KEYSTORE_B64 }}
-          DROIDDECK_KEYSTORE_PASS: ${{ secrets.DROIDDECK_KEYSTORE_PASS }}
-          DROIDDECK_KEY_ALIAS: ${{ secrets.DROIDDECK_KEY_ALIAS }}
-          DROIDDECK_KEY_PASS: ${{ secrets.DROIDDECK_KEY_PASS }}
         run: |
           set -o pipefail
           python3 tools/quest/build-driver.py "$ANDROID_HOME/ndk/$NDK_VERSION"
           python3 tools/release/runtime_inputs.py record
-          # The DroidDeck-zh release key comes from Actions secrets: decode it to a file and point
-          # build.gradle at it. Without the secret the release falls back to testkey (local dev).
-          if [ -n "$DROIDDECK_KEYSTORE_B64" ]; then
-            echo "$DROIDDECK_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP"/droiddeck-release.p12
-            # Export to the current shell so gradle (a child process below) inherits them.
-            # GITHUB_ENV alone does not take effect within the same step.
-            export DROIDDECK_KEYSTORE_FILE="$RUNNER_TEMP"/droiddeck-release.p12
-            export DROIDDECK_KEYSTORE_PASS="$DROIDDECK_KEYSTORE_PASS"
-            export DROIDDECK_KEY_ALIAS="$DROIDDECK_KEY_ALIAS"
-            export DROIDDECK_KEY_PASS="$DROIDDECK_KEY_PASS"
-            echo "DROIDDECK_KEYSTORE_FILE=$DROIDDECK_KEYSTORE_FILE" >> "$GITHUB_ENV"
-            echo "DROIDDECK_KEYSTORE_PASS=$DROIDDECK_KEYSTORE_PASS" >> "$GITHUB_ENV"
-            echo "DROIDDECK_KEY_ALIAS=$DROIDDECK_KEY_ALIAS" >> "$GITHUB_ENV"
-            echo "DROIDDECK_KEY_PASS=$DROIDDECK_KEY_PASS" >> "$GITHUB_ENV"
-            echo "signing: DroidDeck-zh release key"
-          else
-            echo "signing: no release key secret, falling back to testkey"
-          fi
           ./gradlew assembleRelease --console=plain -PndkVersion="$NDK_VERSION" 2>&1 | tee /tmp/build.log
           python3 tools/release/check_session_assets.py app/build/outputs/apk/release/app-release.apk
           python3 tools/release/runtime_inputs.py apk app/build/outputs/apk/release/app-release.apk
@@ -505,11 +598,46 @@ jobs:
           path: app/src/main/rust/stores/Cargo.lock
           if-no-files-found: ignore
 
+      - name: Install Python test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq python3-yaml
+
       - name: Steam import and game environment tests
         run: python3 -m unittest discover -s tools/tests -p 'test_*.py'
 
       - name: Unit tests
-        run: ./gradlew testReleaseUnitTest --console=plain -PndkVersion="$NDK_VERSION"
+        id: unit-tests
+        run: |
+          set -o pipefail
+          mkdir -p app/build
+          ./gradlew testReleaseUnitTest --console=plain --info --stacktrace -Drobolectric.logging=stderr -PndkVersion="$NDK_VERSION" 2>&1 | tee app/build/unit-tests.log
+
+      - name: Upload unit test diagnostics
+        id: unit-test-diagnostics
+        if: always() && steps.unit-tests.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            app/build/unit-tests.log
+            app/build/test-results/testReleaseUnitTest/
+            app/build/reports/tests/testReleaseUnitTest/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Sign with the testkey (v1 + v2 + v3)
+        run: |
+          set -euo pipefail
+          APK=$(find app/build/outputs/apk -name '*.apk' | head -1)
+          TOOLS=$(find "$ANDROID_HOME/build-tools" -maxdepth 1 -type d | sort -V | tail -1)
+          "$TOOLS/zipalign" -p -f 4 "$APK" "$APK.aligned"
+          "$TOOLS/apksigner" sign \
+            --ks keystore/testkey.p12 --ks-type PKCS12 --ks-pass pass:android \
+            --ks-key-alias testkey --key-pass pass:android \
+            --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true \
+            --out "$APK" "$APK.aligned"
+          rm -f "$APK.aligned" "$APK.idsig"
 
       - name: Check the signature
         run: |
@@ -523,18 +651,25 @@ jobs:
                         "v3 scheme (APK Signature Scheme v3): true"; do
             grep -qF "$scheme" /tmp/sig.txt || { echo "::error::apk is not signed with $scheme"; exit 1; }
           done
-          # The DroidDeck-zh release key when the secret is present (CI main builds),
-          # otherwise the AOSP testkey fallback (PR/local builds without the secret).
-          if [ -n "${{ secrets.DROIDDECK_KEYSTORE_B64 }}" ]; then
-            expected=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
-            grep -qi "$expected" /tmp/sig.txt \
-              || { echo "::error::apk is not signed with the DroidDeck-zh release key"; cat /tmp/sig.txt; exit 1; }
-            echo "signature OK (DroidDeck-zh release key)"
-          else
-            grep -qi "CN=Android, OU=Android, O=Android" /tmp/sig.txt \
-              || { echo "::error::apk is not signed with the AOSP testkey"; cat /tmp/sig.txt; exit 1; }
-            echo "signature OK (AOSP testkey fallback)"
-          fi
+          grep -qi "CN=Android, OU=Android, O=Android" /tmp/sig.txt \
+            || { echo "::error::apk is not signed with the AOSP testkey"; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        id: apk-upload
+        with:
+          name: droiddeck-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: droiddeck-packs
+          path: app/build/packs/*.tar.zst
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
 
       - name: Report on the pull request
         if: always() && github.event_name == 'pull_request'
@@ -544,6 +679,10 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
+          UNIT_TEST_OUTCOME: ${{ steps.unit-tests.outcome }}
+          TEST_DIAGNOSTICS_URL: ${{ steps.unit-test-diagnostics.outputs.artifact-url }}
+          APK_OUTCOME: ${{ steps.apk-upload.outcome }}
+          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           set -uo pipefail
           MARK="<!-- droiddeck-pr-build -->"
@@ -553,16 +692,42 @@ jobs:
             echo
             [ -f /tmp/pr-merge.md ] && cat /tmp/pr-merge.md
             echo
-            case "$BUILD_OUTCOME" in
-              success)
+            case "$BUILD_OUTCOME:$UNIT_TEST_OUTCOME:$APK_OUTCOME" in
+              success:success:success)
                 echo "###  Build passed"
                 echo
                 echo "The \`droiddeck-apk\` artifact is [on this run]($RUN_URL), signed with the public test key."
                 echo
-                echo "Preview builds are published automatically from main. This PR's APK is on the run above."
+                if [ "$SAME_REPO" = true ]; then
+                  echo "A release-signed tester build that installs over Stable or Preview is being published now and will appear in DroidDeck's **Test builds** list. Label the PR \`no-test-build\` to skip that."
+                else
+                  echo "**Maintainer:** add the \`publish-test\` label to publish a release-signed tester build that installs over Stable or Preview and appears in DroidDeck's **Test builds** list. The label is removed automatically after publishing."
+                fi
                 echo
+                echo "Fallback: [open **PR Release Publish**]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/workflows/pr-release-publish.yml) on \`main\` and enter PR \`$PR\`."
                 ;;
-              failure)
+              success:success:*)
+                echo "###  APK publication incomplete"
+                echo
+                echo "Compilation and unit tests passed, but APK publication did not complete. See [the run]($RUN_URL)."
+                ;;
+              success:failure:*)
+                echo "### ERROR: Unit tests failed"
+                echo
+                echo "The APK compiled, but unit tests failed. No installable artifact was published."
+                echo
+                if [ -n "$TEST_DIAGNOSTICS_URL" ]; then
+                  echo "The [unit-test-results]($TEST_DIAGNOSTICS_URL) artifact contains the test log and any generated reports."
+                else
+                  echo "The test diagnostics upload did not complete. See [the test log]($RUN_URL)."
+                fi
+                ;;
+              success:*)
+                echo "###  Build incomplete"
+                echo
+                echo "The APK compiled, but unit tests did not complete successfully. See [the run]($RUN_URL)."
+                ;;
+              failure:*)
                 echo "### ERROR: Build failed"
                 echo
                 echo "The compiler's errors ([full log]($RUN_URL)):"
@@ -580,7 +745,7 @@ jobs:
                 echo '```'
                 echo "</details>"
                 ;;
-              skipped|cancelled)
+              skipped:*|cancelled:*)
                 echo "###  Not built"
                 echo
                 echo "The build did not run (see above, or [the run]($RUN_URL))."
@@ -596,118 +761,152 @@ jobs:
             gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR}/comments" -F body=@/tmp/pr-report.md >/dev/null
           fi
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: droiddeck-apk
-          path: app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
-          retention-days: 30
-          compression-level: 0
+  sign:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/sign.yml
+    with:
+      environment: signing-main
+      variants: ${{ needs.build.outputs.variants }}
+    secrets: inherit
 
-  # Each main build published as a prerelease (main-<sha>, last 10 kept).
+  packs:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/publish-packs.yml
+    secrets: inherit
+
   announce:
-    needs: [build]
+    needs: [build, sign, packs]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
-      contents: write
+      contents: read
       pull-requests: read
     env:
-      KEEP: 3
+      CI_REPO: Droid-Deck/DroidDeck-CI
+      KEEP: 10
     steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/download-artifact@v4
         with:
-          name: droiddeck-apk
+          pattern: droiddeck-signed-*
+          merge-multiple: true
           path: signed
 
-      - name: Publish prerelease
-        id: publish
+      - uses: actions/create-github-app-token@v2
+        id: ci-token
+        with:
+          app-id: ${{ vars.DROIDDECK_CI_APP_ID }}
+          private-key: ${{ secrets.DROIDDECK_CI_APP_KEY }}
+          owner: Droid-Deck
+          repositories: DroidDeck-CI
+
+      - name: Describe the change
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
-          sha7=${GITHUB_SHA::7}
-          tag="${version}-${sha7}"
-          subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
-          cd signed
-          sha256sum *.apk > SHA256SUMS.txt
-          cd ..
-          notes="## ${version} (${sha7})
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/pulls" \
+            --jq '[.[] | select(.merged_at != null and .base.ref == "main")] | first // empty')
+          if [ -n "$pr" ]; then
+            number=$(jq -r .number <<<"$pr")
+            title=$(jq -r .title <<<"$pr")
+            merged=$(jq -r '.merged_at[:10]' <<<"$pr")
+            summary=$(jq -r '.body // ""' <<<"$pr" | tr -d '\r' | { grep -v '^🤖' || true; } |
+              awk '!p && /^#/ { next } NF { p = 1; print; next } p { exit }' | head -n 6 | cut -c1-400)
+            {
+              echo "**Merged to main** - [PR #$number]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$number): $title (merged $merged)"
+              if [ -n "$summary" ]; then
+                echo
+                echo "$summary"
+              fi
+            } > notes-head.md
+          else
+            subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
+            echo "**Pushed to main** without a PR - $subject" > notes-head.md
+          fi
+          cat notes-head.md
 
-          ${subject}
+      - name: Publish to DroidDeck-CI
+        id: publish
+        env:
+          GH_TOKEN: ${{ steps.ci-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          tag=main-${GITHUB_SHA::7}
+          cat signed/SHA256SUMS-*.txt > signed/SHA256SUMS.txt
+          rm signed/SHA256SUMS-*.txt
+          notes="$(cat notes-head.md)
 
-          基于上游 DroidDeck 源码编译的中文优化版。
-
-          ### 本次变更
-          - 详见 commit: \`${sha7}\`
-
-          ### 独家功能
-          - 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）
-          - 中文字体注入（文泉驿微米黑兜底，Steam 中文不显示口口口）
-          - 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）
-          - 国内 Steam 下载区域预设（首次启动自动设置）
-          - 汉化声明弹窗
-
-          ### 注意
-          - 使用 DroidDeck-zh 自有 release key 签名（非上游 testkey），安装时可能提示未知来源，属正常现象
-          - 与旧 testkey 版本签名不同，需卸载旧版或接受覆盖安装提示
-          - 此为预发布版，仅供测试验证
+          Signed build of $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA - in main, not yet in a DroidDeck release; for testing.
+          Commit: $GITHUB_SHA
+          VersionCode: $(sed -n 's/^ *versionCode \([0-9][0-9]*\)$/\1/p' app/build.gradle)
+          Each apk installs over a DroidDeck release and keeps its data. \`standard\` is the normal app; the others are the same app under another package name, installed beside it.
 
           SHA-256:
           \`\`\`
           $(cat signed/SHA256SUMS.txt)
           \`\`\`"
-          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" --target main --prerelease \
-            --title "${version} 预发布 (${sha7})" --notes "$notes" signed/*
-          # Keep newest 5 prereleases
-          gh release list -L 200 --json tagName,publishedAt,isPrerelease \
-            --jq '[.[] | select(.isPrerelease)] | sort_by(.publishedAt) | reverse | .['"$KEEP"':][] | .tagName' |
+          gh release delete "$tag" -R "$CI_REPO" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" -R "$CI_REPO" --target main --prerelease \
+            --title "main ${GITHUB_SHA::7}" --notes "$notes" signed/*
+          gh release list -R "$CI_REPO" -L 200 --json tagName,publishedAt \
+            --jq '[.[] | select(.tagName | startswith("main-"))] | sort_by(.publishedAt) | reverse | .['"$KEEP"':][] | .tagName' |
             while IFS= read -r old; do
-              [ "$old" = "$tag" ] && continue
-              gh release delete "$old" --yes --cleanup-tag 2>/dev/null || true
+              if [ "$old" = "$tag" ]; then
+                continue
+              fi
+              if ! gh release delete "$old" -R "$CI_REPO" --yes --cleanup-tag 2>/dev/null; then
+                if gh release view "$old" -R "$CI_REPO" >/dev/null 2>&1; then
+                  echo "::error::Could not delete old release $old"
+                  exit 1
+                fi
+              fi
             done
-          url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag"
-          apk=$(cd signed && ls *.apk | head -1)
+          published=$(gh release view "$tag" -R "$CI_REPO" --json tagName,assets)
+          jq -e --arg tag "$tag" '.tagName == $tag and (.assets | length) > 0' <<< "$published" >/dev/null
+          url="$GITHUB_SERVER_URL/$CI_REPO/releases/tag/$tag"
+          apk=$(cd signed && ls DroidDeck-*.apk | awk 'length(a) == 0 || length($0) < length(a) { a = $0 } END { print a }')
           echo "release=$url" >> "$GITHUB_OUTPUT"
-          echo "apk=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$tag/$apk" >> "$GITHUB_OUTPUT"
+          echo "apk=$GITHUB_SERVER_URL/$CI_REPO/releases/download/$tag/$apk" >> "$GITHUB_OUTPUT"
           echo "Published $url"
 
-      - name: Update catalog.json
+      - name: Post the Preview build to Discord
         env:
+          WEBHOOK: ${{ secrets.DISCORD_BUILDS_WEBHOOK }}
           GH_TOKEN: ${{ github.token }}
+          RELEASE: ${{ steps.publish.outputs.release }}
+          APK: ${{ steps.publish.outputs.apk }}
         run: |
           set -euo pipefail
-          # Read the actual signer from the APK in hand, not from a static file:
-          # the catalog must match whatever the build really signed with.
-          APK=$(find signed -name '*.apk' | head -1)
-          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)
-          signer=$("$APKSIGNER" verify --print-certs "$APK" \
-            | grep -oP 'certificate SHA-256 digest: \K[0-9a-fA-F]+' | head -1 | tr 'A-F' 'a-f')
-          version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
-          versionCode=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' app/build.gradle)
-          sha7=${GITHUB_SHA::7}
-          tag="${version}-${sha7}"
-          # SHA-256 of the APK just built: computed locally, no network fetch.
-          sha256=$(awk 'NR==1 {print $1}' signed/SHA256SUMS.txt | tr 'A-F' 'a-f')
-          # Give the Releases API a moment to index the release we just created.
-          sleep 5
-          # record: write THIS build's known-good values into the preview row;
-          # the stable row is inherited unchanged from the previous catalog.
-          python3 .github/scripts/catalog.py record \
-            --repo "$GITHUB_REPOSITORY" --tag "$tag" \
-            --version "$version" --version-code "$versionCode" \
-            --signer "$signer" --commit "$GITHUB_SHA" --sha256 "$sha256"
-          # Push catalog.json to catalog branch
-          cd /tmp/catalog
-          git init -q
-          git config user.email "mihsian77@users.noreply.github.com"
-          git config user.name "mihsian77"
-          git add catalog.json
-          git commit -q -m "catalog: update channels"
-          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:catalog
-          echo "catalog.json pushed to catalog branch"
+          if [ -z "$WEBHOOK" ]; then
+            echo "::notice::No DISCORD_BUILDS_WEBHOOK secret; nothing posted"
+            exit 0
+          fi
+          commit=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA")
+          subject=$(jq -r '.commit.message | split("\n")[0]' <<<"$commit")
+          title=$(jq -r '.commit.message | split("\n") | map(select(length > 0)) | .[1] // ""' <<<"$commit")
+          pr=$(sed -n 's/^Merge pull request #\([0-9]*\).*/\1/p' <<<"$subject")
+          if [ -n "$pr" ]; then
+            what="[#$pr]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/pull/$pr): ${title:-$subject}"
+          else
+            what="[\`${GITHUB_SHA::7}\`]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA): $subject"
+          fi
+          get=$(printf 'Download: [standard APK](<%s>) · [all variants](<%s>)' "$APK" "$RELEASE")
+          content=$(printf '**New signed Preview build** `main-%s`\n%s\nIn the app: **Updates → Preview**\n%s' "${GITHUB_SHA::7}" "$what" "$get")
+          jq -n --arg content "$content" '{content: $content, allowed_mentions: {parse: []}}' |
+            curl -fsS -H 'Content-Type: application/json' -d @- "$WEBHOOK" -o /dev/null
+          echo "Posted: $content"
+
+  catalog:
+    needs: announce
+    if: ${{ always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.announce.result != 'skipped' }}
+    uses: ./.github/workflows/update-catalog.yml
+    secrets: inherit

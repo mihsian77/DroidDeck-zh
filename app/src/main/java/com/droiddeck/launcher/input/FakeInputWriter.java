@@ -79,6 +79,10 @@ public class FakeInputWriter {
     private static final int DECK_CONTROLS_OFFSET = IMU_OFFSET + 40;
     private static final int PAD_TYPE_OFFSET = IMU_OFFSET + 44;
     private static final int PAD_TYPE_SET = 0x80000000;
+    private static final int LATENCY_OFFSET = IMU_OFFSET + 48;
+    public static final int LATENCY_CONTROLLER = 1;
+    public static final int LATENCY_TOUCH = 2;
+    private static volatile int latency = 0;
     public static final int PAD_TYPE_DECK = 0;
     public static final int PAD_TYPE_STEAM = 1;
     public static final int PAD_TYPE_XBOX = 2;
@@ -95,7 +99,8 @@ public class FakeInputWriter {
     private static final int TRITON_REPORT_OFFSET = TRITON_OFFSET + 24;
     private static final int TRITON_OUTPUT_SEQ_OFFSET = TRITON_OFFSET + 88;
     private static final int TRITON_OUTPUT_FEATURE_OFFSET = TRITON_OFFSET + 96;
-    private static final int TRITON_OUTPUT_LENGTH_OFFSET = TRITON_OFFSET + 100;
+    private static final int TRITON_OUTPUT_LENGTH_OFFSET = TRITON_OFFSET + 98;
+    private static final int TRITON_OUTPUT_ACK_OFFSET = TRITON_OFFSET + 100;
     private static final int TRITON_OUTPUT_OFFSET = TRITON_OFFSET + 104;
     private static final int TRITON_GET_REQUEST_OFFSET = TRITON_OFFSET + 168;
     private static final int TRITON_GET_REPLY_OFFSET = TRITON_OFFSET + 176;
@@ -114,6 +119,10 @@ public class FakeInputWriter {
     }
 
     private static native void nativeStoreFence();
+
+    public static void storeFence() {
+        nativeStoreFence();
+    }
 
     private final File eventFile;
     private final int slot;
@@ -214,14 +223,16 @@ public class FakeInputWriter {
         data.putInt(DECK_CONTROLS_OFFSET, 0);
         int type = padType;
         data.putInt(PAD_TYPE_OFFSET, type >= 0 ? PAD_TYPE_SET | type : 0);
+        data.putInt(LATENCY_OFFSET, latency);
         data.putInt(TRITON_OFFSET, TRITON_MAGIC);
         data.putInt(TRITON_CONNECTED_OFFSET, tritonConnected ? 1 : 0);
         data.putLong(TRITON_INPUT_SEQ_OFFSET, 0L);
         data.putInt(TRITON_REPORT_ID_OFFSET, 0);
         data.putInt(TRITON_REPORT_LENGTH_OFFSET, 0);
         data.putLong(TRITON_OUTPUT_SEQ_OFFSET, 0L);
-        data.putInt(TRITON_OUTPUT_FEATURE_OFFSET, 0);
-        data.putInt(TRITON_OUTPUT_LENGTH_OFFSET, 0);
+        data.putShort(TRITON_OUTPUT_FEATURE_OFFSET, (short) 0);
+        data.putShort(TRITON_OUTPUT_LENGTH_OFFSET, (short) 0);
+        data.putInt(TRITON_OUTPUT_ACK_OFFSET, 0);
         data.putLong(TRITON_GET_REQUEST_OFFSET, 0L);
         data.putLong(TRITON_GET_REPLY_OFFSET, 0L);
     }
@@ -514,6 +525,22 @@ public class FakeInputWriter {
         }
     }
 
+    public static void setLowLatency(boolean controller, boolean touch) {
+        int flags = (controller ? LATENCY_CONTROLLER : 0) | (touch ? LATENCY_TOUCH : 0);
+        latency = flags;
+        RingSlot ringSlot;
+        synchronized (RING_LOCK) {
+            ringSlot = RING_SLOTS[0];
+        }
+        if (ringSlot == null) return;
+        synchronized (ringSlot) {
+            ByteBuffer ring = ringSlot.data;
+            if (ring == null) return;
+            nativeStoreFence();
+            ring.putInt(LATENCY_OFFSET, flags);
+        }
+    }
+
     public static void setTritonConnected(int slot, boolean connected) {
         tritonConnected = connected;
         RingSlot ringSlot = tritonSlot(slot);
@@ -562,14 +589,18 @@ public class FakeInputWriter {
             nativeStoreFence();
             long seq = ring.getLong(TRITON_OUTPUT_SEQ_OFFSET);
             if ((seq & 1) != 0 || seq <= lastSequence) return null;
-            int length = ring.getInt(TRITON_OUTPUT_LENGTH_OFFSET);
+            int length = ring.getShort(TRITON_OUTPUT_LENGTH_OFFSET) & 0xffff;
             if (length <= 0 || length > TRITON_REPORT_MAX) return null;
             byte[] output = new byte[9 + length];
             ByteBuffer.wrap(output).order(ByteOrder.LITTLE_ENDIAN).putLong(seq);
-            output[8] = (byte) (ring.getInt(TRITON_OUTPUT_FEATURE_OFFSET) != 0 ? 1 : 0);
+            output[8] = (byte) (ring.getShort(TRITON_OUTPUT_FEATURE_OFFSET) != 0 ? 1 : 0);
             for (int i = 0; i < length; i++) output[9 + i] = ring.get(TRITON_OUTPUT_OFFSET + i);
             nativeStoreFence();
-            return seq == ring.getLong(TRITON_OUTPUT_SEQ_OFFSET) ? output : null;
+            if (seq != ring.getLong(TRITON_OUTPUT_SEQ_OFFSET)) return null;
+            // Acknowledge the exact report sequence taken so a concurrent timeout overwrite cannot lose its length.
+            ring.putInt(TRITON_OUTPUT_ACK_OFFSET, (int) seq);
+            nativeStoreFence();
+            return output;
         }
     }
 

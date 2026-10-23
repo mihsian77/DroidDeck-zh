@@ -40,7 +40,7 @@ object StoreInstalls {
         val app = context.applicationContext
         onStep?.invoke(0, STEPS)
         val before = StoreGameSidecar.read(folder)
-        val finished = StoreLaunch.writeLauncher(folder, sidecar.copy(state = StoreGameSidecar.STATE_INSTALLED, epic = before?.epic ?: sidecar.epic, cloud = before?.cloud ?: sidecar.cloud, achievements = before?.achievements ?: sidecar.achievements))
+        val finished = StoreLaunch.writeLauncher(folder, sidecar.copy(state = StoreGameSidecar.STATE_INSTALLED, epic = before?.epic ?: sidecar.epic, cloud = before?.cloud ?: sidecar.cloud, achievements = before?.achievements ?: sidecar.achievements, logo = sidecar.logo ?: before?.logo))
         finished.write(folder)
         if (StoreGameSidecar.read(folder)?.isInstalled != true) throw java.io.IOException("the install record could not be written in ${folder.name}")
         onStep?.invoke(1, STEPS)
@@ -58,11 +58,13 @@ object StoreInstalls {
         try {
             val games = AddedGames.scan(app)
             AddedGames.writeListing(app, games)
-            LibraryCache.save(app, Library.launchableGames(app, added = games))
+            val arch = SessionPrefs.activeSteamClientArch(app)
+            LibraryCache.save(app, Library.launchableGames(app, added = games, arch = arch), arch == "x86_64")
             SteamLiveShortcuts.sync(app, games)
         } catch (e: Exception) {
             Log.w(TAG, "registration: ${e.message}")
         }
+        com.droiddeck.launcher.stores.epic.EpicClient.libraryChanged(app)
     }
 
     fun uninstall(context: Context, game: InstalledStoreGame, progress: (Float) -> Unit = {}, removed: () -> Unit = {}) {

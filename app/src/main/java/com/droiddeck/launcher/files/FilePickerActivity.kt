@@ -25,9 +25,7 @@ class FilePickerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // targetSdk 28: the old storage permission is exactly what lets us list the card.
-        // No requestedOrientation here: management screens follow the device (DroidDeck-zh),
-        // only the game session stays landscape.
+        requestedOrientation = com.droiddeck.launcher.session.SessionPrefs.orientation(this)
         if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
         }
