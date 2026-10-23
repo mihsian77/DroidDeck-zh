@@ -2958,3 +2958,15 @@
     <string name="tracking_recovery_look">在光线充足的房间内缓慢环顾四周。\n不要遮挡追踪摄像头，并面向家具等有明显细节的物体。</string>
     <string name="spatial_print_job">DroidDeck ChArUco 30 mm</string>
 </resources>
+    <string name="speed_test_title">网络测速</string>
+    <string name="speed_test_lede">测试直连和 MirrorHub 节点的下载速度，选最快的节点。</string>
+    <string name="speed_test_start">开始测速</string>
+    <string name="speed_test_running">测速中（%1$d/%2$d）…</string>
+    <string name="speed_test_direct">直连</string>
+    <string name="speed_test_nodes">MirrorHub 节点</string>
+    <string name="speed_test_none">无可用节点</string>
+    <string name="speed_test_failed">失败</string>
+    <string name="speed_test_best">最佳</string>
+    <string name="speed_test_mbps">%.2f MB/s</string>
+    <string name="speed_test_kbps">%d KB/s</string>
+    <string name="mirrorhub_attribution">MirrorHub 加速下载</string>
