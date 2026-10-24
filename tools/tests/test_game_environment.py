@@ -357,6 +357,27 @@ class GameEnvironmentTest(unittest.TestCase):
                 (asylum / name).touch()
             self.assertEqual(MODULE["engine_fixes"](str(asylum / "BmLauncher.exe"), []), ({}, [], []))
 
+    def test_unity_players_keep_tso_over_the_preset(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            def game(*names):
+                for name in names:
+                    (Path(tmp) / name).parent.mkdir(parents=True, exist_ok=True)
+                    (Path(tmp) / name).touch()
+                return str(Path(tmp) / names[0])
+
+            il2cpp = game("Megabonk/Megabonk.x86_64", "Megabonk/UnityPlayer.so", "Megabonk/GameAssembly.so")
+            mono = game("Mono/Game.x86_64", "Mono/UnityPlayer.so")
+            windows = game("Crab Game/Crab Game.exe", "Crab Game/UnityPlayer.dll", "Crab Game/GameAssembly.dll")
+            windows_mono = game("RoR2/Risk of Rain 2.exe", "RoR2/UnityPlayer.dll", "RoR2/MonoBleedingEdge/mono-2.0-bdwgc.dll")
+            for exe in (il2cpp, mono, windows, windows_mono):
+                env, extra, notes = MODULE["engine_fixes"](exe, [])
+                self.assertEqual((env, extra, notes), ({"FEX_TSOENABLED": "1"}, [], ["Unity: FEX with TSO"]))
+            performance = {"version": 1, "shared": {"FEX_TSOENABLED": "0", "FEX_VECTORTSOENABLED": "0"}}
+            result = MODULE["apply_config"]({}, performance, "3405340", env)
+            self.assertEqual((result["FEX_TSOENABLED"], result["FEX_VECTORTSOENABLED"]), ("1", "0"))
+            performance["games"] = {"3405340": {"FEX_TSOENABLED": "0"}}
+            self.assertEqual(MODULE["apply_config"]({}, performance, "3405340", env)["FEX_TSOENABLED"], "0")
+
     def test_a_new_fix_only_needs_registering(self):
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "Game.exe").touch()

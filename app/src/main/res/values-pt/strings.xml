@@ -543,8 +543,8 @@
     <string name="perf_sysmem">Turnip: renderização sysmem</string>
     <string name="perf_sysmem_hint">Mais rápido para o cliente da Steam; nos jogos, o driver escolhe a cada passagem entre renderização em blocos ou na memória do sistema. Obrigatório nas Adreno 710/720/722.</string>
     <string name="perf_xalia">Pular o assistente xalia da Steam</string>
-    <string name="perf_fastsync">droiddeck-ntsync (experimental)</string>
-    <string name="perf_fastsync_hint">Um substituto em espaço de usuário para o driver ntsync do Linux, para testes. Enquanto estiver ativado, o Proton o usa no lugar do droiddeck-esync e do droiddeck-fsync. Funciona com o Proton Experimental ARM64, o GE-Proton e o proton-cachyos. Vale a partir da próxima sessão.</string>
+    <string name="perf_fastsync">droiddeck-ntsync</string>
+    <string name="perf_fastsync_hint">Um substituto em espaço de usuário para o driver ntsync do Linux. Enquanto estiver ativado, o Proton o usa no lugar do droiddeck-esync e do droiddeck-fsync. Funciona com o Proton Experimental ARM64, o GE-Proton e o proton-cachyos. Vale a partir da próxima sessão.</string>
     <string name="perf_esync">droiddeck-esync</string>
     <string name="perf_fsync">droiddeck-fsync primeiro</string>
     <string name="perf_fsync_hint">Roda o fsync do próprio Proton nos arquivos originais do Proton, com o futex_waitv fornecido em espaço de usuário, então não precisa de pacote e continua funcionando assim que a Steam atualiza o Proton. Enquanto estiver ativado, os jogos o usam antes do droiddeck-esync, exceto os poucos que o Proton mantém fora do fsync. Vale a partir da próxima sessão.</string>
@@ -1407,6 +1407,10 @@
     <string name="theme_icon_blue_detail">Fundo preto, texto branco e o azul em tudo que estiver selecionado, em foco ou pressionado.</string>
     <string name="theme_electric">Marinho elétrico</string>
     <string name="theme_electric_detail">O azul mais vivo, sobre superfícies puxadas para o marinho em vez do cinza.</string>
+    <string name="theme_inner_gamer">Inner Gamer</string>
+    <string name="theme_inner_gamer_detail">Cores que percorrem o arco-íris. Respeita as configurações de animação do Android.</string>
+    <string name="theme_rgb_speed">Velocidade</string>
+    <string name="theme_rgb_speed_hint">Com que rapidez as cores mudam.</string>
     <string name="theme_gradient">Gradiente</string>
     <string name="theme_gradient_detail">Suas próprias cores primária e secundária, combinadas em botões e destaques.</string>
     <string name="theme_gradient_primary">Primária</string>
@@ -1533,6 +1537,13 @@
     <string name="fm_conflict_skip">Pular</string>
     <string name="fm_select_this_folder">Selecionar esta pasta</string>
     <string name="fm_back">Voltar</string>
+    <string name="fm_exit">Sair</string>
+    <string name="fm_return_to_start">Voltar à pasta inicial</string>
+    <string name="fm_start_unavailable">A pasta inicial não está mais disponível</string>
+    <string name="fm_cancel_operation_title">Cancelar operação?</string>
+    <string name="fm_cancel_operation_confirmation">A operação será cancelada. Tem certeza?</string>
+    <string name="fm_accept">Aceitar</string>
+    <string name="fm_decline">Recusar</string>
     <string name="fm_drive_not_readable">%1$s está montado, mas não pode ser lido agora</string>
     <string name="fm_list_view">Visualização em lista</string>
     <string name="fm_grid_view">Visualização em grade</string>

@@ -88,6 +88,12 @@ def dotnet_memory_ordering(game):
 
 
 @fix
+def unity_memory_ordering(game):
+    if {"unityplayer.so", "gameassembly.so", "unityplayer.dll"} & game.files:
+        return {"FEX_TSOENABLED": "1"}, [], "Unity: FEX with TSO"
+
+
+@fix
 def godot_vulkan(game):
     if is_godot(game) and not game.has_arg("--rendering-driver"):
         return {}, ["--rendering-driver", "vulkan"], "Godot: Vulkan renderer"
