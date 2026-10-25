@@ -456,6 +456,16 @@ internal fun SetupPanel(
                             ActionRow(stringResource(R.string.setup_saved_logs), stringResource(R.string.setup_saved_logs_hint, com.droiddeck.launcher.session.SessionPaths.KEEP_SESSIONS), stringResource(R.string.setup_clear_logs), a.onClearLogs)
                             ActionRow(stringResource(R.string.setup_reset_settings), stringResource(R.string.setup_reset_settings_hint),
                                 stringResource(R.string.setup_reset_settings_button), a.onResetSettings)
+                            if (signedIn) {
+                                ActionRow(
+                                    "退出 Steam 登录",
+                                    "下次启动 Steam 时清除登录凭证",
+                                    "退出",
+                                ) {
+                                    java.io.File(ctx.filesDir, ".droiddeck-steam-logout").createNewFile()
+                                    android.widget.Toast.makeText(ctx, "已标记退出，下次启动 Steam 生效", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            }
                         }
                     }
                     GLASSES_TAB -> GlassesSetupPanel()
