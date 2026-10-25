@@ -777,7 +777,7 @@ jobs:
 
   packs:
     needs: build
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: false  # upstream CI repo, not needed in our fork
     permissions:
       contents: read
       actions: read
