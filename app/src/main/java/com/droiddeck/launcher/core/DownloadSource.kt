@@ -134,13 +134,14 @@ object DownloadSource {
         val api = target.startsWith("https://api.github.com/")
         val proxies = MIRRORS.filter { !api || it.api }.map { it.proxy(target) }
         // MirrorHub dynamic nodes (our nodes)
-        val mirrorHubNodes = try {
-            app?.let { ctx ->
+        val mirrorHubNodes: List<String> = try {
+            val ctx = app ?: emptyList()
+            if (ctx is Context) {
                 com.droiddeck.launcher.core.MirrorHub.getNodes(ctx)
                     .filter { it.category == "universal_proxy" }
                     .take(2)
                     .map { "https://${it.domain}/$target" }
-            } ?: emptyList()
+            } else emptyList()
         } catch (_: Exception) emptyList()
         val ordered = when (prefs.getString(KEY_MODE, MODE_AUTO) ?: MODE_AUTO) {
             MODE_DIRECT -> listOf(target)
