@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "sourceRepo": "mihsian77/DroidDeck-zh",
+  "ciRepo": "mihsian77/DroidDeck-zh",
+  "stable": {
+    "tag": "0.6.0-zh1",
+    "title": "0.6.0-zh1 (stable)",
+    "summary": "## 0.6.0-zh1 (stable)\n\nrelease-stable: skip signature check, use debug APK directly\n\n基于上游 DroidDeck 源码编译的中文优化版，已确认稳定可用。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n- 此为稳定版，安装前建议先备份旧版本\n\nSHA-256:\n```\nec01e190144370bf10b2fd3abec7c52501e449db0bff7b03fb4642bc65",
+    "commit": "711af9814459c3f7e58ae034cf921c65b6341fd1",
+    "pr": 0,
+    "version": "0.6.0-zh1",
+    "versionCode": 17,
+    "publishedAt": 1793012819000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.6.0-zh1",
+    "apks": {
+      "com.droiddeck.launcher": {
+        "name": "app-release.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.6.0-zh1/app-release.apk",
+        "size": 67729524,
+        "sha256": "ec01e190144370bf10b2fd3abec7c52501e449db0bff7b03fb4642bc65e0a1e8",
+        "packageName": "com.droiddeck.launcher",
+        "versionCode": 17,
+        "signerSha256": "1c61c55b071523c511f963bad7acd02431fb962fd341b856581637bcb841412c"
+      }
+    }
+  },
+  "preview": {
+    "tag": "0.5.0-zh1-d54bfc0",
+    "title": "0.5.0-zh1 预发布 (d54bfc0)",
+    "summary": "## 0.5.0-zh1 (d54bfc0)\n\ndocs: update channel table to 0.5.0 and clarify release key\n\n基于上游 DroidDeck 源码编译的中文优化版。\n\n### 本次变更\n- 详见 commit: `d54bfc0`\n\n### 独家功能\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不显示口口口）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- 国内 Steam 下载区域预设（首次启动自动设置）\n- 汉化声明弹窗\n\n### 注意\n- 使用 DroidDeck-zh 自有 release key 签名（非上游 testkey），安装时可能提示未知来源，属正常现象\n- 与旧 testkey 版本签名不同，需卸载旧版或接受覆盖安装提示\n- 此为预发布版，仅供测试验证\n\nSHA-256:\n```\n63eb0e99b4d84622270cc547fcddaf7afe70faec214ccffd3b5139fd75a33c08  app-rele",
+    "commit": "d54bfc0431dd32532248256c5458f6e6e880ccef",
+    "pr": 0,
+    "version": "0.5.0-zh1",
+    "versionCode": 16,
+    "publishedAt": 1792687284000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.5.0-zh1-d54bfc0",
+    "apks": {
+      "com.droiddeck.launcher": {
+        "name": "app-release.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.5.0-zh1-d54bfc0/app-release.apk",
+        "size": 64089498,
+        "sha256": "63eb0e99b4d84622270cc547fcddaf7afe70faec214ccffd3b5139fd75a33c08",
+        "packageName": "com.droiddeck.launcher",
+        "versionCode": 16,
+        "signerSha256": "1c61c55b071523c511f963bad7acd02431fb962fd341b856581637bcb841412c"
+      }
+    }
+  },
+  "tests": [],
+  "recentPreviews": []
+}
