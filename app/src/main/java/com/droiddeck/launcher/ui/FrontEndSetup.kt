@@ -521,8 +521,14 @@ internal fun SetupPanel(
                                 "导入",
                                 onClick = {
                                     val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
+                                    val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
                                     activity?.pickRuntimeImport?.launch(
-                                        InAppFilePicker.buildIntent(ctx, listOf("tar", "gz", "zst", "zip"), "选择数据包文件")
+                                        InAppFilePicker.buildIntent(
+                                            ctx,
+                                            listOf("tar", "gz", "zst", "zip"),
+                                            "选择数据包文件",
+                                            initialDir = downloadDir
+                                        )
                                     ) ?: run {
                                         android.widget.Toast.makeText(ctx, "无法打开文件选择器", android.widget.Toast.LENGTH_SHORT).show()
                                     }
