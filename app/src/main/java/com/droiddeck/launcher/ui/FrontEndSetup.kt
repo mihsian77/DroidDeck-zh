@@ -467,6 +467,53 @@ internal fun SetupPanel(
                                     }
                                 )
                             }
+                            ActionRow(
+                                "网络测速",
+                                "测试 GitHub 和 MirrorHub 节点延迟",
+                                "测速",
+                                onClick = {
+                                    Thread {
+                                        try {
+                                            // 测 GitHub 直连
+                                            val githubStart = System.currentTimeMillis()
+                                            java.net.URL("https://raw.githubusercontent.com/Droid-Deck/DroidDeck/main/README.md").openConnection().apply {
+                                                connectTimeout = 5000
+                                                readTimeout = 5000
+                                                getInputStream().close()
+                                            }
+                                            val githubMs = System.currentTimeMillis() - githubStart
+
+                                            // 测 MirrorHub 第一个节点
+                                            var mirrorMs = -1L
+                                            try {
+                                                val nodes = com.droiddeck.launcher.core.MirrorHub.getNodes(ctx)
+                                                if (nodes.isNotEmpty()) {
+                                                    val mirrorStart = System.currentTimeMillis()
+                                                    java.net.URL("https://${nodes[0].domain}/Droid-Deck/DroidDeck/main/README.md").openConnection().apply {
+                                                        connectTimeout = 5000
+                                                        readTimeout = 5000
+                                                        getInputStream().close()
+                                                    }
+                                                    mirrorMs = System.currentTimeMillis() - mirrorStart
+                                                }
+                                            } catch (_: Exception) {}
+
+                                            val msg = if (mirrorMs > 0) {
+                                                "GitHub: ${githubMs}ms | MirrorHub: ${mirrorMs}ms"
+                                            } else {
+                                                "GitHub: ${githubMs}ms | MirrorHub: 节点不可用"
+                                            }
+                                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                                android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_LONG).show()
+                                            }
+                                        } catch (_: Exception) {
+                                            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                                android.widget.Toast.makeText(ctx, "测速失败", android.widget.Toast.LENGTH_LONG).show()
+                                            }
+                                        }
+                                    }.start()
+                                }
+                            )
                         }
                     }
                     GLASSES_TAB -> GlassesSetupPanel()
