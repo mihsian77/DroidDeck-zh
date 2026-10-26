@@ -427,6 +427,9 @@ class SessionService : Service() {
         }
 
         val root = LinuxRuntime.rootDir(this)
+        // Apply Steam logout if user requested it (before Steam starts)
+        runCatching { SteamLogout.apply(this, root) }
+            .onFailure { Log.w(TAG, "SteamLogout failed", it) }
         val sessionRoot = LinuxRuntime.sessionRoot(this).apply { mkdirs() }
         val runtimeDir = File(filesDir, ".wayland-rt").apply { mkdirs() }
         killStragglers()
