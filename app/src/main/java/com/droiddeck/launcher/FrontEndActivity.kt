@@ -238,6 +238,25 @@ class FrontEndActivity : ComponentActivity() {
         val then = onSavePicked.also { onSavePicked = null } ?: return@registerForActivityResult
         if (r.resultCode == RESULT_OK) InAppFilePicker.pickedFile(r.data)?.let(then)
     }
+    private val pickRuntimeImport = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        if (r.resultCode == RESULT_OK) {
+            InAppFilePicker.pickedFile(r.data)?.let { file ->
+                Thread {
+                    try {
+                        val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
+                        com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, file, root, null)
+                        runOnUiThread {
+                            android.widget.Toast.makeText(this, "导入完成", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        runOnUiThread {
+                            android.widget.Toast.makeText(this, "导入失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }.start()
+            }
+        }
+    }
 
     private fun refreshWifiDiscovery() {
         wifiDiscoveryPermission = WifiDiscovery.permissionGranted(this)
