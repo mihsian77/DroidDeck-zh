@@ -144,8 +144,12 @@ object DownloadSource {
                     result.add("https://${node.domain}/$target")
                 }
                 result
-            } else emptyList()
-        } catch (_: Exception) emptyList()
+            } else {
+                emptyList<String>()
+            }
+        } catch (_: Exception) {
+            emptyList<String>()
+        }
         val ordered = when (prefs.getString(KEY_MODE, MODE_AUTO) ?: MODE_AUTO) {
             MODE_DIRECT -> listOf(target)
             MODE_MIRROR -> listOfNotNull(picked(prefs, api)?.proxy(target)) + mirrorHubNodes + listOf(target) + quickest(proxies)
