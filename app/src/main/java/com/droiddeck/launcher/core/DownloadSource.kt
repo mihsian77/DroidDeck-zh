@@ -133,11 +133,20 @@ object DownloadSource {
         if (!isGithub(target)) return listOf(target)
         val api = target.startsWith("https://api.github.com/")
         val proxies = MIRRORS.filter { !api || it.api }.map { it.proxy(target) }
+        // MirrorHub dynamic nodes (our nodes)
+        val mirrorHubNodes = try {
+            app?.let { ctx ->
+                com.droiddeck.launcher.core.MirrorHub.getNodes(ctx)
+                    .filter { it.category == "universal_proxy" }
+                    .take(2)
+                    .map { "https://${it.domain}/$target" }
+            } ?: emptyList()
+        } catch (_: Exception) emptyList()
         val ordered = when (prefs.getString(KEY_MODE, MODE_AUTO) ?: MODE_AUTO) {
             MODE_DIRECT -> listOf(target)
-            MODE_MIRROR -> listOfNotNull(picked(prefs, api)?.proxy(target)) + listOf(target) + quickest(proxies)
+            MODE_MIRROR -> listOfNotNull(picked(prefs, api)?.proxy(target)) + mirrorHubNodes + listOf(target) + quickest(proxies)
             MODE_CUSTOM -> listOfNotNull(customProxy(prefs, target)) + listOf(target) + quickest(proxies)
-            else -> if (api) listOf(target) else listOf(target) + quickest(proxies)
+            else -> if (api) listOf(target) else listOf(target) + mirrorHubNodes + quickest(proxies)
         }
         return ordered.distinct()
     }
