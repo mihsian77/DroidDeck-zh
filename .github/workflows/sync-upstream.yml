@@ -106,45 +106,25 @@ jobs:
           git add .github/workflows/
           git commit --no-edit -m "sync: keep our own workflows" || true
 
-      - name: Push branch
+      - name: Merge directly to main (no PR needed)
         if: steps.check.outputs.has_updates == 'true'
-        run: |
-          set -euo pipefail
-          git push origin "${{ steps.check.outputs.branch }}" --force
-
-      - name: Wait for CI
-        if: steps.check.outputs.has_updates == 'true'
-        run: sleep 20
-
-      - name: Create PR and auto-merge
-        if: steps.check.outputs.has_updates == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           BRANCH="${{ steps.check.outputs.branch }}"
-          MERGE_STATUS="${{ steps.merge.outputs.merge_status }}"
-          COMMIT_COUNT="${{ steps.check.outputs.commit_count }}"
-
-          if [ "$MERGE_STATUS" = "conflict" ]; then
-            TITLE="sync: auto-merged upstream ${COMMIT_COUNT} commits"
-            { echo "## Upstream commits"; echo; echo '```'; cat /tmp/upstream-commits.txt; echo '```'; echo; echo "## Auto-resolved conflicts"; echo; echo '```'; cat /tmp/conflict-files.txt; echo '```'; } > /tmp/pr-body.txt
-          else
-            TITLE="sync: merge upstream ${COMMIT_COUNT} commits"
-            { echo "## Upstream commits"; echo; echo '```'; cat /tmp/upstream-commits.txt; echo '```'; } > /tmp/pr-body.txt
-          fi
-
-          PR_URL=$(gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file /tmp/pr-body.txt 2>&1) || PR_FAILED=1
-          if [ -n "${PR_FAILED:-}" ]; then
-            if gh pr list --head "$BRANCH" --json number -q '.[0-9]' 2>/dev/null | grep -q '[0-9]'; then
-              echo "PR already exists."
-            else
-              echo "::warning::PR create failed."
-            fi
-          else
-            echo "Created PR: $PR_URL"
-            gh pr merge "$PR_URL" --auto --merge --delete-branch || echo "::warning::auto-merge failed"
-          fi
+          # Already on the sync branch with conflicts resolved.
+          # Switch to main and merge the sync branch.
+          git checkout main
+          git merge "$BRANCH" --no-edit
+          # Keep our own .github/workflows/
+          rm -rf .github/workflows/
+          git checkout "$BRANCH" -- .github/workflows/
+          git add .github/workflows/
+          git commit --no-edit -m "sync: keep our own workflows" || true
+          # Push directly to main
+          git push origin main
+          # Delete the sync branch
+          git push origin --delete "$BRANCH" || true
+          echo "Merged upstream and pushed to main."
 
       - name: Check if upstream has new stable release
         id: check_release
