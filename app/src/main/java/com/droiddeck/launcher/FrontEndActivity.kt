@@ -238,7 +238,7 @@ class FrontEndActivity : ComponentActivity() {
         val then = onSavePicked.also { onSavePicked = null } ?: return@registerForActivityResult
         if (r.resultCode == RESULT_OK) InAppFilePicker.pickedFile(r.data)?.let(then)
     }
-    private val pickRuntimeImport = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+    internal val pickRuntimeImport = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
         if (r.resultCode == RESULT_OK) {
             InAppFilePicker.pickedFile(r.data)?.let { file ->
                 Thread {

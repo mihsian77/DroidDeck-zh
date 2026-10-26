@@ -514,6 +514,19 @@ internal fun SetupPanel(
                                     }.start()
                                 }
                             )
+                            ActionRow(
+                                "导入数据包",
+                                "从本地文件导入 Linux 运行时/Proton 数据包",
+                                "导入",
+                                onClick = {
+                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
+                                    activity?.pickRuntimeImport?.launch(
+                                        InAppFilePicker.buildIntent(ctx, listOf("tar", "gz", "zst", "zip"), "选择数据包文件")
+                                    ) ?: run {
+                                        android.widget.Toast.makeText(ctx, "无法打开文件选择器", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
                         }
                     }
                     GLASSES_TAB -> GlassesSetupPanel()
