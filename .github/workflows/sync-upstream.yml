@@ -146,12 +146,37 @@ jobs:
             gh pr merge "$PR_URL" --auto --merge --delete-branch || echo "::warning::auto-merge failed"
           fi
 
-      - name: Auto-release after merge
+      - name: Check if upstream has new stable release
+        id: check_release
         if: steps.check.outputs.has_updates == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Wait a bit for the merge to complete
+          set -euo pipefail
+          # Get upstream latest release tag
+          UPSTREAM_TAG=$(gh api repos/Droid-Deck/DroidDeck/releases/latest --jq .tag_name 2>/dev/null || echo "")
+          # Get our current version from build.gradle
+          OUR_VERSION=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
+          echo "upstream_tag=$UPSTREAM_TAG" >> "$GITHUB_OUTPUT"
+          echo "our_version=$OUR_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Upstream latest release: $UPSTREAM_TAG"
+          echo "Our current version: $OUR_VERSION"
+          # If upstream tag starts with our version prefix, no new release
+          if [[ "$OUR_VERSION" == "$UPSTREAM_TAG"* ]]; then
+            echo "has_new_release=false" >> "$GITHUB_OUTPUT"
+            echo "No new upstream release, skipping release."
+          else
+            echo "has_new_release=true" >> "$GITHUB_OUTPUT"
+            echo "New upstream release detected, will trigger release."
+          fi
+
+      - name: Auto-release after merge (only for new upstream stable)
+        if: steps.check.outputs.has_updates == 'true' && steps.check_release.outputs.has_new_release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
           sleep 10
-          # Trigger release-stable workflow
-          gh workflow run release-stable.yml --ref main || echo "::warning::release trigger failed"
+          UPSTREAM_TAG="${{ steps.check_release.outputs.upstream_tag }}"
+          # Trigger release-stable with new version label
+          gh workflow run release-stable.yml --ref main -f label="${UPSTREAM_TAG}-zh1" || echo "::warning::release trigger failed"
