@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   catalog:
+    if: false  # disabled: requires upstream GitHub App token we don't have
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
