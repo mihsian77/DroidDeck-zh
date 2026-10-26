@@ -66,15 +66,35 @@ jobs:
           else
             echo "merge_status=conflict" >> "$GITHUB_OUTPUT"
             git diff --name-only --diff-filter=U > /tmp/conflict-files.txt || true
-            # Auto-resolve: translation files keep ours, others take upstream
+            # Auto-resolve conflicts:
+            # - Our modified feature files: keep ours (we added features upstream doesn't have)
+            # - Translation files: keep ours (we have more complete Chinese)
+            # - Other files: take upstream version
             while IFS= read -r file; do
-              if [[ "$file" == *"values-zh-rCN/strings.xml"* ]] || [[ "$file" == *"values/strings.xml"* ]]; then
-                git checkout --ours "$file"
-                echo "RESOLVED (ours): $file"
-              else
-                git checkout --theirs "$file"
-                echo "RESOLVED (theirs): $file"
-              fi
+              # Files we intentionally modified - always keep our version
+              case "$file" in
+                app/build.gradle|\
+                app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt|\
+                app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt|\
+                app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java|\
+                app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt|\
+                app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt|\
+                tools/linuxfs/overlay/usr/local/bin/droiddeck-session|\
+                tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf|\
+                tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc|\
+                proton-seed.json)
+                  git checkout --ours "$file"
+                  echo "RESOLVED (ours - feature): $file"
+                  ;;
+                *values-zh-rCN/strings.xml*|*values/strings.xml*)
+                  git checkout --ours "$file"
+                  echo "RESOLVED (ours - translation): $file"
+                  ;;
+                *)
+                  git checkout --theirs "$file"
+                  echo "RESOLVED (theirs): $file"
+                  ;;
+              esac
               git add "$file"
             done < /tmp/conflict-files.txt
             git -c core.editor=true commit --no-edit -m "sync: auto-merged upstream with conflict resolution" || \
