@@ -267,6 +267,24 @@
     <string name="osc_steam_touch">Steam 触控（测试版）</string>
     <string name="osc_style_next_session">Steam 的触控按键将从下次 Steam 会话开始生效</string>
     <string name="osc_steam_layout">Steam 触控布局</string>
+    <string name="screen_keys">屏幕按键</string>
+    <string name="screen_keys_add">添加按键</string>
+    <string name="screen_key_text">文本</string>
+    <string name="screen_key_size">大小</string>
+    <string name="screen_key_opacity">透明</string>
+    <string name="screen_key_type_button">单键</string>
+    <string name="screen_key_shape_trigger">扳机</string>
+    <string name="screen_key_toggle">切换</string>
+    <string name="screen_key_layout_export">导出</string>
+    <string name="screen_key_shape_pill">胶囊</string>
+    <string name="screen_key_shape_round">圆角</string>
+    <string name="screen_key_shape_circle">圆形</string>
+    <string name="screen_key_shape_rect">矩形</string>
+    <string name="screen_key_bind">绑定</string>
+    <string name="screen_key_image">图片</string>
+    <string name="screen_key_image_clear">清除</string>
+    <string name="screen_key_layout">布局</string>
+    <string name="screen_key_layout_save">保存</string>
     <string name="osc_steam_layout_hint">移动、调整大小或隐藏此游戏的触控按键；保存到 Steam</string>
     <string name="mode_controller">手柄</string>
     <string name="mode_controller_hint">决定 Steam 把你的手柄识别为哪种类型，将在下次会话生效。</string>
@@ -541,8 +559,8 @@
     <string name="perf_sysmem">Turnip：sysmem 渲染</string>
     <string name="perf_sysmem_hint">Steam 客户端更快；游戏中驱动会为每个渲染通道选择分块渲染或系统内存渲染。Adreno 710/720/722 必需。</string>
     <string name="perf_xalia">跳过 Steam 的 xalia 助手</string>
-    <string name="perf_fastsync">droiddeck-ntsync（实验性）</string>
-    <string name="perf_fastsync_hint">Linux ntsync 驱动的用户态替代品，供测试使用。开启时，Proton 使用它代替 droiddeck-esync 和 droiddeck-fsync。适用于 Proton Experimental ARM64、GE-Proton 和 proton-cachyos。将在下次会话生效。</string>
+    <string name="perf_fastsync">droiddeck-ntsync</string>
+    <string name="perf_fastsync_hint">Linux ntsync 驱动的用户态替代品。开启时，Proton 使用它代替 droiddeck-esync 和 droiddeck-fsync。适用于 Proton Experimental ARM64、GE-Proton 和 proton-cachyos。将在下次会话生效。</string>
     <string name="perf_esync">droiddeck-esync</string>
     <string name="perf_fsync">droiddeck-fsync 优先</string>
     <string name="perf_fsync_hint">在原始 Proton 文件上运行 Proton 自带的 fsync，由用户态提供 futex_waitv，因此无需任何包，且 Steam 更新 Proton 后立即继续可用。开启时，除 Proton 自身禁用 fsync 的少数游戏外，各游戏优先使用它而非 droiddeck-esync。将在下次会话生效。</string>
@@ -838,6 +856,7 @@
     <string name="setup_download_source_custom">自定义前缀</string>
     <string name="setup_download_mirror">镜像站点</string>
     <string name="setup_download_prefix">前缀</string>
+    <string name="setup_download_proxy">HTTP 代理</string>
     <string name="setup_tool_files">文件</string>
     <string name="setup_tool_files_hint">浏览和管理文件</string>
     <string name="setup_tool_protons">Proton 版本</string>
@@ -1101,8 +1120,6 @@
     <string name="games_empty">你在 Steam 安装的游戏会在会话结束后显示在这里。</string>
     <string name="games_play_steam">游玩 Steam</string>
     <string name="games_play_steamvr">游玩 SteamVR</string>
-    <string name="games_launch_settings">启动设置</string>
-    <string name="games_launch">启动</string>
     <string name="games_files">游戏文件</string>
     <string name="games_prefix">Proton 前缀</string>
     <string name="games_saves_looking">正在查找存档…</string>
@@ -1110,7 +1127,6 @@
     <string name="games_saves_folders">%1$d 个存档文件夹</string>
     <string name="games_saves_summary">%1$s · %2$d 个文件 · %3$s</string>
     <string name="games_kb">%1$d KB</string>
-    <string name="games_manage_saves">管理存档</string>
     <string name="games_saves">游戏存档</string>
     <string name="games_import_saves">导入存档…</string>
     <string name="games_export_gamehub">导出为 GameHub zip 包…</string>
@@ -1122,7 +1138,6 @@
     <string name="games_runtime_first_play">运行时在首次“游玩”时安装</string>
     <string name="games_runtime_update">运行时有可用更新</string>
     <string name="games_runtime_ready">● 运行时就绪</string>
-    <string name="games_last_played">上次游玩于 %1$s</string>
     <string name="games_internal">内部存储</string>
     <string name="games_added">已添加游戏</string>
     <string name="games_custom">自定义游戏</string>
@@ -1191,7 +1206,7 @@
     <string name="second_terminal">Linux 终端</string>
     <string name="second_terminal_not_ready">Linux 会话尚未准备好使用终端。</string>
     <string name="rail_steam">Steam</string>
-    <string name="rail_games">游戏</string>
+    <string name="rail_games">库</string>
     <string name="rail_desktop">桌面</string>
     <string name="rail_store">商店</string>
     <string name="rail_components">组件</string>
@@ -1465,6 +1480,10 @@
     <string name="theme_icon_blue_detail">黑色背景、白色文字，选中、聚焦或按下的元素使用蓝色。</string>
     <string name="theme_electric">电光藏青</string>
     <string name="theme_electric_detail">更明亮的蓝色，配以偏藏青而非灰色的界面。</string>
+    <string name="theme_inner_gamer">Inner Gamer</string>
+    <string name="theme_inner_gamer_detail">在彩虹色之间循环变化的颜色。遵循 Android 的动画设置。</string>
+    <string name="theme_rgb_speed">速度</string>
+    <string name="theme_rgb_speed_hint">颜色循环的快慢。</string>
     <string name="theme_gradient">渐变</string>
     <string name="theme_gradient_detail">你自己选择的主色和辅色，在按钮和高亮处渐变呈现。</string>
     <string name="theme_gradient_primary">主色</string>
@@ -1581,6 +1600,13 @@
     <string name="fm_conflict_skip">跳过</string>
     <string name="fm_select_this_folder">选择此文件夹</string>
     <string name="fm_back">返回</string>
+    <string name="fm_exit">退出</string>
+    <string name="fm_return_to_start">返回初始文件夹</string>
+    <string name="fm_start_unavailable">初始文件夹已不可用</string>
+    <string name="fm_cancel_operation_title">取消操作？</string>
+    <string name="fm_cancel_operation_confirmation">操作将被取消。确定吗？</string>
+    <string name="fm_accept">接受</string>
+    <string name="fm_decline">拒绝</string>
     <string name="fm_drive_not_readable">%1$s 已挂载，但当前无法读取</string>
     <string name="fm_list_view">列表视图</string>
     <string name="fm_grid_view">网格视图</string>
@@ -1994,7 +2020,6 @@
     <string name="source_steam">Steam</string>
     <string name="source_added">自定义</string>
     <string name="setup_stores">游戏商店</string>
-    <string name="setup_stores_open_on">打开商店时显示</string>
     <string name="setup_stores_speed">下载速度档位</string>
     <string name="setup_stores_engine">商店引擎</string>
     <string name="setup_stores_engine_chip_ready">● 引擎就绪</string>
@@ -2008,11 +2033,9 @@
     <string name="stores_tabs_arrange">整理标签</string>
     <string name="stores_tabs_arrange_done">完成</string>
     <string name="stores_chip_signed_out">（未登录）</string>
-    <string name="stores_tab_store">商店</string>
     <string name="stores_tab_library">库</string>
     <string name="stores_tab_all">全部</string>
     <string name="stores_tab_downloads">下载</string>
-    <string name="stores_tab_count">%1$s（%2$d）</string>
     <string name="stores_signin">登录</string>
     <string name="stores_signout_named">%1$s · 退出登录</string>
     <string name="stores_signout_title">要从 %1$s 退出登录吗？</string>
@@ -2030,9 +2053,17 @@
     <string name="stores_shelf_deals">特惠</string>
     <string name="stores_shelf_free">免费游戏</string>
     <string name="stores_shelf_trending">趋势</string>
-    <string name="stores_shelf_library">你的库</string>
     <string name="stores_play">游玩</string>
     <string name="stores_install">安装</string>
+    <string name="bnet_open">打开 Battle.net</string>
+    <string name="bnet_dl_starting">正在启动暴雪下载器…</string>
+    <string name="bnet_dl_waiting">正在等待 Battle.net 关闭…</string>
+    <string name="bnet_dl_queued">正在等待另一个 Battle.net 下载…</string>
+    <string name="bnet_dl_client_first">请先打开 Battle.net 并登录一次，然后在这里安装其游戏。</string>
+    <string name="bnet_dl_failed">暴雪下载器已停止：%1$s</string>
+    <string name="bnet_dl_agent_error">暴雪错误 %1$s</string>
+    <string name="bnet_update">更新</string>
+    <string name="bnet_store">暴雪游戏</string>
     <string name="stores_resume_install">继续安装</string>
     <string name="stores_dl_interrupted">已中断</string>
     <string name="stores_install_size">安装 · %1$s</string>
@@ -2051,8 +2082,32 @@
     <string name="stores_itch_no_exe">下载内容中未找到 Windows 游戏</string>
     <string name="stores_itch_extract_failed">无法解压下载内容（代码 %1$d）</string>
     <string name="stores_itch_no_catalog">itch.io 没有响应</string>
+    <string name="stores_itch_sort_popular">热门</string>
+    <string name="stores_itch_sort_new">最新发布</string>
+    <string name="stores_itch_sort_new_popular">新品与热门</string>
+    <string name="stores_itch_price_paid">付费</string>
+    <string name="stores_itch_price_under_5">5 美元以下</string>
+    <string name="stores_itch_price_under_15">15 美元以下</string>
+    <string name="stores_itch_sort_top_rated">评分最高</string>
+    <string name="stores_itch_sort_top_sellers">热销</string>
+    <string name="stores_itch_price_any">任意价格</string>
+    <string name="stores_itch_price_free">免费</string>
+    <string name="stores_itch_price_sale">特价</string>
+    <string name="stores_itch_load_more">加载更多</string>
+    <string name="stores_itch_platform_any">任意平台</string>
+    <string name="stores_itch_platform_mobile_web">移动网页</string>
+    <string name="stores_itch_tag_add">添加标签</string>
+    <string name="stores_itch_tag_title">按标签筛选</string>
+    <string name="stores_itch_browse_failed">无法从 itch.io 加载游戏</string>
     <string name="stores_itch_archive">不支持 %1$s 压缩包</string>
     <string name="stores_itch_download_failed">itch.io 返回 HTTP %1$d</string>
+    <string name="stores_itch_pick_title">选择版本</string>
+    <string name="stores_itch_pick_none">未找到此游戏的下载</string>
+    <string name="stores_itch_pick_failed">无法从 itch.io 加载下载内容</string>
+    <string name="stores_itch_build_demo">试玩版</string>
+    <string name="stores_itch_build_open">在 itch.io 上打开</string>
+    <string name="stores_itch_build_linux_soon">暂不支持</string>
+    <string name="stores_itch_no_game">在 itch.io 上找不到这款游戏</string>
     <string name="stores_free">免费</string>
     <string name="stores_resume">继续</string>
     <string name="stores_refresh">刷新</string>
@@ -2202,6 +2257,7 @@
     <string name="stores_login_close">关闭</string>
     <string name="stores_login_retry">重试</string>
     <string name="stores_login_finishing">正在完成登录…</string>
+    <string name="stores_xbox_sign_in_again">Microsoft 拒绝了 Xbox 登录。请在游戏商店中退出 Xbox，重新登录，然后继续。</string>
     <string name="stores_login_error_network">无法加载登录页面：%1$s</string>
     <string name="stores_login_error_idp_blocked">该第三方登录方式不允许在内嵌页面中登录。请改用商店密码登录。</string>
     <string name="stores_login_error_http">登录页面返回了错误（HTTP %1$d）。</string>
@@ -2957,76 +3013,57 @@
     <string name="glasses_6dof">6DoF 虚拟屏幕</string>
     <string name="tracking_recovery_look">在光线充足的房间内缓慢环顾四周。\n不要遮挡追踪摄像头，并面向家具等有明显细节的物体。</string>
     <string name="spatial_print_job">DroidDeck ChArUco 30 mm</string>
-<string name="speed_test_title">网络测速</string>
-    <string name="speed_test_lede">测试直连和 MirrorHub 节点的下载速度，选最快的节点。</string>
-    <string name="speed_test_start">开始测速</string>
-    <string name="speed_test_running">测速中（%1$d/%2$d）…</string>
-    <string name="speed_test_direct">直连</string>
-    <string name="speed_test_nodes">MirrorHub 节点</string>
-    <string name="speed_test_none">无可用节点</string>
-    <string name="speed_test_failed">失败</string>
-    <string name="speed_test_best">最佳</string>
-    <string name="speed_test_mbps">%.2f MB/s</string>
-    <string name="speed_test_kbps">%d KB/s</string>
-    
-    <string name="mirrorhub_attribution">MirrorHub 加速下载</string>
-
-
-    <!-- Decky Loader -->
-    <string name="decky_channel">更新通道</string>
-    <string name="decky_channel_failed">无法保存 Decky 更新通道</string>
-    <string name="decky_channel_hint">选择安装哪个 Decky Loader 版本。Decky 自带的更新器也使用相同通道。</string>
-    <string name="decky_channel_prerelease">预发布</string>
-    <string name="decky_channel_stable">稳定版</string>
-    <string name="decky_channel_testing">测试版</string>
-    <string name="decky_zip_warning_continue">继续</string>
-    <string name="decky_zip_warning_text">Decky Loader 团队未审核此插件。它可能包含恶意软件，例如窃取 Steam 账号或损害设备的程序。安装此插件即表示您自行承担设备风险。</string>
-    <string name="decky_zip_warning_title">第三方插件安装</string>
-
-    <!-- Game environment -->
-    <string name="game_env_anticheat_offline">默认开启。在游戏支持离线游玩时，跳过 Easy Anti-Cheat 启动。关闭则按常规通过 EAC 启动。需要 EAC 的在线模式仍不可用。</string>
-
-    <!-- Runtime actions -->
-    <string name="runtime_actions_text">修复会重新安装运行时系统文件，保留 Steam、游戏和设置。桌面等附加组件下次使用时会重新安装。移除会删除所有内容。</string>
-    <string name="runtime_actions_title">Linux 运行时</string>
-    <string name="runtime_repair">修复运行时</string>
-
-    <!-- Session -->
-    <string name="session_package_resume_failed">中断的安装无法继续（%1$s）。请检查网络和存储空间后重试。</string>
-
-    <!-- Stores -->
-    <string name="stores_install_language">游戏语言</string>
-    <string name="stores_install_language_hint">GOG 和 Epic 按此语言安装。跟随系统则使用 App 语言。</string>
-    <string name="stores_install_language_system">跟随系统</string>
-
-    <!-- Tracking pack (VR hand tracking) -->
-    <string name="tracking_pack_download">下载</string>
-    <string name="tracking_pack_downloading">正在下载手部追踪… %1$d%%</string>
-    <string name="tracking_pack_failed">手部追踪下载失败。请检查网络后重试。</string>
-    <string name="tracking_pack_hint">手部追踪需要一次性下载 %1$s。</string>
-    <string name="tracking_pack_retry">重试</string>
-    <string name="tracking_pack_title">手部追踪下载</string>
-
-    <!-- Controls -->
-    <string name="unfolded_controls_with_controller">连接手柄时保留展开控件</string>
-    <string name="unfolded_controls_with_controller_hint">连接手柄时也显示展开的虚拟控件，适用于夹住手机的手柄。</string>
-
-    <!-- VR controllers -->
-    <string name="vr_controllers_buttons">按钮映射</string>
-    <string name="vr_controllers_buttons_off">无 VR 手部。支持手柄的游戏和 SteamVR 菜单按常规使用控制器。</string>
-    <string name="vr_controllers_buttons_stick">扳机是扳机，肩键抓握，A/B 和 X/Y 分别是左右手的面部按钮，摇杆按动摇杆，Guide 打开 SteamVR 菜单。十字键上下移动手部远近。</string>
-    <string name="vr_controllers_buttons_vive">摇杆是触控板；按 A/X 或点击摇杆按压触控板。扳机是扳机，肩键抓握，Start 和 Select 是菜单，Guide 打开 SteamVR 菜单。</string>
-    <string name="vr_controllers_emulate">VR 手柄模拟</string>
-    <string name="vr_controllers_emulate_hint">控制器模拟的两只 VR 手部。立即生效，SteamVR 运行时也可更改。Joy-Con 和追踪手部仍接管各自一侧。</string>
-    <string name="vr_controllers_group">SteamVR 控制器</string>
-    <string name="vr_controllers_index">Valve Index 控制器</string>
-    <string name="vr_controllers_off">普通手柄</string>
-    <string name="vr_controllers_sticks">摇杆默认</string>
-    <string name="vr_controllers_sticks_game">在游戏中移动</string>
-    <string name="vr_controllers_sticks_hands">移动手部</string>
-    <string name="vr_controllers_sticks_hint">VR 中同时按动摇杆可切换。</string>
-    <string name="vr_controllers_tab">控制器</string>
-    <string name="vr_controllers_touch">Meta Quest 3 控制器</string>
-    <string name="vr_controllers_vive">HTC Vive 手柄</string>
-
+    <string name="setup_group_memory">内存</string>
+    <string name="setup_clear_cached">会话前关闭缓存的应用</string>
+    <string name="setup_clear_cached_hint">会话开始时关闭 Android 留在后台的应用，让游戏有更多内存可用。需要开启无线调试。</string>
+    <string name="setup_clear_cached_unpaired">需要先将 DroidDeck 与无线调试配对（见下方“配对”）。</string>
+    <string name="setup_memory_hud">内存读数</string>
+    <string name="setup_memory_hud_hint">在会话画面上显示已用内存和交换空间。高级模式会分别显示游戏、DroidDeck、Android 和 GPU。</string>
+    <string name="setup_memory_hud_simple">简单</string>
+    <string name="setup_memory_hud_advanced">高级</string>
+    <string name="memory_hud_simple">内存 %1$s/%2$s GB · 交换 %3$s/%4$s GB</string>
+    <string name="memory_hud_split">游戏 %1$s · DroidDeck %2$s · Android %3$s GB</string>
+    <string name="memory_hud_gpu">GPU %1$s GB</string>
+    <string name="setup_bg_limit">会话期间的后台应用</string>
+    <string name="setup_bg_limit_hint">会话运行期间，Android 最多缓存这么多个应用并关闭其余应用，让游戏使用它们的内存。会话结束后恢复原状。需要开启无线调试。</string>
+    <string name="setup_bg_limit_4">最多 4 个</string>
+    <string name="setup_bg_limit_1">最多 1 个</string>
+    <string name="setup_bg_limit_0">无</string>
+    <string name="setup_adb_pair">无线调试</string>
+    <string name="setup_adb_pair_hint">为上面的选项将 DroidDeck 与 Android 无线调试配对。子进程限制保持关闭。</string>
+    <string name="setup_adb_pair_button">配对</string>
+    <string name="epic_client_missing">未安装</string>
+    <string name="epic_client_open">打开</string>
+    <string name="epic_client_install">安装</string>
+    <string name="game_tab_about">关于</string>
+    <string name="game_tab_install">安装</string>
+    <string name="game_install_location">位置</string>
+    <string name="game_install_folder">文件夹</string>
+    <string name="game_install_size">占用空间</string>
+    <string name="game_install_date">已安装</string>
+    <string name="stores_xbox_update">更新 / 验证</string>
+    <string name="stores_xbox_manage">管理内容</string>
+    <string name="stores_xbox_close_first">更新前请先关闭此 Xbox 游戏。</string>
+    <string name="stores_xbox_content_title">Xbox 内容</string>
+    <string name="stores_xbox_content_none">此游戏没有已授权的 PC 内容包。</string>
+    <string name="stores_xbox_content_update">%1$s · 更新 / 验证</string>
+    <string name="stores_xbox_content_install">%1$s · 安装</string>
+    <string name="stores_xbox_choose_content">选择 PC 内容</string>
+    <string name="stores_eyebrow_pass">%1$s 可玩</string>
+    <string name="stores_owned_in_library">游戏库中已拥有的游戏</string>
+    <string name="library_filter_added">已添加</string>
+    <string name="game_tab_launch">启动</string>
+    <string name="game_tab_saves_cloud">存档和云</string>
+    <string name="game_launch_shortcut">Steam 快捷方式</string>
+    <string name="game_install_version">版本</string>
+    <string name="game_install_played">上次游玩</string>
+    <string name="game_install_access">访问权限</string>
+    <string name="game_install_access_owned">已拥有</string>
+    <string name="game_stream">串流</string>
+    <string name="library_add">添加到游戏库</string>
+    <string name="library_remove">从游戏库移除</string>
+    <string name="library_in">已在游戏库</string>
+    <string name="xbox_filter_show">显示</string>
+    <string name="xbox_filter_cloud">云</string>
+    <string name="stores_xbox_cloud_settings">云设置</string>
 </resources>
