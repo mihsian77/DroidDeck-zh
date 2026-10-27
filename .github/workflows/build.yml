@@ -368,7 +368,7 @@ jobs:
           ls -lR "$D"
 
       - name: Fetch the Debian image the preloads build in
-        if: steps.preloads.outputs.cache-hit != 'true'
+        if: false  # skipped: Docker Hub rate limits, we don't need x86 preloads on ARM64
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -391,7 +391,7 @@ jobs:
           docker image ls "$image"
 
       - name: Build the x86 preloads FEX guests load (glibc 2.31)
-        if: steps.preloads.outputs.cache-hit != 'true'
+        if: false  # skipped: Docker Hub rate limits, we don't need x86 preloads on ARM64
         run: |
           set -euo pipefail
           docker run --rm -v "$PWD:/src" -w /src debian:bullseye bash -c '
