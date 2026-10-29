@@ -213,6 +213,7 @@ class FrontEndActivity : ComponentActivity() {
     }
     private val mediaReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            usbScan++
             ui.removeCallbacks(mediaRefresh)
             ui.postDelayed(mediaRefresh, MEDIA_SETTLE_MS)
         }
@@ -491,6 +492,16 @@ class FrontEndActivity : ComponentActivity() {
     private var oscMode by mutableStateOf(SessionPrefs.OSC_AUTO)
     private var backActionsInverted by mutableStateOf(false)
     private var gameStorage by mutableStateOf("")
+    private var slowUsb by mutableStateOf<com.droiddeck.launcher.session.UsbLink.SlowDrive?>(null)
+    private var usbScan = 0
+    private var slowUsbNever by mutableStateOf(false)
+
+    private fun showSlowUsb(drive: com.droiddeck.launcher.session.UsbLink.SlowDrive?) {
+        val off = slowUsbNever
+        if (off) SessionPrefs.setSlowUsbWarningOff(this)
+        slowUsbNever = false
+        slowUsb = drive.takeUnless { off }
+    }
     private var storageDiagnostics by mutableStateOf(false)
     private var storageOptions by mutableStateOf<List<GameStorage.Option>>(emptyList())
     private val pickGameStorage = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
@@ -553,6 +564,10 @@ class FrontEndActivity : ComponentActivity() {
                     android.widget.Toast.makeText(this, R.string.main_wait_runtime, android.widget.Toast.LENGTH_SHORT).show()
                     return
                 }
+                SessionState.installing != null && !SessionState.running -> {
+                    android.widget.Toast.makeText(this, R.string.main_wait_desktop_install, android.widget.Toast.LENGTH_SHORT).show()
+                    return
+                }
                 compat -> Unit
                 pkgStage != null -> {
                     android.widget.Toast.makeText(this, R.string.main_wait_desktop_install, android.widget.Toast.LENGTH_SHORT).show()
@@ -578,12 +593,12 @@ class FrontEndActivity : ComponentActivity() {
     }
 
     private fun launchFlooded(f: PendingFlood) {
-        if (busy || LinuxRuntimeInstaller.isBusy() || protons.protonBusyId != null ||
-            ProtonExtras.installInProgress || pkgStage != null) {
+        if (busy || LinuxRuntimeInstaller.isBusy() || (SessionState.installing != null && !SessionState.running) ||
+            protons.protonBusyId != null || ProtonExtras.installInProgress || pkgStage != null) {
             flood = null
             floodProgress = 0f
             com.droiddeck.launcher.ui.LaunchOrigin.flooding = null
-            if (!busy && !LinuxRuntimeInstaller.isBusy() &&
+            if (!busy && !LinuxRuntimeInstaller.isBusy() && !(SessionState.installing != null && !SessionState.running) &&
                 (protons.protonBusyId != null || ProtonExtras.installInProgress)) {
                 compatFlood = com.droiddeck.launcher.ui.Themes.byId(theme).signal
                 waitForCompat(f.intent)
@@ -617,7 +632,7 @@ class FrontEndActivity : ComponentActivity() {
                 }
                 if (!compatLaunchVisible) { ui.postDelayed(this, 250); return }
                 val problem = protons.protonProblem.takeIf { waiting.menuInstall }
-                if (problem == null && (busy || LinuxRuntimeInstaller.isBusy() || pkgStage != null)) {
+                if (problem == null && (busy || LinuxRuntimeInstaller.isBusy() || (SessionState.installing != null && !SessionState.running) || pkgStage != null)) {
                     waiting.loading.say(pkgStage ?: stage.takeIf { it.isNotBlank() } ?: getString(R.string.main_wait_runtime),
                         com.droiddeck.launcher.session.LoadingState.Topic.RUNTIME, readable = true)
                     waiting.loading.percent = if (pkgStage != null) pkgPercent else percent
@@ -980,6 +995,13 @@ class FrontEndActivity : ComponentActivity() {
                 if (decky.deckyPendingZip != null) com.droiddeck.launcher.ui.DeckyZipWarningDialog(
                     onConfirm = { decky.confirmPluginZip() }, onCancel = { decky.cancelPluginZip() },
                 )
+                slowUsb?.let { drive ->
+                    com.droiddeck.launcher.ui.SlowUsbDialog(drive, slowUsbNever, { slowUsbNever = it }) {
+                        com.droiddeck.launcher.session.UsbLink.markShown(this, drive)
+                        showSlowUsb(null)
+                        checkUsbLink()
+                    }
+                }
                 val page: (@Composable () -> Unit)? = when {
                     showPerformance -> { { PerformanceHost() } }
                     showComponents -> { { ComponentsHost() } }
@@ -1330,7 +1352,7 @@ class FrontEndActivity : ComponentActivity() {
                             showPhantomGate = true
                         },
                         onStartWirelessAdbPairing = { WirelessAdbPairingService.start(this) },
-                        onStartPairingGuide = { displayId -> PairingGuideActivity.start(this, displayId) },
+                        onStartPairingGuide = { displayId, toggleOnly -> PairingGuideActivity.start(this, displayId, toggleOnly) },
                         onOpenNotificationSettings = {
                             startActivity(Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                                 .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
@@ -1632,6 +1654,7 @@ class FrontEndActivity : ComponentActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        if (slowUsbNever) SessionPrefs.setSlowUsbWarningOff(this)
         saveCompatLaunch(outState)
         pendingSwitch?.let { outState.putParcelable(KEY_PENDING_SWITCH, it) }
         switchingTo?.let {
@@ -2213,6 +2236,7 @@ class FrontEndActivity : ComponentActivity() {
     }
 
     private fun refreshAddedGames() {
+        checkUsbLink()
         sgdbKeyKnown()
         fetchAddedGameArt()
     }
@@ -2317,6 +2341,20 @@ class FrontEndActivity : ComponentActivity() {
         }
         SessionPrefs.setGameStorage(this, path, label)
         gameStorage = path
+        checkUsbLink()
+    }
+
+    private fun checkUsbLink() {
+        if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) { ui.post { checkUsbLink() }; return }
+        val scan = ++usbScan
+        Thread({
+            val drive = runCatching { com.droiddeck.launcher.session.UsbLink.slowLibrary(this) }.getOrNull()
+            ui.post {
+                if (scan != usbScan || isFinishing) return@post
+                val due = drive?.takeIf { com.droiddeck.launcher.session.UsbLink.stillDue(this, it) }
+                if (due == null) { if (slowUsb != null) showSlowUsb(null) } else if (slowUsb?.key != due.key) showSlowUsb(due)
+            }
+        }, "usb-link").start()
     }
 
     private fun refreshCores() {
@@ -2456,6 +2494,10 @@ class FrontEndActivity : ComponentActivity() {
 
     private fun startSession(intent: Intent, steamSession: Boolean = false): Boolean {
         if (busy || LinuxRuntimeInstaller.isBusy()) return false
+        if (SessionState.installing != null && !SessionState.running) {
+            android.widget.Toast.makeText(this, R.string.main_wait_desktop_install, android.widget.Toast.LENGTH_SHORT).show()
+            return false
+        }
         if (com.droiddeck.launcher.storage.StorageState.cleaning) {
             android.widget.Toast.makeText(this, R.string.storage_cleanup_busy, android.widget.Toast.LENGTH_SHORT).show()
             return false

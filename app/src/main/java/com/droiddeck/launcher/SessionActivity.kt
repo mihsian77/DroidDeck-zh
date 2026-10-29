@@ -90,7 +90,8 @@ import com.droiddeck.launcher.input.TouchscreenGestures
 import com.droiddeck.launcher.input.ScrollTouchGestures
 import com.droiddeck.launcher.runtime.LinuxRuntime
 import com.droiddeck.launcher.session.LoadingState
-import com.droiddeck.launcher.session.PerfHud
+import com.droiddeck.launcher.hud.FusionHudConfig
+import com.droiddeck.launcher.hud.FusionHudHost
 import com.droiddeck.launcher.session.PerfMode
 import com.droiddeck.launcher.session.SteamRepair
 import com.droiddeck.launcher.session.GameEnvironmentStore
@@ -158,7 +159,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
     private lateinit var surfaceView: SurfaceView
     private lateinit var sessionOverlay: ComposeView
     private lateinit var loading: LoadingState
-    private lateinit var hud: PerfHud
+    private lateinit var hud: FusionHudHost
     private lateinit var memoryHud: com.droiddeck.launcher.session.MemoryHud
     private var padBridge: PadBridge? = null
     private var joyConVr: com.droiddeck.launcher.input.JoyConVr? = null
@@ -333,9 +334,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
     private var achievementsInFront by mutableStateOf<AchievementsInFront?>(null)
     private var achievementsOpen by mutableStateOf(false)
     private var hudOn by mutableStateOf(true)
-    private var hudFps by mutableStateOf(true)
-    private var hudBattery by mutableStateOf(true)
-    private var hudGraph by mutableStateOf(true)
+    private var hudConfig by mutableStateOf<Map<String, String>>(emptyMap())
     private var hudColor by mutableStateOf(SessionPrefs.HUD_COLOR_MINT)
     private var hudOpacity by mutableStateOf(SessionPrefs.HUD_OPACITY_DEFAULT)
     private var upscaler by mutableStateOf(0)
@@ -489,6 +488,13 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
             finish()
             return
         }
+        // A cancelled install keeps its thread until the download stops; a new launch would reuse its stop flag and close itself.
+        if (savedInstanceState == null && SessionState.installing != null && !SessionState.running) {
+            runtimeRemovalBlocked = true
+            android.widget.Toast.makeText(this, R.string.main_wait_desktop_install, android.widget.Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
         if (!SessionState.running && SessionState.phase in setOf(SessionPhase.IDLE, SessionPhase.FAILED)) {
             val mode = intent.getStringExtra(SessionService.EXTRA_MODE) ?: SessionService.MODE_STEAM
             SessionState.programArgs = intent.getStringArrayExtra(SessionService.EXTRA_PROGRAM_ARGS)?.toList().orEmpty()
@@ -634,7 +640,9 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
             val needProton = protonUser && com.droiddeck.launcher.runtime.DesktopCatalog.protonSeedNeeded(this)
             if (needRuntime || needResume || needDesktop || needProton) installThenStart(needRuntime, needDesktop, needProton, needResume)
         }
-        hud = PerfHud(this)
+        hud = FusionHudHost(this)
+        hud.onConfigChanged = { hudConfig = FusionHudConfig.load(this) }
+        hud.attach(root, root.childCount)
         memoryHud = com.droiddeck.launcher.session.MemoryHud(this)
         hud.onPresentingWindowChanged = {
             if (FrameGen.engine(this) != FrameGen.ENGINE_OFF) CompositorHost.rearmFrameGen { applyFrameGen() }
@@ -722,6 +730,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
                 onDispose { com.droiddeck.launcher.glasses.GlassesMenuMirror.setSessionMenuVisible(this@SessionActivity, false) }
             }
             androidx.compose.runtime.LaunchedEffect(drawerOpen, pcKeyboardOpen, achievementsOpen, pipUi) { updatePointerCapture() }
+            androidx.compose.runtime.LaunchedEffect(pipUi) { hud.setHidden(pipUi) }
             androidx.compose.runtime.LaunchedEffect(AgentGuest.steamKeyboard) { updateOnScreenControls() }
             androidx.compose.runtime.LaunchedEffect(picturePosition, SessionState.running, pipUi, cardboard.enabled) { applyGameAlignment() }
             DroidDeckTheme {
@@ -737,9 +746,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
             com.droiddeck.launcher.ui.FocusGlideHost(androidx.compose.ui.Modifier.fillMaxSize()) {
                 CursorOverlay({ cursorPos }, cursorVisible, resources.displayMetrics.density,
                     cursorImage, cursorHotX, cursorHotY, cursorImageScale)
-                val hudLines = listOf(hud.text, memoryHud.text).filter { it.isNotEmpty() }
-                if (hudLines.isNotEmpty() || hud.graph.size >= 2)
-                    HudText(hudLines.joinToString("\n"), hud.graph, hudColor, hudOpacity)
+                if (memoryHud.text.isNotEmpty()) HudText(memoryHud.text, hudColor, hudOpacity)
                 val phonePanel = glassesOutputActive && !loading.visible && !drawerOpen && !pcKeyboardOpen
                 if (phonePanel) GlassesPhonePanel(glasses, steamVrStatus == SteamVr.Status.RUNNING, headTracking)
                 if (trackingRecovery != null && !drawerOpen && !pcKeyboardOpen && !loading.visible) {
@@ -936,11 +943,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
                     isHomeApp = isHomeApp,
                     androidApps = androidApps,
                     hudOn = hudOn,
-                    hudFps = hudFps,
-                    hudBattery = hudBattery,
-                    hudGraph = hudGraph,
-                    hudColor = hudColor,
-                    hudOpacity = hudOpacity,
+                    hudConfig = hudConfig,
                     upscaler = upscaler, upscaleSharpness = upscaleSharpness,
                     effects = effects,
                     cardboard = cardboard,
@@ -971,11 +974,9 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
                     secondScreenDisplays = secondScreenDisplays,
                     selectedSecondScreenDisplay = selectedSecondScreenDisplay,
                     onHud = { on -> SessionPrefs.setHudEnabled(this@SessionActivity, on); hudOn = on; hud.refresh() },
-                    onHudFps = { on -> SessionPrefs.setHudShowFps(this@SessionActivity, on); hudFps = on; hud.refresh() },
-                    onHudBattery = { on -> SessionPrefs.setHudShowBattery(this@SessionActivity, on); hudBattery = on; hud.refresh() },
-                    onHudGraph = { on -> SessionPrefs.setHudShowGraph(this@SessionActivity, on); hudGraph = on; hud.refresh() },
-                    onHudColor = { color -> SessionPrefs.setHudColor(this@SessionActivity, color); hudColor = color },
-                    onHudOpacity = { percent -> SessionPrefs.setHudOpacity(this@SessionActivity, percent); hudOpacity = percent },
+                    onHudSetting = { key, value -> hudConfig = FusionHudConfig.set(this@SessionActivity, key, value); hud.applyConfig() },
+                    onHudReset = { hudConfig = FusionHudConfig.reset(this@SessionActivity); hud.applyConfig() },
+                    onHudExport = { exportHudDiagnostics() },
                     onUpscaler = { m ->
                         SessionPrefs.setUpscaler(this@SessionActivity, m); upscaler = m
                         WaylandCompositor.nativeSetUpscaler(m)
@@ -1597,6 +1598,15 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
             else getString(R.string.load_starting_steam)
     }
 
+    private fun exportHudDiagnostics() {
+        glassesScope.launch {
+            val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { hud.exportDiagnostics() }
+            android.widget.Toast.makeText(this@SessionActivity,
+                if (file != null) getString(R.string.hud_export_done, file.path) else getString(R.string.hud_export_failed),
+                android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun shareCurrentSessionLogs() {
         val folder = SessionPaths.current() ?: SessionPaths.lastEnded()
         if (folder == null || !folder.isDirectory) {
@@ -1622,9 +1632,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
         unfoldedControlsWithController = SessionPrefs.unfoldedControlsWithController(this)
         picturePosition = SessionPrefs.picturePosition(this)
         hudOn = SessionPrefs.hudEnabled(this)
-        hudFps = SessionPrefs.hudShowFps(this)
-        hudBattery = SessionPrefs.hudShowBattery(this)
-        hudGraph = SessionPrefs.hudShowGraph(this)
+        hudConfig = FusionHudConfig.load(this)
         hudColor = SessionPrefs.hudColor(this)
         hudOpacity = SessionPrefs.hudOpacity(this)
         upscaler = SessionPrefs.upscaler(this)
@@ -1666,12 +1674,15 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
     }
 
 
-    @Volatile private var installingRuntime = false
+    private var localInstalling = false
+    private val installingRuntime get() = localInstalling || SessionState.installing != null
     private var repairOffered by mutableStateOf(false)
 
     private fun installThenStart(runtime: Boolean, desktop: Boolean, proton: Boolean = false, resume: Boolean = false) {
         if (SessionState.stopRequested) return
-        installingRuntime = true
+        val worker = Any()
+        activeInstallWorker = worker
+        localInstalling = true
         SessionState.installing = if (runtime) "runtime" else if (resume) "package" else if (desktop) "desktop" else "proton"
         SessionEvents.transition(
             SessionPhase.INSTALLING_RUNTIME,
@@ -1689,30 +1700,39 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
                 if (problem == null) SessionEvents.record("runtime.ready") else failedComponent = "runtime"
             }
             if (problem == null && resume && !SessionState.stopRequested) {
-                SessionState.installing = "package"
+                if (activeInstallWorker === worker) SessionState.installing = "package"
                 SessionEvents.transition(SessionPhase.INSTALLING_RUNTIME, "package.resuming", mapOf("component" to "package"))
-                problem = com.droiddeck.launcher.runtime.DesktopCatalog.resumeInterrupted(this, progressAsIs())
-                    ?.let { getString(R.string.session_package_resume_failed, it) }
+                val cancellation = com.droiddeck.launcher.core.Downloader.Cancellation { SessionState.stopRequested }
+                SessionState.installCancellation = cancellation
+                problem = try {
+                    com.droiddeck.launcher.runtime.DesktopCatalog.resumeInterrupted(this, cancellation, progressAsIs())
+                        ?.let { getString(R.string.session_package_resume_failed, it) }
+                } finally {
+                    if (SessionState.installCancellation === cancellation) SessionState.installCancellation = null
+                }
                 if (problem == null) SessionEvents.record("package.ready") else failedComponent = "package"
             }
             if (problem == null && desktop && !SessionState.stopRequested) {
-                SessionState.installing = "desktop"
+                if (activeInstallWorker === worker) SessionState.installing = "desktop"
                 SessionEvents.transition(SessionPhase.INSTALLING_RUNTIME, "desktop.installing", mapOf("component" to "desktop"))
                 problem = installDesktop()
                 if (problem == null) SessionEvents.record("desktop.ready") else failedComponent = "desktop"
             }
             if (problem == null && proton && !SessionState.stopRequested) {
-                SessionState.installing = "proton"
+                if (activeInstallWorker === worker) SessionState.installing = "proton"
                 SessionEvents.transition(SessionPhase.INSTALLING_RUNTIME, "proton.installing", mapOf("component" to "proton"))
                 val protonProblem = installProton()
                 if (protonProblem == null) SessionEvents.record("proton.ready")
                 else SessionEvents.record("proton.skipped", mapOf("reason" to protonProblem))
             }
             uiHandler.post {
-                installingRuntime = false
-                SessionState.installing = null
+                localInstalling = false
+                if (activeInstallWorker === worker) {
+                    activeInstallWorker = null
+                    SessionState.installing = null
+                }
                 if (SessionState.stopRequested) {
-                    SessionState.stopRequested = false
+                    if (activeInstallWorker == null) SessionState.stopRequested = false
                     SessionEvents.transition(SessionPhase.IDLE, "session.cancelled")
                     collectStartArtifacts("session start cancelled")
                     finish()
@@ -1790,17 +1810,29 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
     private fun installDesktop(): String? {
         uiHandler.post { loading.percent = -1; loading.say(getString(DESKTOP_LINES.downloading), DESKTOP_LINES.topic, readable = true) }
         val entry = com.droiddeck.launcher.runtime.DesktopCatalog.desktopEntry(this)
-        val problem = com.droiddeck.launcher.runtime.DesktopCatalog.install(this, entry,
-            progressFor(DESKTOP_LINES, entry.size / 1_000_000))
-        return problem?.let { getString(R.string.session_desktop_install_failed, it) }
+        val cancellation = com.droiddeck.launcher.core.Downloader.Cancellation { SessionState.stopRequested }
+        SessionState.installCancellation = cancellation
+        return try {
+            val problem = com.droiddeck.launcher.runtime.DesktopCatalog.install(this, entry, cancellation,
+                progressFor(DESKTOP_LINES, entry.size / 1_000_000))
+            problem?.let { getString(R.string.session_desktop_install_failed, it) }
+        } finally {
+            if (SessionState.installCancellation === cancellation) SessionState.installCancellation = null
+        }
     }
 
     private fun installProton(): String? {
         uiHandler.post { loading.percent = -1; loading.say(getString(PROTON_LINES.downloading), PROTON_LINES.topic, readable = true) }
         val catalog = com.droiddeck.launcher.runtime.DesktopCatalog
-        val entry = catalog.fetch(catalog.STEAM_SEED_URL)?.firstOrNull { it.id == catalog.PROTON_SEED_ID }
-            ?: return "catalog unreachable"
-        return catalog.install(this, entry, progressFor(PROTON_LINES, entry.size / 1_000_000))
+        val cancellation = com.droiddeck.launcher.core.Downloader.Cancellation { SessionState.stopRequested }
+        SessionState.installCancellation = cancellation
+        return try {
+            val entry = catalog.fetch(catalog.STEAM_SEED_URL, cancellation)?.firstOrNull { it.id == catalog.PROTON_SEED_ID }
+                ?: return if (cancellation.asBoolean) "cancelled" else "catalog unreachable"
+            catalog.install(this, entry, cancellation, progressFor(PROTON_LINES, entry.size / 1_000_000))
+        } finally {
+            if (SessionState.installCancellation === cancellation) SessionState.installCancellation = null
+        }
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
@@ -3249,6 +3281,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
         super.onStart()
         if (runtimeRemovalBlocked) return
         started = true
+        if (::hud.isInitialized) hud.setBackgrounded(false)
         refreshActivityDisplayId()
         displayManager.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
         for (name in arrayOf("peak_refresh_rate", "min_refresh_rate")) {
@@ -3266,6 +3299,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
     override fun onStop() {
         if (runtimeRemovalBlocked) { super.onStop(); return }
         started = false
+        if (::hud.isInitialized) hud.setBackgrounded(true)
         updateHandCamera()
         displayManager.unregisterDisplayListener(displayListener)
         contentResolver.unregisterContentObserver(refreshSettingObserver)
@@ -3876,6 +3910,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback {
         private const val PAUSED_FRAME_REDRAW_MS = 150L
         private const val TAG = "SessionActivity"
         private var startedScreens = 0
+        @Volatile private var activeInstallWorker: Any? = null
         private const val FEX_MISSING = "droiddeck-fex: x86 Linux programs need"
         private const val UNBUFFERED_SOURCES = InputDevice.SOURCE_CLASS_JOYSTICK or InputDevice.SOURCE_CLASS_TRACKBALL or InputDevice.SOURCE_CLASS_POSITION
         private const val CURSOR_PAD_HOLD_MS = 1200L

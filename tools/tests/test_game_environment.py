@@ -1,4 +1,5 @@
 import hashlib
+import io
 import json
 import os
 import shutil
@@ -29,6 +30,24 @@ def config_text(entries):
 
 
 class GameDebugLoggingTest(unittest.TestCase):
+    def test_maintenance_precision_survives_run_with_performance_game_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            config = home / ".config/droiddeck/game-environment.json"
+            config.parent.mkdir(parents=True)
+            config.write_text(json.dumps({"version": 1, "shared": {"FEX_X87REDUCEDPRECISION": "1"},
+                                          "games": {"42": {"FEX_X87REDUCEDPRECISION": "1"}}}))
+            probe = home / "proton"
+            probe.write_text("#!" + sys.executable + "\nimport os\nprint(os.environ['FEX_X87REDUCEDPRECISION'])\n")
+            probe.chmod(0o755)
+            base = {**os.environ, "HOME": tmp, "STEAM_COMPAT_DATA_PATH": str(home / "compatdata/42")}
+            maintenance = subprocess.run([sys.executable, str(BIN / "droiddeck-game-env"), str(probe), "run"],
+                env={**base, "DROIDDECK_GOG_MAINTENANCE": "1", "FEX_X87REDUCEDPRECISION": "0"}, text=True, capture_output=True, check=True)
+            game = subprocess.run([sys.executable, str(BIN / "droiddeck-game-env"), str(probe), "waitforexitandrun"],
+                env={**base, "FEX_X87REDUCEDPRECISION": "1"}, text=True, capture_output=True, check=True)
+            self.assertEqual("0", maintenance.stdout.strip())
+            self.assertEqual("1", game.stdout.strip())
+
     def test_real_game_launch_without_config_file_keeps_the_base_environment(self):
         with tempfile.TemporaryDirectory() as tmp:
             home = Path(tmp)
@@ -586,6 +605,39 @@ class GameEnvironmentTest(unittest.TestCase):
             self.assertEqual(env.get("WINE_CPU_TOPOLOGY"), expected, env)
             self.assertEqual(env.get("PROTON_CPU_TOPOLOGY"), proton, env)
 
+    def test_opengl_games_do_not_wait_for_the_screen_refresh(self):
+        cases = [
+            ({}, "0"),
+            ({"STEAM_COMPAT_DATA_PATH": "/steam/compatdata/-686078602"}, "0"),
+            ({"vblank_mode": "2"}, "2"),
+            ({"vblank_mode": ""}, ""),
+            ({"STEAM_COMPAT_DATA_PATH": "/steam/compatdata/0"}, None),
+            ({"STEAM_COMPAT_DATA_PATH": ""}, None),
+        ]
+        for env, expected in cases:
+            env.setdefault("STEAM_COMPAT_DATA_PATH", "/steam/compatdata/3608888694")
+            added = expected == "0" and "vblank_mode" not in env
+            self.assertEqual(MODULE["gl_vsync"](env), added, env)
+            self.assertEqual(env.get("vblank_mode"), expected, env)
+        said = "OpenGL does not wait for the screen refresh"
+        with tempfile.TemporaryDirectory() as tmp:
+            probe = Path(tmp) / "probe"
+            probe.write_text("#!" + sys.executable + "\nimport os\nprint(os.environ.get('vblank_mode', 'unset'))\n")
+            probe.chmod(0o755)
+            config = Path(tmp) / ".config/droiddeck/game-environment.json"
+            config.parent.mkdir(parents=True)
+            for inherited, edits, expected in (({}, None, "0"), ({"vblank_mode": "3"}, None, "3"),
+                                               ({}, {"vblank_mode": None}, "unset"), ({}, {"vblank_mode": "2"}, "2"),
+                                               ({"vblank_mode": "3"}, {"vblank_mode": None}, "unset")):
+                with self.subTest(inherited=inherited, edits=edits):
+                    config.write_text(json.dumps({"version": 1, "games": {"42": edits or {}}}))
+                    env = {name: value for name, value in os.environ.items() if name != "vblank_mode"}
+                    env.update(HOME=tmp, STEAM_COMPAT_DATA_PATH="/compatdata/42", **inherited)
+                    result = subprocess.run([sys.executable, str(BIN / "droiddeck-game-env"), str(probe), "waitforexitandrun"],
+                                            env=env, text=True, capture_output=True, check=True)
+                    self.assertEqual(result.stdout.strip(), expected)
+                    self.assertEqual(said in result.stderr, expected == "0" and not inherited, result.stderr)
+
     def test_windows_cpu_0_is_the_fastest_core(self):
         os_mod = MODULE["os"]
         pocket_fit = {0: 379, 1: 379, 2: 923, 3: 923, 4: 923, 5: 867, 6: 867, 7: 1024}
@@ -970,6 +1022,36 @@ class GameEnvironmentTest(unittest.TestCase):
         for script in (COMPAT["LAUNCHER_SH"], COMPAT["EXTRA_WRAPPER_SH"] % "proton"):
             subprocess.run(["bash", "-n"], input=script, text=True, check=True)
             self.assertIn('bl_run ${BL_TASKSET:-} /usr/local/bin/droiddeck-game-env', script)
+
+    def test_both_proton_wrappers_answer_steams_driver_query_without_wine(self):
+        scripts = (COMPAT["launcher_sh"](), COMPAT["extra_wrapper_sh"]("proton"))
+        query = "/root/.local/share/Steam/steamrtarm64/../bin/d3ddriverquery64.exe"
+        probe = "/root/.local/share/Steam/steamapps/compatdata/0"
+        for script in scripts:
+            subprocess.run(["bash", "-n"], input=script, text=True, check=True)
+            self.assertLess(script.index('case "$verb:${1##*/}:'), script.index("bl_components "))
+            for args, prefix in (([query, "-d3d12"], probe), ([query], probe + "/"),
+                                 ([query.replace("64.exe", ".exe")], probe)):
+                result = subprocess.run(["bash", "-s", "run"] + args, input=script, text=True, capture_output=True,
+                                        env={"PATH": os.defpath, "HOME": "/nonexistent", "STEAM_COMPAT_DATA_PATH": prefix},
+                                        timeout=10)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("D3D driver query is not run", result.stderr)
+        skip = COMPAT["BL_DRIVER_QUERY_SKIP"]
+        for verb, args, prefix in (
+                ("getcompatpath", [query], probe),
+                ("run", [query], "/root/.local/share/Steam/steamapps/compatdata/2276548447"),
+                ("run", [query], None),
+                ("waitforexitandrun", ["/games/AIO/AIO-Graphics-Test-64bit.exe", "--cube", "dx11"], probe),
+                ("run", ["/games/Tool/tool.exe", query], probe),
+                ("run", ["/games/d3ddriverquery64.exe.bak"], probe)):
+            env = {"PATH": os.defpath}
+            if prefix is not None:
+                env["STEAM_COMPAT_DATA_PATH"] = prefix
+            out = subprocess.run(["bash", "-c", "verb=" + verb + "\n" + skip + "echo continued", "_"] + args,
+                                 env=env, capture_output=True, text=True, check=True).stdout
+            self.assertEqual(out, "continued\n", (verb, args, prefix))
 
     def test_wrappers_preload_the_session_library_before_the_input_shim(self):
         overlay = "/root/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so"
