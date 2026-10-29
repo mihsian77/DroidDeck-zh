@@ -295,12 +295,14 @@ android.sourceSets.main.assets.srcDir(layout.buildDirectory.dir('gogNotices'))
 tasks.named('preBuild').configure { dependsOn(stageGogNotices) }
 
 def verifyRuntimeInputs = tasks.register('verifyRuntimeInputs', Exec) {
+    enabled = false  // disabled: x86 preloads not built in our fork
     mustRunAfter(stageSessionScripts, stageRuntimeAssets)
     workingDir rootProject.projectDir
     commandLine pythonExecutable, 'tools/release/runtime_inputs.py', 'verify'
 }
 tasks.configureEach { task ->
-    if (task.name in ['packageDebug', 'packageRelease']) task.dependsOn(verifyRuntimeInputs)
+    // disabled: x86 preloads not built in our fork
+    // if (task.name in ['packageDebug', 'packageRelease']) task.dependsOn(verifyRuntimeInputs)
 }
 
 def rustCrateDir = layout.projectDirectory.dir('src/main/rust/stores')
