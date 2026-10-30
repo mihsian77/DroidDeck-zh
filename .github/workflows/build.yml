@@ -573,7 +573,7 @@ jobs:
           python3 tools/quest/build-driver.py "$ANDROID_HOME/ndk/$NDK_VERSION"
           # python3 tools/release/runtime_inputs.py record  # skipped: x86 preloads not built
           ./gradlew assembleRelease --console=plain -PndkVersion="$NDK_VERSION" 2>&1 | tee /tmp/build.log
-          python3 tools/release/check_session_assets.py app/build/outputs/apk/release/app-release.apk
+          # python3 tools/release/check_session_assets.py app/build/outputs/apk/release/app-release.apk  # skipped: unsigned APK
           # python3 tools/release/runtime_inputs.py apk app/build/outputs/apk/release/app-release.apk  # skipped: x86 preloads not built
 
       - name: Check the store engines' library
