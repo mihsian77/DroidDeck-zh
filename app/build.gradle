@@ -193,7 +193,7 @@ android {
         }
         release {
             minifyEnabled false
-            signingConfig signingConfigs.testkey
+            // No signing config here; signed in CI by sign.yml step.
         }
     }
 
