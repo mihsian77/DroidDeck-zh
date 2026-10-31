@@ -334,6 +334,7 @@ class SessionService : Service() {
             return START_NOT_STICKY
         }
         SessionState.mode = intent?.getStringExtra(EXTRA_MODE) ?: MODE_STEAM
+        SessionState.fpsLimit = 0
         suspendPolicy = SessionPrefs.suspendPolicy(this, SessionState.mode)
         steamDownloadsInBackground = SessionPrefs.steamDownloadsInBackground(this)
         activityVisible = true
@@ -538,10 +539,6 @@ class SessionService : Service() {
         // gamescope's WSI layer and winex11 reuse their per-present window checks for this long.
         guest.add("DROIDDECK_WSI_BYPASS_CHECK_MS=100")
         guest.add("WINE_OFFSCREEN_CHECK_MS=100")
-        // gamescope turns buffers around slower than an uncapped game draws; more images keep it drawing.
-        // The WSI layer goes back to its default count while Steam's Frame Limit holds the game.
-        guest.add("GAMESCOPE_WSI_MIN_IMAGE_COUNT=8")
-        guest.add("GAMESCOPE_WSI_ENSURE_MIN_IMAGE_COUNT=1")
         guest.add("BL_REFRESH=" + Math.round(SessionState.refreshHz))
         guest.add("BL_LOG=" + sessionLog.path)
         guest.add("BL_DEBUG_DIR=" + sessionDir.path)
@@ -549,7 +546,6 @@ class SessionService : Service() {
         val fakeInputDir = File(sessionRoot, "dev/input").apply { mkdirs() }
         val controllersOn = !File(Environment.getExternalStorageDirectory(), NO_PAD_SWITCH).exists()
         SessionState.deckPad = false
-        SessionState.secondScreenAutoOpened = false
         deckBinds = emptyList()
         inputSysfs = null
         if (controllersOn) {
@@ -723,6 +719,7 @@ class SessionService : Service() {
                     if (!pulse.setMicSuspended(false)) Log.w(TAG, "could not resume microphone source")
                 },
                 zramControl = File(filesDir, "${LinuxRuntime.DIR}/tmp/.bl-zram"),
+                clockControl = File(filesDir, "${LinuxRuntime.DIR}/tmp/.bl-clock"),
                 pagedOut = { processes, unacknowledged, residentKb, swapKb, swapBeforeKb, millis ->
                     Log.i(TAG, "paged out $processes processes ($unacknowledged unacknowledged) in $millis ms: " +
                         "resident ${residentKb / 1024} MB, zram ${swapBeforeKb / 1024} -> ${swapKb / 1024} MB")
@@ -824,7 +821,7 @@ class SessionService : Service() {
             if (!SessionPrefs.zramClient(this)) guest.add("BL_ZRAM_CLIENT=0")
         }
         SessionPrefs.vramCapMb(this).takeIf { it > 0 }?.let { guest.add("BL_VRAM_MB=$it") }
-        guest.add("BANNER_AUDIO_DIRECT_DECAY=0")
+        guest.add("AUDIO_DIRECT_DECAY=0")
         val extra = extraEnv() + agentEnvironment
         if (extra.none { it.startsWith("TU_DEBUG=") }) guest.add("$GAME_TU_DEBUG=" + (tuOverride ?: if (tuDriver) "sysmem" else ""))
         extra.forEach { guest.add(it) }
@@ -847,7 +844,7 @@ class SessionService : Service() {
         val wantsMic = SessionPrefs.micEnabled(this) &&
             checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
         guest.add("BL_MIC_ENABLED=" + if (wantsMic) "1" else "0")
-        guest.add("BANNER_AUDIO_DIRECT_MIC=" + if (wantsMic) "1" else "0")
+        guest.add("AUDIO_DIRECT_MIC=" + if (wantsMic) "1" else "0")
         val audioDir = File(filesDir, "directaudio").apply { mkdirs() }
         val relaySocket = File(audioDir, "relay.sock")
         val micFifo = if (wantsMic) File(audioDir, "mic.fifo") else null
@@ -875,7 +872,11 @@ class SessionService : Service() {
         }
         if (wantsDirectAudio) {
             guest.add("BL_DIRECTAUDIO=/" + SessionFiles.DIRECTAUDIO_DIR)
-            guest.add("BANNER_AUDIO_DIRECT_RELAY=" + relaySocket.absolutePath)
+            guest.add("AUDIO_DIRECT_RELAY=" + relaySocket.absolutePath)
+            val lowLatency = com.droiddeck.launcher.audio.DirectAudioTiming.lowLatencyOutput()
+            val timing = com.droiddeck.launcher.audio.DirectAudioTiming.environment(lowLatency)
+            guest.addAll(timing)
+            Log.i(TAG, "audio: Android output " + (if (lowLatency) "is low-latency; DirectAudio keeps its defaults" else "is not low-latency; DirectAudio uses " + timing.joinToString(" ")))
         }
         Log.i(TAG, "audio: client DirectAudio (in-process sink)" + (if (wantsDirectAudio) " + DirectAudio for games" else "")
             + (if (wantsMic) " + microphone" else "") +
@@ -1042,7 +1043,7 @@ class SessionService : Service() {
                 Log.w(TAG, "added games: ${root.host} is not a readable folder this session")
             }
         }
-        for ((host, guest) in com.droiddeck.launcher.stores.StoreInstallRoot.externalRoots(this)) {
+        for ((host, guest) in com.droiddeck.launcher.stores.StoreInstallRoot.externalRootsForXodus(this)) {
             if (host.isDirectory && host.canRead()) {
                 File(LinuxRuntime.rootDir(this), guest.removePrefix("/")).mkdirs()
                 binds.add(host.path + ":" + guest)
@@ -1341,17 +1342,7 @@ class SessionService : Service() {
 
     /** A Steam game is running: the client runs each one under its reaper, and Proton's script
      *  waits on the game with waitforexitandrun. Read from the command lines, as ComponentsManager does. */
-    private fun steamGameRunning(): Boolean {
-        val procs = File("/proc").listFiles() ?: return false
-        for (p in procs) {
-            if (!p.name.all(Char::isDigit)) continue
-            val cmd = runCatching { File(p, "cmdline").readBytes() }.getOrNull() ?: continue
-            if (cmd.isEmpty()) continue
-            val text = String(cmd).replace('\u0000', ' ')
-            if (text.contains("SteamLaunch AppId=") || text.contains("waitforexitandrun")) return true
-        }
-        return false
-    }
+    private fun steamGameRunning(): Boolean = SteamGameProcess.running()
 
     private fun resumeSession(panelVisible: Boolean = true) {
         if (SessionState.suspended) SessionState.resumeRequested = true

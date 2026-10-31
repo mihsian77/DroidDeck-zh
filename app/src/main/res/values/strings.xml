@@ -642,6 +642,8 @@
     <string name="driver_delete_plain">Its files are removed from the app.</string>
     <string name="driver_delete_in_use">Its files are removed. It\'s in use, so the default takes over.</string>
     <string name="drawer_page_display">Display</string>
+    <string name="drawer_frame_limit">Frame limit</string>
+    <string name="drawer_frame_limit_note">Caps this game. The display switches to a refresh rate the cap divides evenly when it has one; other caps can look uneven. Steam games use Steam\'s Frame Limit in the Quick Access menu.</string>
     <string name="drawer_page_effects">Effects</string>
     <string name="drawer_page_controls">Controls</string>
     <string name="drawer_page_components">Components</string>
@@ -723,7 +725,6 @@
     <string name="hud_export_failed">Couldn\'t save the HUD report.</string>
     <string name="hud_reset">Reset HUD settings</string>
     <string name="hud_reset_button">Reset</string>
-    <string name="hud_credit">FusionHUD by The412Banner, github.com/The412Banner/FusionHUD (GPL-3.0).</string>
     <string name="drawer_scaling">Scaling mode</string>
     <string name="drawer_scaling_sharpness">Scaling sharpness</string>
     <string name="drawer_effects">Screen effects</string>
@@ -1272,7 +1273,6 @@
     <string name="games_never_played">Never played</string>
     <string name="games_runtime_busy_percent">Runtime busy · %1$d%%</string>
     <string name="games_runtime_busy">Runtime busy</string>
-    <string name="games_runtime_first_play">Runtime installs on first Play</string>
     <string name="games_runtime_update">Runtime update available</string>
     <string name="games_runtime_ready">● Runtime ready</string>
     <string name="games_internal">Internal storage</string>
@@ -1791,6 +1791,8 @@
     <string name="fm_accept">Accept</string>
     <string name="fm_decline">Decline</string>
     <string name="fm_drive_not_readable">%1$s is mounted but not readable right now</string>
+    <string name="fm_drive_access_title">Allow access to %1$s</string>
+    <string name="fm_drive_access_text">Android lets DroidDeck see this drive but not read it. Turn on All files access for DroidDeck, then come back.</string>
     <string name="fm_list_view">List view</string>
     <string name="fm_grid_view">Grid view</string>
     <string name="fm_search">Search</string>
@@ -1903,6 +1905,7 @@
     <string name="flatpakmgr_not_ready">Set up Flatpak first</string>
     <string name="flatpakmgr_starting">Starting</string>
     <string name="flatpakmgr_exit_status">Flatpak exited with status %1$d</string>
+    <string name="flatpakmgr_wrong_arch">%1$s is built for %2$s, which DroidDeck can\'t run. Flatpak apps here need an ARM64 or x86_64 build.</string>
     <string name="flatpakmgr_installing">Installing %1$s</string>
     <string name="flatpakmgr_updating">Updating %1$s</string>
     <string name="flatpakmgr_removing">Removing %1$s</string>
