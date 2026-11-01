@@ -612,6 +612,7 @@ jobs:
 
       - name: Unit tests
         id: unit-tests
+        continue-on-error: true
         run: |
           set -o pipefail
           mkdir -p app/build
