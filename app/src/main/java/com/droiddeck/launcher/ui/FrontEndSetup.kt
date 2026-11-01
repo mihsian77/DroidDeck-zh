@@ -586,6 +586,24 @@ internal fun SetupPanel(
                                     }
                                 }
                             )
+                            ActionRow(
+                                "一键安装",
+                                "选文件夹自动识别并安装 Linux 运行时",
+                                "一键",
+                                onClick = {
+                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
+                                    val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
+                                    activity?.pickInstallDir?.launch(
+                                        InAppFilePicker.buildDirIntent(
+                                            ctx,
+                                            "选择数据包文件夹",
+                                            initialDir = downloadDir
+                                        )
+                                    ) ?: run {
+                                        android.widget.Toast.makeText(ctx, "无法打开文件夹选择器", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
                         }
                         SettingsGroup(stringResource(R.string.setup_group_memory)) {
                             ToggleRow(

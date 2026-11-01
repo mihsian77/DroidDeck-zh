@@ -282,6 +282,44 @@ class FrontEndActivity : ComponentActivity() {
         }
     }
 
+    internal val pickInstallDir = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
+        if (r.resultCode == RESULT_OK) {
+            InAppFilePicker.pickedPath(r.data)?.let { dirPath ->
+                Thread {
+                    try {
+                        val dir = java.io.File(dirPath)
+                        if (!dir.isDirectory) {
+                            runOnUiThread { android.widget.Toast.makeText(this, "不是文件夹", android.widget.Toast.LENGTH_LONG).show() }
+                            return@Thread
+                        }
+                        var installed = 0
+                        var skipped = 0
+                        val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
+                        dir.listFiles()?.forEach { f ->
+                            val name = f.name.lowercase()
+                            try {
+                                when {
+                                    name.contains("linuxfs") && (name.endsWith(".tar.zst") || name.endsWith(".tar.gz")) -> {
+                                        com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, f, root, null)
+                                        installed++
+                                    }
+                                    else -> skipped++
+                                }
+                            } catch (_: Exception) { skipped++ }
+                        }
+                        runOnUiThread {
+                            android.widget.Toast.makeText(this, "一键安装完成: 成功 $installed 个, 跳过 $skipped 个", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        runOnUiThread {
+                            android.widget.Toast.makeText(this, "安装失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }.start()
+            }
+        }
+    }
+
     private fun refreshWifiDiscovery() {
         wifiDiscoveryPermission = WifiDiscovery.permissionGranted(this)
         wifiDiscoveryLocation = WifiDiscovery.locationEnabled(this)
