@@ -45,7 +45,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN: ${{ steps.find.outputs.run_id }}
-        run: gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n droiddeck-apk -D apk
+        run: gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n droiddeck-signed-standard -D apk
 
       - name: Verify APK exists
         run: |
