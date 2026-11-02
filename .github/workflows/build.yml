@@ -646,6 +646,7 @@ jobs:
           rm -f "$APK.aligned" "$APK.idsig"
 
       - name: Check the signature
+        if: false  # skipped: signed by sign.yml
         run: |
           set -euo pipefail
           APK=$(find app/build/outputs/apk -name '*.apk' | head -1)
