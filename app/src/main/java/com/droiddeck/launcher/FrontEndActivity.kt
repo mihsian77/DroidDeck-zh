@@ -287,6 +287,7 @@ class FrontEndActivity : ComponentActivity() {
         if (r.resultCode == RESULT_OK) {
             InAppFilePicker.pickedPath(r.data)?.let { dirPath ->
                 Thread {
+                    busy = true
                     try {
                         val dir = java.io.File(dirPath)
                         if (!dir.isDirectory) {
@@ -301,12 +302,16 @@ class FrontEndActivity : ComponentActivity() {
                             try {
                                 when {
                                     name.contains("linuxfs") && (name.endsWith(".tar.zst") || name.endsWith(".tar.gz")) -> {
+                                        runOnUiThread { android.widget.Toast.makeText(this, "正在安装 ${f.name}", android.widget.Toast.LENGTH_SHORT).show() }
                                         com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, f, root, null)
                                         installed++
                                     }
                                     else -> skipped++
                                 }
-                            } catch (_: Exception) { skipped++ }
+                            } catch (e: Exception) {
+                                Log.e("QuickInstall", "安装失败: ${f.name}", e)
+                                skipped++
+                            }
                         }
                         runOnUiThread {
                             android.widget.Toast.makeText(this, "一键安装完成: 成功 $installed 个, 跳过 $skipped 个", android.widget.Toast.LENGTH_LONG).show()
@@ -315,6 +320,8 @@ class FrontEndActivity : ComponentActivity() {
                         runOnUiThread {
                             android.widget.Toast.makeText(this, "安装失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                         }
+                    } finally {
+                        busy = false
                     }
                 }.start()
             }
