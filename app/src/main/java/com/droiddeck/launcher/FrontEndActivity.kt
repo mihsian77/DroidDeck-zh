@@ -329,12 +329,12 @@ class FrontEndActivity : ComponentActivity() {
                     if (release != null) {
                         install(release)
                     } else {
-                        android.widget.Toast.makeText(this, "获取最新版本失败，请检查网络", android.widget.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(this, "获取最新版本失败，请检查网络", android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    android.widget.Toast.makeText(this, "下载失败: ${e.message}", android.widget.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(this, "下载失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                 }
             }
         }.start()
