@@ -285,6 +285,12 @@ private fun ChannelPicker(u: UpdatesState, ua: UpdatesActions) {
                 tests.forEach { t -> TestRow(t, u.follow.pr == t.pr) { ua.onFollow(Follow(Channel.TEST, t.pr)) } }
             }
         }
+        Text(
+            stringResource(R.string.upd_signature_note),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
     }
 }
 
