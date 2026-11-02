@@ -79,6 +79,7 @@ jobs:
                 app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java|\
                 app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt|\
                 app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt|\
+                app/src/main/java/com/droiddeck/launcher/ui/UpdatesPage.kt|\
                 tools/linuxfs/overlay/usr/local/bin/droiddeck-session|\
                 tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf|\
                 tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc|\
@@ -149,6 +150,23 @@ jobs:
             echo "has_new_release=true" >> "$GITHUB_OUTPUT"
             echo "New upstream release detected, will trigger release."
           fi
+
+      - name: Update versionName to match upstream release
+        if: steps.check.outputs.has_updates == 'true' && steps.check_release.outputs.has_new_release == 'true'
+        run: |
+          set -euo pipefail
+          UPSTREAM_TAG="${{ steps.check_release.outputs.upstream_tag }}"
+          NEW_VERSION="${UPSTREAM_TAG}-zh1"
+          # Update versionName
+          sed -i "s/versionName \".*\"/versionName \"$NEW_VERSION\"/" app/build.gradle
+          # Increment versionCode
+          CURRENT_CODE=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' app/build.gradle)
+          NEW_CODE=$((CURRENT_CODE + 1))
+          sed -i "s/versionCode $CURRENT_CODE/versionCode $NEW_CODE/" app/build.gradle
+          git add app/build.gradle
+          git commit -m "sync: bump version to $NEW_VERSION" || echo "::warning::no version bump needed"
+          git push origin main || echo "::warning::version bump push failed"
+          echo "Updated versionName to $NEW_VERSION, versionCode to $NEW_CODE"
 
       - name: Auto-release after merge (only for new upstream stable)
         if: steps.check.outputs.has_updates == 'true' && steps.check_release.outputs.has_new_release == 'true'
