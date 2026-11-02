@@ -632,6 +632,7 @@ jobs:
           retention-days: 14
 
       - name: Sign with the testkey (v1 + v2 + v3)
+        if: false  # skipped: signed by sign.yml
         run: |
           set -euo pipefail
           APK=$(find app/build/outputs/apk -name '*.apk' | head -1)
