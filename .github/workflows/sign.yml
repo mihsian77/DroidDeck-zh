@@ -73,7 +73,7 @@ jobs:
           ( umask 077; base64 -d <<<"$RELEASE_KEYSTORE_B64" > "$RELEASE_KEYSTORE" )
           BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n1)
           export BUILD_TOOLS
-          [ -n "$LABEL" ] || LABEL="${GITHUB_REF_NAME//\//-}-${GITHUB_SHA::7}"
+          [ -n "$LABEL" ] || LABEL=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
           suffix=$(awk -v v="$VARIANT" '!/^#/ && $1 == v { print $3 }' tools/release/variants.txt)
           [ "$suffix" = - ] && suffix=
           apks=(in/*.apk)
