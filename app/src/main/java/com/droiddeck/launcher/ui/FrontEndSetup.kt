@@ -619,6 +619,10 @@ internal fun SetupPanel(
                                 "一键",
                                 onClick = {
                                     val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
+                                    if (activity?.busy == true || com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.isBusy()) {
+                                        android.widget.Toast.makeText(ctx, "正在安装中，请稍候", android.widget.Toast.LENGTH_SHORT).show()
+                                        return@ActionRow
+                                    }
                                     val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
                                     activity?.pickInstallDir?.launch(
                                         InAppFilePicker.buildDirIntent(

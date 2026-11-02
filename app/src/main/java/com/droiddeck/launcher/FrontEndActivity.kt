@@ -112,7 +112,7 @@ class FrontEndActivity : ComponentActivity() {
     private var available by mutableStateOf<LinuxRuntimeInstaller.Release?>(null)
     private var catalogFresh = false
     private var componentsQueueBusy by mutableStateOf(false)
-    private var busy by mutableStateOf(false)
+    internal var busy by mutableStateOf(false)
     private var stage by mutableStateOf("")
     private var percent by mutableIntStateOf(-1)
     private var failed by mutableStateOf(false)
@@ -322,6 +322,10 @@ class FrontEndActivity : ComponentActivity() {
     }
 
     fun quickInstallRuntime() {
+        if (busy || LinuxRuntimeInstaller.isBusy()) {
+            android.widget.Toast.makeText(this, "正在安装中，请稍候", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
         Thread {
             try {
                 val release = LinuxRuntimeInstaller.fetchRelease()
