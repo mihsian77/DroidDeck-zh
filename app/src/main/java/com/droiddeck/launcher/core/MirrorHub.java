@@ -35,6 +35,12 @@ public final class MirrorHub {
     private static final String TAG = "MirrorHub";
     private static final String ACTIVE_NODES_URL =
             "https://raw.githubusercontent.com/mihsian77/MirrorHub/main/active-nodes.json";
+    // Mirror URLs for fetching the node list itself (chicken-and-egg problem)
+    private static final String[] MIRROR_NODES_URLS = {
+            "https://mirror.ghproxy.com/https://raw.githubusercontent.com/mihsian77/MirrorHub/main/active-nodes.json",
+            "https://ghfast.top/https://raw.githubusercontent.com/mihsian77/MirrorHub/main/active-nodes.json",
+            "https://gh-proxy.com/https://raw.githubusercontent.com/mihsian77/MirrorHub/main/active-nodes.json",
+    };
     private static final String PREFS_NAME = "mirrorhub";
     private static final String KEY_NODES_JSON = "nodes_json";
     private static final String KEY_LAST_FETCH = "last_fetch";
@@ -84,28 +90,40 @@ public final class MirrorHub {
             return parseNodeCount(cached) > 0;
         }
 
-        try {
-            HttpURLConnection conn = (HttpURLConnection) new URL(ACTIVE_NODES_URL).openConnection();
-            conn.setConnectTimeout(PROBE_TIMEOUT_MS);
-            conn.setReadTimeout(PROBE_TIMEOUT_MS);
-            conn.setRequestProperty("User-Agent", "DroidDeck-Android");
-            if (conn.getResponseCode() / 100 != 2) {
-                Log.w(TAG, "fetch nodes HTTP " + conn.getResponseCode());
-                return cached != null && parseNodeCount(cached) > 0;
+        // Try direct first, then mirrors (chicken-and-egg: the node list itself needs acceleration)
+        String[] allUrls = new String[1 + MIRROR_NODES_URLS.length];
+        allUrls[0] = ACTIVE_NODES_URL;
+        System.arraycopy(MIRROR_NODES_URLS, 0, allUrls, 1, MIRROR_NODES_URLS.length);
+
+        for (String url : allUrls) {
+            try {
+                HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setConnectTimeout(PROBE_TIMEOUT_MS);
+                conn.setReadTimeout(PROBE_TIMEOUT_MS);
+                conn.setRequestProperty("User-Agent", "DroidDeck-Android");
+                if (conn.getResponseCode() / 100 != 2) {
+                    Log.w(TAG, "fetch nodes HTTP " + conn.getResponseCode() + " from " + url);
+                    continue;
+                }
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                try (java.io.InputStream in = conn.getInputStream()) {
+                    byte[] buf = new byte[8192];
+                    int read;
+                    while ((read = in.read(buf)) > 0) out.write(buf, 0, read);
+                }
+                String json = out.toString("UTF-8");
+                if (parseNodeCount(json) > 0) {
+                    prefs.edit().putString(KEY_NODES_JSON, json).putLong(KEY_LAST_FETCH, System.currentTimeMillis()).apply();
+                    Log.i(TAG, "fetched nodes from " + url);
+                    return true;
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "refresh failed from " + url, e);
             }
-            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
-            try (java.io.InputStream in = conn.getInputStream()) {
-                byte[] buf = new byte[8192];
-                int read;
-                while ((read = in.read(buf)) > 0) out.write(buf, 0, read);
-            }
-            String json = out.toString("UTF-8");
-            prefs.edit().putString(KEY_NODES_JSON, json).putLong(KEY_LAST_FETCH, System.currentTimeMillis()).apply();
-            return parseNodeCount(json) > 0;
-        } catch (Exception e) {
-            Log.w(TAG, "refresh failed", e);
-            return cached != null && parseNodeCount(cached) > 0;
         }
+
+        Log.w(TAG, "all node list sources failed, using cache");
+        return cached != null && parseNodeCount(cached) > 0;
     }
 
     /** Returns cached universal_proxy nodes, sorted by latency (fastest first). */
