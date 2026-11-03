@@ -392,6 +392,60 @@ internal fun SetupPanel(
                             }
                         }
                         SettingsGroup(stringResource(R.string.setup_runtime)) { runtimeCheck(false) }
+                        SettingsGroup("本地安装工具") {
+                            ActionRow(
+                                "导入数据包",
+                                "从本地文件导入 Linux 运行时/Proton 数据包",
+                                "导入",
+                                onClick = {
+                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
+                                    val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
+                                    activity?.pickRuntimeImport?.launch(
+                                        InAppFilePicker.buildIntent(
+                                            ctx,
+                                            listOf("tar", "gz", "zst", "zip"),
+                                            "选择数据包文件",
+                                            initialDir = downloadDir
+                                        )
+                                    ) ?: run {
+                                        android.widget.Toast.makeText(ctx, "无法打开文件选择器", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                            ActionRow(
+                                "一键下载安装",
+                                "自动下载并安装 Linux 运行时（走国内加速）",
+                                "下载",
+                                onClick = {
+                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
+                                    activity?.quickInstallRuntime() ?: run {
+                                        android.widget.Toast.makeText(ctx, "无法启动", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                            ActionRow(
+                                "一键安装",
+                                "选文件夹自动识别并安装 Linux 运行时",
+                                "一键",
+                                onClick = {
+                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
+                                    if (activity?.busy == true || com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.isBusy()) {
+                                        android.widget.Toast.makeText(ctx, "正在安装中，请稍候", android.widget.Toast.LENGTH_SHORT).show()
+                                        return@ActionRow
+                                    }
+                                    val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
+                                    activity?.pickInstallDir?.launch(
+                                        InAppFilePicker.buildDirIntent(
+                                            ctx,
+                                            "选择数据包文件夹",
+                                            initialDir = downloadDir
+                                        )
+                                    ) ?: run {
+                                        android.widget.Toast.makeText(ctx, "无法打开文件夹选择器", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                        }
                         SteamIntegrationGroup(s.integration, s.integrationFocus, a.onIntegration, a.onIntegrationAppInfo, a.onIntegrationLocation)
                     }
                     1 -> {
@@ -613,58 +667,6 @@ internal fun SetupPanel(
                                             }
                                         }
                                     }.start()
-                                }
-                            )
-                            ActionRow(
-                                "导入数据包",
-                                "从本地文件导入 Linux 运行时/Proton 数据包",
-                                "导入",
-                                onClick = {
-                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
-                                    val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
-                                    activity?.pickRuntimeImport?.launch(
-                                        InAppFilePicker.buildIntent(
-                                            ctx,
-                                            listOf("tar", "gz", "zst", "zip"),
-                                            "选择数据包文件",
-                                            initialDir = downloadDir
-                                        )
-                                    ) ?: run {
-                                        android.widget.Toast.makeText(ctx, "无法打开文件选择器", android.widget.Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            )
-                            ActionRow(
-                                "一键下载安装",
-                                "自动下载并安装 Linux 运行时（走国内加速）",
-                                "下载",
-                                onClick = {
-                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
-                                    activity?.quickInstallRuntime() ?: run {
-                                        android.widget.Toast.makeText(ctx, "无法启动", android.widget.Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            )
-                            ActionRow(
-                                "一键安装",
-                                "选文件夹自动识别并安装 Linux 运行时",
-                                "一键",
-                                onClick = {
-                                    val activity = ctx as? com.droiddeck.launcher.FrontEndActivity
-                                    if (activity?.busy == true || com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.isBusy()) {
-                                        android.widget.Toast.makeText(ctx, "正在安装中，请稍候", android.widget.Toast.LENGTH_SHORT).show()
-                                        return@ActionRow
-                                    }
-                                    val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
-                                    activity?.pickInstallDir?.launch(
-                                        InAppFilePicker.buildDirIntent(
-                                            ctx,
-                                            "选择数据包文件夹",
-                                            initialDir = downloadDir
-                                        )
-                                    ) ?: run {
-                                        android.widget.Toast.makeText(ctx, "无法打开文件夹选择器", android.widget.Toast.LENGTH_SHORT).show()
-                                    }
                                 }
                             )
                         }
