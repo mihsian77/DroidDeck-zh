@@ -2,6 +2,7 @@ package com.droiddeck.launcher.core
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.Proxy
