@@ -79,13 +79,32 @@ object DownloadSource {
         Thread {
             try {
                 val times = ConcurrentHashMap<String, Long>()
-                val sources = listOf<String?>(null) + MIRRORS.map { it.host }
+                // 准备所有要测的源：直连 + 普通镜像 + MirrorHub 节点
+                val sources = mutableListOf<Pair<String, String>>()
+                // 直连
+                sources.add("" to PROBE)
+                // 普通镜像
+                for (m in MIRRORS) {
+                    sources.add(m.host to "https://${m.host}/$PROBE")
+                }
+                // MirrorHub 节点（最多测前 2 个）
+                try {
+                    val ctx = app
+                    if (ctx != null) {
+                        val nodes = MirrorHub.getNodes(ctx)
+                        for (i in 0 until minOf(2, nodes.size)) {
+                            val node = nodes[i]
+                            sources.add("mirrorhub:$i" to "https://${node.domain}/$PROBE")
+                        }
+                    }
+                } catch (_: Exception) {}
+
                 val latch = CountDownLatch(sources.size)
-                for (mirror in sources) {
+                for ((key, url) in sources) {
                     Thread {
                         try {
-                            val ms = latency(mirror?.let { "https://$it/$PROBE" } ?: PROBE)
-                            if (ms > 0) times[mirror ?: ""] = ms
+                            val ms = latency(url)
+                            if (ms > 0) times[key] = ms
                         } finally {
                             latch.countDown()
                         }
@@ -95,6 +114,7 @@ object DownloadSource {
                 val best = times.minByOrNull { it.value }?.key ?: return@Thread
                 lastGood = best
                 prefs()?.edit()?.putString(KEY_FASTEST, best)?.apply()
+                Log.i("DownloadSource", "probe done: fastest=$best (${times[best]}ms)")
             } finally {
                 probing.set(false)
             }
@@ -155,7 +175,46 @@ object DownloadSource {
             MODE_DIRECT -> listOf(target)
             MODE_MIRROR -> listOfNotNull(picked(prefs, api)?.proxy(target)) + mirrorHubNodes + listOf(target) + quickest(proxies)
             MODE_CUSTOM -> listOfNotNull(customProxy(prefs, target)) + listOf(target) + quickest(proxies)
-            else -> if (api) listOf(target) else listOf(target) + mirrorHubNodes + quickest(proxies)
+            else -> {
+                // AUTO 模式：按测速结果把最快的源排第一
+                val result = mutableListOf<String>()
+                val lg = lastGood
+                when {
+                    // 直连最快
+                    lg == "" -> {
+                        result.add(target)
+                        result.addAll(mirrorHubNodes)
+                        result.addAll(proxies)
+                    }
+                    // MirrorHub 节点最快
+                    lg?.startsWith("mirrorhub:") == true -> {
+                        val idx = lg.removePrefix("mirrorhub:").toIntOrNull() ?: 0
+                        // 把对应的 MirrorHub 节点排第一
+                        val first = mirrorHubNodes.getOrElse(idx) { mirrorHubNodes.firstOrNull() }
+                        if (first != null) result.add(first)
+                        // 其他 MirrorHub 节点
+                        for (m in mirrorHubNodes) if (m != first) result.add(m)
+                        result.add(target)
+                        result.addAll(proxies)
+                    }
+                    // 普通镜像最快
+                    lg != null -> {
+                        val fastest = proxies.filter { it.startsWith("https://$lg/") }
+                        result.addAll(fastest)
+                        result.add(target)
+                        result.addAll(mirrorHubNodes)
+                        // 其他普通镜像
+                        for (p in proxies) if (p !in fastest) result.add(p)
+                    }
+                    // 没测速过，默认直连优先
+                    else -> {
+                        result.add(target)
+                        result.addAll(mirrorHubNodes)
+                        result.addAll(proxies)
+                    }
+                }
+                result
+            }
         }
         return ordered.distinct()
     }
