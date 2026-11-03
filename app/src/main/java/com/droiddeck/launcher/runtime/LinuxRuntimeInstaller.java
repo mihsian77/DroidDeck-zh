@@ -35,7 +35,7 @@ public final class LinuxRuntimeInstaller {
     private static final String TAG = "LinuxRuntimeInstaller";
 
     public static final String CATALOG_URL =
-            "https://raw.githubusercontent.com/Droid-Deck/DroidDeck-Components/main/linuxfs-ubuntu.json";
+            "https://raw.githubusercontent.com/Droid-Deck/DroidDeck-Components/main/linuxfs.json";
 
     private static final String VERSION_FILE = ".version";
 
