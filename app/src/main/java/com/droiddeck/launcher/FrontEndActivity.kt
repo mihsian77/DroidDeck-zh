@@ -1593,6 +1593,19 @@ class FrontEndActivity : ComponentActivity() {
                 showRuntimeActions?.let { release ->
                     com.droiddeck.launcher.ui.RuntimeActionsDialog(
                         onRepair = { showRuntimeActions = null; if (!runtimeChangesBlocked()) install(release) },
+                        onImport = {
+                            showRuntimeActions = null
+                            val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
+                            pickRuntimeImport.launch(
+                                InAppFilePicker.buildIntent(
+                                    this,
+                                    listOf("tar", "gz", "zst", "zip"),
+                                    "选择数据包文件",
+                                    initialDir = downloadDir
+                                )
+                            )
+                        },
+                        onQuickInstall = { showRuntimeActions = null; quickInstallRuntime() },
                         onRemove = { showRuntimeActions = null; showRemove = true },
                         onDismiss = { showRuntimeActions = null },
                     )

@@ -68,13 +68,31 @@ fun ConfirmDialog(title: String, text: String, confirm: String, onConfirm: () ->
 }
 
 @Composable
-fun RuntimeActionsDialog(onRepair: () -> Unit, onRemove: () -> Unit, onDismiss: () -> Unit) {
+@Composable
+fun RuntimeActionsDialog(
+    onRepair: () -> Unit,
+    onImport: () -> Unit,
+    onQuickInstall: () -> Unit,
+    onRemove: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.runtime_actions_title)) },
-        text = { Text(stringResource(R.string.runtime_actions_text)) },
-        confirmButton = { TextButton(onClick = onRepair, modifier = Modifier.focusGlide(CircleShape)) { Text(stringResource(R.string.runtime_repair)) } },
-        dismissButton = {
+        text = {
+            Column {
+                TextButton(onClick = onRepair, modifier = Modifier.focusGlide().fillMaxWidth()) {
+                    Text(stringResource(R.string.runtime_repair))
+                }
+                TextButton(onClick = onImport, modifier = Modifier.focusGlide().fillMaxWidth()) {
+                    Text("从本地导入数据包")
+                }
+                TextButton(onClick = onQuickInstall, modifier = Modifier.focusGlide().fillMaxWidth()) {
+                    Text("选文件夹一键安装")
+                }
+            }
+        },
+        confirmButton = {
             Row {
                 TextButton(onClick = onRemove, modifier = Modifier.focusGlide(CircleShape)) { Text(stringResource(R.string.store_remove)) }
                 TextButton(onClick = onDismiss, modifier = Modifier.focusGlide(CircleShape)) { Text(stringResource(R.string.common_cancel)) }
