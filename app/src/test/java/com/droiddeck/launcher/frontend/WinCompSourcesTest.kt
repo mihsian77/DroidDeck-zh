@@ -77,6 +77,8 @@ class WinCompSourcesTest {
 
     @Test fun steamworksSharedDepotsMapToComponents() {
         assertEquals(listOf("vcredist2015_dll" to "VC++ 2015", "d3dx9" to "DirectX (June 2010)"), WinCompSources.steamDepots(listOf("228986", "228990", "999")))
+        // Hotline Miami's OpenAL depot: the DLL-copy entry, which installs without running anything.
+        assertEquals(listOf("oalinst_dll" to "OpenAL"), WinCompSources.steamDepots(listOf("229020")))
     }
 
 
@@ -288,6 +290,24 @@ class WinCompSourcesTest {
         AutoComponents.online = { false }
         AutoComponents.queueGame(app, game, asked = true)
         assertFalse(requests.first())
+    }
+
+    @Test fun aSweepRefreshesTheCatalogOnlyOnAFavourableConnection() = withFakeWorker {
+        installedNow.addAll(catalog3.map { it.name })
+        val requests = ArrayList<Boolean>()
+        AutoComponents.catalogOf = { _, network -> requests.add(network); catalog3 }
+        val games = listOf(payback())
+        AutoComponents.sweep(app, games)
+        assertTrue(requests.first())
+        requests.clear()
+        AutoComponents.unfavourable = { true }
+        AutoComponents.sweep(app, games)
+        assertFalse(requests.contains(true))
+        requests.clear()
+        AutoComponents.unfavourable = { false }
+        AutoComponents.online = { false }
+        AutoComponents.sweep(app, games)
+        assertFalse(requests.contains(true))
     }
 
     @Test fun aSteamListedComponentNotYetDownloadedTurnsOnWhenItLands() = withFakeWorker {
