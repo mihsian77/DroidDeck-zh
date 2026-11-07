@@ -38,7 +38,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- catalog.json; then
+          if [ -z "$(git status --porcelain -- catalog.json)" ]; then
             echo "catalog 没变化"
             exit 0
           fi
