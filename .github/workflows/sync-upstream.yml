@@ -60,6 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="${{ steps.check.outputs.branch }}"
+          MERGE_BASE=$(git rev-parse HEAD)
+          echo "MERGE_BASE=$MERGE_BASE" >> "$GITHUB_ENV"
           git checkout -b "$BRANCH"
           if git merge upstream/main --no-edit; then
             echo "merge_status=clean" >> "$GITHUB_OUTPUT"
@@ -101,11 +103,17 @@ jobs:
             git -c core.editor=true commit --no-edit -m "sync: auto-merged upstream with conflict resolution" || \
               git commit --allow-empty -m "sync: auto-merged upstream"
           fi
-          # Keep our own .github/workflows/
-          rm -rf .github/workflows/
-          git checkout HEAD~1 -- .github/workflows/
-          git add .github/workflows/
-          git commit --no-edit -m "sync: keep our own workflows" || true
+          # 只保留我们自己维护的 workflow，其余跟随上游。
+          # build.yml 是我们自己维护的（预发布 job、跳过的上游 CI job 都在里面），
+          # 上游加新构建步骤时靠 fork-drift.yml 每周提醒，不靠整目录覆盖。
+          for f in build.yml sync-upstream.yml sync-data-packages.yml; do
+            if git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
+              git checkout "$MERGE_BASE" -- ".github/workflows/$f"
+              echo "KEEP (fork-owned): .github/workflows/$f" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          git add .github/workflows
+          git commit --no-edit -m "sync: keep fork-owned workflows" || true
 
       - name: Merge directly to main (no PR needed)
         if: steps.check.outputs.has_updates == 'true'
@@ -116,11 +124,14 @@ jobs:
           # Switch to main and merge the sync branch.
           git checkout main
           git merge "$BRANCH" --no-edit
-          # Keep our own .github/workflows/
-          rm -rf .github/workflows/
-          git checkout "$BRANCH" -- .github/workflows/
-          git add .github/workflows/
-          git commit --no-edit -m "sync: keep our own workflows" || true
+          # 同样只恢复我们自己维护的那几个 workflow
+          for f in build.yml sync-upstream.yml sync-data-packages.yml; do
+            if git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
+              git checkout "$MERGE_BASE" -- ".github/workflows/$f"
+            fi
+          done
+          git add .github/workflows
+          git commit --no-edit -m "sync: keep fork-owned workflows" || true
           # Push directly to main
           git push origin main
           # Delete the sync branch

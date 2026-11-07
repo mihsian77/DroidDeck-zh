@@ -1,0 +1,55 @@
+name: Fork drift check
+
+# build.yml 是我们自己维护的，上游加新的构建步骤时不会自动进来。
+# 每周对一次，把上游有、我们没有的步骤列出来，避免等到下次构建失败才发现。
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Compare build steps with upstream
+        run: |
+          set -euo pipefail
+          curl -fsSL -o /tmp/upstream-build.yml \
+            https://raw.githubusercontent.com/Droid-Deck/DroidDeck/main/.github/workflows/build.yml
+          python3 - <<'EOF'
+          import re, sys
+
+          def steps(path):
+              out = []
+              for line in open(path, encoding='utf-8'):
+                  m = re.match(r'      - (?:name|uses): (.*)', line)
+                  if m:
+                      out.append(m.group(1).strip())
+              return out
+
+          up = steps('/tmp/upstream-build.yml')
+          ours = steps('.github/workflows/build.yml')
+          missing = [s for s in up if s not in ours]
+          extra = [s for s in ours if s not in up]
+
+          print(f'上游步骤 {len(up)}，我们的 {len(ours)}，缺 {len(missing)}')
+          if missing:
+              print('\n## 上游有、我们没有的步骤\n')
+              for s in missing:
+                  print(f'- {s}')
+          if extra:
+              print('\n## 我们独有的步骤\n')
+              for s in extra:
+                  print(f'- {s}')
+          if missing:
+              print(f'::warning::上游有 {len(missing)} 个构建步骤我们没有，同步后可能缺资源或编译失败')
+          EOF
