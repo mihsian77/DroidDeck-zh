@@ -4,6 +4,7 @@ name: Update catalog
 # 这里只读本仓库的 release，生成 catalog.json 提交到 main，App 拉 raw 地址。
 
 on:
+  workflow_call:
   release:
     types: [published, edited, deleted, released, unpublished]
   schedule:

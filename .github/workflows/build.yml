@@ -972,6 +972,15 @@ jobs:
             done
           echo "发布完成：$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag"
 
+  catalog-zh:
+    # publish-test 用内置 token 发 release，不会触发别的 workflow（GitHub 的规则），
+    # 所以在构建末尾直接调一次 catalog 生成，测试包才能立刻进 catalog。
+    needs: [publish-test]
+    if: ${{ !cancelled() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: write
+    uses: ./.github/workflows/catalog-zh.yml
+
   catalog:
     needs: announce
     if: ${{ always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.announce.result != 'skipped' }}
