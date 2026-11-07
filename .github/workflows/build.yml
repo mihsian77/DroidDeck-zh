@@ -912,6 +912,64 @@ jobs:
             curl -fsS -H 'Content-Type: application/json' -d @- "$WEBHOOK" -o /dev/null
           echo "Posted: $content"
 
+  # 每次 main 构建出一个预发布包，方便直接下载测试，不用再去翻 Actions 的 artifact。
+  publish-test:
+    needs: [build, sign]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      KEEP: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 上游同步的 bot 合并可能没带来任何代码变化，这种不发包，免得一堆重复测试包
+      - name: Skip if the commit changed nothing
+        id: tree
+        run: |
+          set -euo pipefail
+          if git rev-parse HEAD^1 >/dev/null 2>&1 && git diff --quiet HEAD^1 HEAD; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "这次的提交没改任何文件（多半是上游同步的合并），不发测试包"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v4
+        if: steps.tree.outputs.skip != 'true'
+        with:
+          pattern: droiddeck-signed-*
+          merge-multiple: true
+          path: signed
+
+      - name: Publish test build
+        if: steps.tree.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=test-${GITHUB_SHA::7}
+          cat signed/SHA256SUMS-*.txt > signed/SHA256SUMS.txt
+          rm signed/SHA256SUMS-*.txt
+          subject=$(git log -1 --pretty=%s)
+          versionName=$(sed -n "s/^ *versionName \"\(.*\)\"$/\1/p" app/build.gradle)
+          notes="$(printf '自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：%s\n\n版本：%s（%s）\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。\n\nSHA-256：\n\n%s' \
+            "$subject" "$versionName" "${GITHUB_SHA::7}" "$(cat signed/SHA256SUMS.txt)")"
+          gh release create "$tag" --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "测试包 ${GITHUB_SHA::7}" --notes "$notes" signed/*
+          gh release list -L 200 --json tagName,publishedAt |
+            jq -r '[.[] | select(.tagName | startswith("test-"))] | sort_by(.publishedAt) | reverse | .['"$KEEP"':][] | .tagName' |
+            while IFS= read -r old; do
+              if [ -n "$old" ] && [ "$old" != "$tag" ]; then
+                gh release delete "$old" --yes --cleanup-tag 2>/dev/null || true
+              fi
+            done
+          echo "发布完成：$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag"
+
   catalog:
     needs: announce
     if: ${{ always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.announce.result != 'skipped' }}

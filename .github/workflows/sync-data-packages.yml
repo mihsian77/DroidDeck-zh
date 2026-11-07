@@ -4,6 +4,19 @@ on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: '上游版本没变化也重新上传'
+        type: boolean
+        default: false
+      target_tag:
+        description: '上传到哪个 release，留空自动选最新正式版'
+        type: string
+        default: ''
+      drop_legacy:
+        description: '迁移后删除旧的 data-packages release'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -55,14 +68,37 @@ jobs:
           echo "proton_size=$PR_SIZE" >> "$GITHUB_OUTPUT"
           echo "Upstream linuxfs $LF_VERSION, desktop $DT_VERSION, proton $PR_VERSION"
 
-      - name: Check current data-packages release
-        id: current
+      # 数据包不再单独发一个 release：都挂在最新正式版下面，正式版在 release 页上排第一。
+      - name: Resolve target release
+        id: target
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RELEASE_BODY=$(gh release view data-packages --repo "$GITHUB_REPOSITORY" --json body --jq '.body' 2>/dev/null || echo "")
-          if [ -z "$RELEASE_BODY" ]; then
+          tag='${{ inputs.target_tag }}'
+          if [ -z "$tag" ]; then
+            tag=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-pre-releases --limit 50 \
+              --json tagName,isLatest,createdAt |
+              jq -r '([.[] | select(.isLatest and .tagName != "data-packages")][0].tagName)
+                     // ([.[] | select(.tagName != "data-packages")][0].tagName) // ""')
+          fi
+          if [ -z "$tag" ]; then
+            echo "::error::仓库里没有正式版 release 可以挂数据包，先发一个正式版本，或者手动填 target_tag"
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "数据包目标 release：$tag"
+
+      - name: Check current data-packages release
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          set -euo pipefail
+          META=$(gh release download "$TAG" --repo "$GITHUB_REPOSITORY" -p data-packages.json -O - 2>/dev/null || true)
+          FORCE='${{ inputs.force }}'
+          if [ -z "$META" ]; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "up_to_date=false" >> "$GITHUB_OUTPUT"
             echo "current_linuxfs=none" >> "$GITHUB_OUTPUT"
@@ -70,20 +106,21 @@ jobs:
             echo "current_proton=none" >> "$GITHUB_OUTPUT"
           else
             echo "exists=true" >> "$GITHUB_OUTPUT"
-            CL=$(echo "$RELEASE_BODY" | grep -oP 'linuxfs version:\*\*\s*\K\S+' || echo "unknown")
-            CD=$(echo "$RELEASE_BODY" | grep -oP 'desktop version:\*\*\s*\K\S+' || echo "unknown")
-            CP=$(echo "$RELEASE_BODY" | grep -oP 'proton version:\*\*\s*\K\S+' || echo "unknown")
+            CL=$(jq -r '.linuxfs.version // "unknown"' <<<"$META")
+            CD=$(jq -r '.desktop.version // "unknown"' <<<"$META")
+            CP=$(jq -r '.proton.version // "unknown"' <<<"$META")
             echo "current_linuxfs=$CL" >> "$GITHUB_OUTPUT"
             echo "current_desktop=$CD" >> "$GITHUB_OUTPUT"
             echo "current_proton=$CP" >> "$GITHUB_OUTPUT"
-            if [ "$CL" = "${{ steps.upstream.outputs.linuxfs_version }}" ] \
+            if [ "$FORCE" != "true" ] \
+               && [ "$CL" = "${{ steps.upstream.outputs.linuxfs_version }}" ] \
                && [ "$CD" = "${{ steps.upstream.outputs.desktop_version }}" ] \
                && [ "$CP" = "${{ steps.upstream.outputs.proton_version }}" ]; then
               echo "up_to_date=true" >> "$GITHUB_OUTPUT"
             else
               echo "up_to_date=false" >> "$GITHUB_OUTPUT"
             fi
-            echo "Current data-packages: linuxfs $CL, desktop $CD, proton $CP"
+            echo "当前数据包：linuxfs $CL, desktop $CD, proton $CP"
           fi
 
       - name: Skip if up to date
@@ -150,61 +187,71 @@ jobs:
           PYEOF
           ls -lh /tmp/droiddeck-bundle.zip
 
-      - name: Create or update data-packages release
+      - name: Upload data packages into the target release
         if: steps.current.outputs.up_to_date != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
+          DROP_LEGACY: ${{ inputs.drop_legacy }}
         run: |
           set -euo pipefail
-          LF_VERSION="${{ steps.upstream.outputs.linuxfs_version }}"
-          DT_VERSION="${{ steps.upstream.outputs.desktop_version }}"
-          PR_VERSION="${{ steps.upstream.outputs.proton_version }}"
-          LF_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.linuxfs_size }}")
-          DT_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.desktop_size }}")
-          PR_SIZE_HUMAN=$(numfmt --to=iec "${{ steps.upstream.outputs.proton_size }}")
-          cat > /tmp/release-notes.md <<EOF
-          ## 数据包（Linux 运行时 + 桌面 + Proton）
-
-          用于 DroidDeck 中文优化版的本地导入功能。
-
-          ### 方式一：全能合包（推荐）
-          下载 \`droiddeck-bundle.zip\`（linuxfs + desktop 二合一），App 内配置页点「导入」选择该 zip，自动依次安装 Linux 运行时和 Linux 桌面。
-
-          ### 方式二：单独安装 Linux 运行时
-          下载 \`linuxfs.tar.zst\`，App 内配置页点「导入」选择该文件即可。
-
-          ### 方式三：导入 Proton 兼容层
-          下载 \`proton.tar.zst\`，打开 DroidDeck → Proton 版本 → 对应构建点「导入」选择该文件。网络慢或梯子限速时推荐此方式。
-
-          - **linuxfs version:** $LF_VERSION（$LF_SIZE_HUMAN）
-          - **desktop version:** $DT_VERSION（$DT_SIZE_HUMAN）
-          - **proton version:** $PR_VERSION（$PR_SIZE_HUMAN）
-          - **来源:** The412Banner/winlator-contents（linuxfs / desktop / proton 均源自上游，仅做镜像分发）
-          - **linuxfs sha256:** \`${{ steps.upstream.outputs.linuxfs_sha256 }}\`
-          - **desktop sha256:** \`${{ steps.upstream.outputs.desktop_sha256 }}\`
-          - **proton sha256:** \`${{ steps.upstream.outputs.proton_sha256 }}\`
-
-          ### 使用方法
-          1. 下载合包 zip（或单独 linuxfs / proton）
-          2. 传到手机存储
-          3. 打开 DroidDeck → 配置 → Linux 运行时 → 导入（合包或 linuxfs）；Proton 版本 → 导入（proton）
-          4. 选择文件，自动校验并安装
-
-          > 本 release 由 sync-data-packages workflow 自动同步上游版本。
-          > Steam 客户端不属于本数据包：它由 Valve 在首次会话时自行下载（闭源产物，无法再分发）。
+          cat > /tmp/data-packages.json <<EOF
+          {
+            "linuxfs": {
+              "version": "${{ steps.upstream.outputs.linuxfs_version }}",
+              "sha256": "${{ steps.upstream.outputs.linuxfs_sha256 }}",
+              "size": ${{ steps.upstream.outputs.linuxfs_size }}
+            },
+            "desktop": {
+              "version": "${{ steps.upstream.outputs.desktop_version }}",
+              "sha256": "${{ steps.upstream.outputs.desktop_sha256 }}",
+              "size": ${{ steps.upstream.outputs.desktop_size }}
+            },
+            "proton": {
+              "version": "${{ steps.upstream.outputs.proton_version }}",
+              "sha256": "${{ steps.upstream.outputs.proton_sha256 }}",
+              "size": ${{ steps.upstream.outputs.proton_size }}
+            },
+            "source": "The412Banner/winlator-contents"
+          }
           EOF
 
-          if [ "${{ steps.current.outputs.exists }}" = "false" ]; then
-            gh release create data-packages \
-              --repo "$GITHUB_REPOSITORY" \
-              --title "数据包（Linux 运行时 + 桌面 + Proton）" \
-              --notes-file /tmp/release-notes.md \
-              /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/desktop.tar.zst /tmp/proton.tar.zst
-          else
-            gh release delete-asset data-packages droiddeck-bundle.zip --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-            gh release delete-asset data-packages linuxfs.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-            gh release delete-asset data-packages desktop.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-            gh release delete-asset data-packages proton.tar.zst --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
-            gh release upload data-packages /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/desktop.tar.zst /tmp/proton.tar.zst --repo "$GITHUB_REPOSITORY" --clobber
-            gh release edit data-packages --repo "$GITHUB_REPOSITORY" --notes-file /tmp/release-notes.md
+          for asset in droiddeck-bundle.zip linuxfs.tar.zst desktop.tar.zst proton.tar.zst data-packages.json; do
+            gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+          done
+          gh release upload "$TAG" \
+            /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/desktop.tar.zst /tmp/proton.tar.zst /tmp/data-packages.json \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+          # 正式版标成 Latest，这样 release 页上它排在最前面，预发布包自然排在后面
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --latest
+
+          # 说明段落只加一次，避免每次同步都改正式版的发布说明
+          body=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq '.body // ""')
+          if ! grep -q 'data-packages-section' <<<"$body"; then
+            {
+              echo "$body"
+              echo
+              echo '<!-- data-packages-section -->'
+              echo '### 离线数据包（Linux 运行时 / 桌面 / Proton）'
+              echo
+              echo '网络慢或者不想等 App 内下载的时候，从这里下，App 里用「导入」选文件即可。'
+              echo
+              echo '- `droiddeck-bundle.zip`：linuxfs + desktop 合包，导入后依次安装运行时和桌面'
+              echo '- `linuxfs.tar.zst`：单独装 Linux 运行时'
+              echo '- `desktop.tar.zst`：单独装 Linux 桌面'
+              echo '- `proton.tar.zst`：Proton 兼容层，在 Proton 版本页导入'
+              echo '- `data-packages.json`：上面几个包的版本和 sha256，给脚本用'
+              echo
+              echo '> 数据包来自 The412Banner/winlator-contents，只做镜像分发，每天自动跟上游同步一次。'
+              echo '> Steam 客户端不在里面，那个得 Valve 自己下，没法再分发。'
+            } > /tmp/body.md
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file /tmp/body.md
           fi
+
+          if [ "$DROP_LEGACY" = "true" ]; then
+            gh release delete data-packages --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag 2>/dev/null || true
+            echo "旧的 data-packages release 已删除"
+          fi
+
+          echo "数据包已上传到 $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG"
