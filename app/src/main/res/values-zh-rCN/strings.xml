@@ -3641,4 +3641,25 @@
         <item quantity="one">已导入 %1$d 个附加内容到 %2$s</item>
         <item quantity="other">已导入 %1$d 个附加内容到 %2$s</item>
     </plurals>
+    <string name="comp_auto_check_failed">检查新构建失败。</string>
+    <string name="comp_auto_checking">正在检查构建…</string>
+    <string name="comp_auto_fallback">回退：%1$s</string>
+    <string name="comp_auto_hint">新构建在后台安装。如果之前能跑的游戏连续两次在几秒内退出，自动模式会回到之前可用的构建。</string>
+    <string name="comp_auto_none">没有 DroidDeck-Proton 在使用它</string>
+    <string name="comp_auto_rolled_back">%1$s %2$s 连续两次在几秒内退出游戏，自动模式已回到 %3$s。</string>
+    <string name="comp_auto_title">自动保持 %1$s 为最新</string>
+    <string name="comp_auto_updated">%1$s 已更新到 %2$s。</string>
+    <string name="comp_auto_waits_network">自动更新会等待网络连接。</string>
+    <string name="comp_auto_waits_unmetered">新构建会等到不计流量的网络、关闭省电模式且设备温度正常后再装。</string>
+    <string name="comp_mode_auto_detail">最新的 DroidDeck 构建，自动保持更新</string>
+    <string name="comp_mode_manual_detail">自己挑选并安装构建</string>
+    <string name="comp_mode_title">构建如何选择</string>
+    <string name="wow_chat_ask">每次询问</string>
+    <string name="wow_chat_listening">正在听…</string>
+    <string name="wow_chat_mic_denied">语音输入需要麦克风权限。</string>
+    <string name="wow_chat_remember">记住这次选择</string>
+    <string name="wow_chat_send">发送</string>
+    <string name="wow_chat_title">聊天输入</string>
+    <string name="wow_chat_voice">语音输入</string>
+    <string name="wow_chat_voice_unavailable">这台设备不支持语音输入。</string>
 </resources>
