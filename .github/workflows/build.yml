@@ -561,7 +561,9 @@ jobs:
           RUSTUP_TOOLCHAIN=1.90.0 bash tools/comet/build.sh
 
       - name: Build the add-on packs
-        run: bash tools/packs/build.sh app/build/packs
+        run: |
+          python3 tools/powervr/fetch.py
+          bash tools/packs/build.sh app/build/packs
 
       - name: Build
         id: build
