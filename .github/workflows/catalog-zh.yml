@@ -1,0 +1,47 @@
+name: Update catalog
+
+# 我们自己的应用内更新 catalog。上游那套要 GitHub App token 往 DroidDeck-CI 里推，我们用不上。
+# 这里只读本仓库的 release，生成 catalog.json 提交到 main，App 拉 raw 地址。
+
+on:
+  release:
+    types: [published, edited, deleted, released, unpublished]
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: catalog-zh
+  cancel-in-progress: true
+
+jobs:
+  catalog:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Build catalog.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: python3 tools/release/make-catalog.py catalog.json
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- catalog.json; then
+            echo "catalog 没变化"
+            exit 0
+          fi
+          git add catalog.json
+          git commit -m "chore: 更新应用内更新用的 catalog"
+          git push
