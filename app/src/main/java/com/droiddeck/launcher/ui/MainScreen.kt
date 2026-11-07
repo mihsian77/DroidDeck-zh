@@ -68,7 +68,6 @@ fun ConfirmDialog(title: String, text: String, confirm: String, onConfirm: () ->
 }
 
 @Composable
-@Composable
 fun RuntimeActionsDialog(
     onRepair: () -> Unit,
     onImport: () -> Unit,
