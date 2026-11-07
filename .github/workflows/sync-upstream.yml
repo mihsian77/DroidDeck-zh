@@ -106,7 +106,7 @@ jobs:
           # 只保留我们自己维护的 workflow，其余跟随上游。
           # build.yml 是我们自己维护的（预发布 job、跳过的上游 CI job 都在里面），
           # 上游加新构建步骤时靠 fork-drift.yml 每周提醒，不靠整目录覆盖。
-          for f in build.yml sync-upstream.yml sync-data-packages.yml; do
+          for f in build.yml sync-upstream.yml sync-data-packages.yml update-catalog.yml; do
             if git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
               git checkout "$MERGE_BASE" -- ".github/workflows/$f"
               echo "KEEP (fork-owned): .github/workflows/$f" >> "$GITHUB_STEP_SUMMARY"
@@ -125,7 +125,7 @@ jobs:
           git checkout main
           git merge "$BRANCH" --no-edit
           # 同样只恢复我们自己维护的那几个 workflow
-          for f in build.yml sync-upstream.yml sync-data-packages.yml; do
+          for f in build.yml sync-upstream.yml sync-data-packages.yml update-catalog.yml; do
             if git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
               git checkout "$MERGE_BASE" -- ".github/workflows/$f"
             fi

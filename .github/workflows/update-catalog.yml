@@ -1,10 +1,10 @@
 name: Update app catalog
 
+# 上游这个 workflow 要用 GitHub App token 往 DroidDeck-CI 推 catalog，我们用不上，
+# 换成自己的 catalog-zh.yml。这里只留手动入口，避免 release 事件刷出失败记录。
 on:
   workflow_call:
   workflow_dispatch:
-  release:
-    types: [published, edited, deleted, unpublished]
 
 permissions:
   contents: read
@@ -13,7 +13,6 @@ permissions:
 concurrency:
   group: update-app-catalog
   cancel-in-progress: false
-  queue: max
 
 jobs:
   catalog:
