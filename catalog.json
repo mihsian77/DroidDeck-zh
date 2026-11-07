@@ -1,0 +1,51 @@
+{
+  "schema": 1,
+  "sourceRepo": "mihsian77/DroidDeck-zh",
+  "ciRepo": "mihsian77/DroidDeck-zh",
+  "stable": {
+    "tag": "0.6.9-zh1",
+    "title": "0.6.9-zh1 (stable)",
+    "summary": "## 0.6.9-zh1 (stable)\n\nsync: bump version to 0.6.9-zh1\n\n基于上游 DroidDeck 源码编译的中文优化版，已确认稳定可用。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n- 此为稳定版，安装前建议先备份旧版本",
+    "commit": "d8a4025c6f5b8d784b1641d1ba23746fc1bed836",
+    "pr": 0,
+    "version": "0.6.9-zh1",
+    "versionCode": 18,
+    "publishedAt": 1793632436000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.6.9-zh1",
+    "apks": {
+      "com.droiddeck.launcher": {
+        "name": "DroidDeck-0.6.9-zh1.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.6.9-zh1/DroidDeck-0.6.9-zh1.apk",
+        "size": 76718734,
+        "sha256": "661426f55fa83b4841d3e9c24f267cb005aa85b87ba338b0c1a1fbbf40dc2c1b",
+        "packageName": "com.droiddeck.launcher",
+        "versionCode": 18,
+        "signerSha256": "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+      }
+    }
+  },
+  "preview": {
+    "tag": "test-af5a3b0",
+    "title": "测试包 af5a3b0",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：补 powervr pack 的构建常量和启动回调\n\n版本：0.6.9-zh1（af5a3b0）\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "af5a3b0fb926e73a89bf8b03cfa9a2987d47170d",
+    "pr": 0,
+    "version": "0.6.9-zh1",
+    "versionCode": 18,
+    "publishedAt": 1794028388000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-af5a3b0",
+    "apks": {
+      "com.droiddeck.launcher": {
+        "name": "DroidDeck-0.6.9-zh1.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-af5a3b0/DroidDeck-0.6.9-zh1.apk",
+        "size": 110531720,
+        "sha256": "7101d10a7b915bc6095638e6208cd2c2036a32ee94a1bd488f0539bb034e557a",
+        "packageName": "com.droiddeck.launcher",
+        "versionCode": 18,
+        "signerSha256": "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+      }
+    }
+  },
+  "tests": [],
+  "recentPreviews": []
+}
