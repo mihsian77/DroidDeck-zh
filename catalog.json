@@ -20,7 +20,7 @@
         "sha256": "661426f55fa83b4841d3e9c24f267cb005aa85b87ba338b0c1a1fbbf40dc2c1b",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 18,
-        "signerSha256": "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
   },
@@ -42,7 +42,7 @@
         "sha256": "7101d10a7b915bc6095638e6208cd2c2036a32ee94a1bd488f0539bb034e557a",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 18,
-        "signerSha256": "a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc"
+        "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
   },
