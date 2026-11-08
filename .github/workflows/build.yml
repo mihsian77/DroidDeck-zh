@@ -955,12 +955,18 @@ jobs:
         run: |
           set -euo pipefail
           tag=test-${GITHUB_SHA::7}
-          cat signed/SHA256SUMS-*.txt > signed/SHA256SUMS.txt
-          rm signed/SHA256SUMS-*.txt
+          # versionName 和稳定版保持一致（release-stable 直接提升同一次构建的包），
+          # 靠文件名区分：DroidDeck-<version>-test.<sha7>.apk
+          rm -f signed/SHA256SUMS-*.txt
+          for f in signed/*.apk; do
+            [ -e "$f" ] || continue
+            mv "$f" "${f%.apk}-test.${GITHUB_SHA::7}.apk"
+          done
+          ( cd signed && sha256sum *.apk > SHA256SUMS.txt )
           subject=$(git log -1 --pretty=%s)
           versionName=$(sed -n "s/^ *versionName \"\(.*\)\"$/\1/p" app/build.gradle)
-          notes="$(printf '自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：%s\n\n版本：%s（%s）\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。\n\nSHA-256：\n\n%s' \
-            "$subject" "$versionName" "${GITHUB_SHA::7}" "$(cat signed/SHA256SUMS.txt)")"
+          notes="$(printf '自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：%s\n\n版本：%s（%s）\n文件名带 -test.%s，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。\n\nSHA-256：\n\n%s' \
+            "$subject" "$versionName" "${GITHUB_SHA::7}" "${GITHUB_SHA::7}" "$(cat signed/SHA256SUMS.txt)")"
           gh release create "$tag" --target "$GITHUB_SHA" --prerelease --latest=false \
             --title "测试包 ${GITHUB_SHA::7}" --notes "$notes" signed/*
           gh release list -L 200 --json tagName,publishedAt |
