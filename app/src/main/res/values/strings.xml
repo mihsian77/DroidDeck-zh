@@ -3853,4 +3853,12 @@
     <string name="wow_chat_title">Chat input</string>
     <string name="wow_chat_voice">Voice type</string>
     <string name="wow_chat_voice_unavailable">Voice typing is not available on this device.</string>
+    <string name="setup_speed">Download source speed</string>
+    <string name="setup_speed_hint">Fetches a small slice of the real file, so sites that only answer 200 get dropped.</string>
+    <string name="setup_speed_run">Test</string>
+    <string name="setup_speed_running">Testing…</string>
+    <string name="setup_speed_use">Use</string>
+    <string name="setup_speed_ms">%1$d ms</string>
+    <string name="setup_speed_unavailable">Unavailable</string>
+    <string name="setup_speed_current">Current: %1$s</string>
 </resources>

@@ -3662,4 +3662,12 @@
     <string name="wow_chat_title">聊天输入</string>
     <string name="wow_chat_voice">语音输入</string>
     <string name="wow_chat_voice_unavailable">这台设备不支持语音输入。</string>
+    <string name="setup_speed">下载源测速</string>
+    <string name="setup_speed_hint">真实拉一小段文件来测，只会返回 200 的站点会被滤掉</string>
+    <string name="setup_speed_run">测速</string>
+    <string name="setup_speed_running">测速中…</string>
+    <string name="setup_speed_use">用它</string>
+    <string name="setup_speed_ms">%1$d ms</string>
+    <string name="setup_speed_unavailable">不可用</string>
+    <string name="setup_speed_current">当前：%1$s</string>
 </resources>

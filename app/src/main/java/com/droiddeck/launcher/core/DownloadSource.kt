@@ -84,25 +84,18 @@ object DownloadSource {
             return
         }
         probedAt.set(now)
+        measure { probing.set(false) }
+    }
+
+    /** 一次测速的单项结果；ms <= 0 表示不可用 */
+    data class Speed(val key: String, val label: String, val ms: Long)
+
+    /** 并行测所有源，结果按可用优先、延时升序排。回调在后台线程。 */
+    fun measure(onDone: (List<Speed>) -> Unit) {
         Thread {
             try {
+                val sources = probeSources()
                 val times = ConcurrentHashMap<String, Long>()
-                // 准备所有要测的源：直连 + 普通镜像 + 验证过的 MirrorHub 节点
-                val sources = mutableListOf<Pair<String, String>>()
-                sources.add("" to PROBE)
-                for (m in MIRRORS) {
-                    sources.add(m.host to m.proxy(PROBE))
-                }
-                // MirrorHub 节点：列表里有名的站点未必真能代理，先一起测，能读到真内容的才留下
-                val nodeDomains = LinkedHashSet(goodNodes())
-                try {
-                    val ctx = app
-                    if (ctx != null) nodeDomains.addAll(MirrorHub.getNodes(ctx).take(5).map { it.domain })
-                } catch (_: Exception) {}
-                for (d in nodeDomains.take(5)) {
-                    sources.add("mirrorhub:$d" to "https://$d/$PROBE")
-                }
-
                 val latch = CountDownLatch(sources.size)
                 for ((key, url) in sources) {
                     Thread {
@@ -115,16 +108,46 @@ object DownloadSource {
                     }.apply { isDaemon = true }.start()
                 }
                 latch.await(PROBE_TIMEOUT_MS * 3L, TimeUnit.MILLISECONDS)
-                // 这轮能读到真内容的节点才算数
-                setGoodNodes(times.keys.filter { it.startsWith("mirrorhub:") }.map { it.removePrefix("mirrorhub:") })
-                val best = times.minByOrNull { it.value }?.key ?: return@Thread
-                lastGood = best
-                prefs()?.edit()?.putString(KEY_FASTEST, best)?.apply()
-                Log.i("DownloadSource", "probe done: fastest=$best (${times[best]}ms)")
-            } finally {
-                probing.set(false)
+                val result = sources
+                    .map { (key, _) -> Speed(key, speedLabel(key), times[key] ?: 0L) }
+                    .sortedBy { if (it.ms > 0) it.ms else Long.MAX_VALUE }
+                applyProbe(times)
+                onDone(result)
+            } catch (e: Exception) {
+                Log.w("DownloadSource", "measure failed", e)
+                onDone(emptyList())
             }
         }.apply { isDaemon = true }.start()
+    }
+
+    private fun probeSources(): List<Pair<String, String>> {
+        val sources = mutableListOf<Pair<String, String>>()
+        sources.add("" to PROBE)
+        for (m in MIRRORS) sources.add(m.host to m.proxy(PROBE))
+        // MirrorHub 节点：列表里有名的站点未必真能代理，先一起测，能读到真内容的才留下
+        val nodeDomains = LinkedHashSet(goodNodes())
+        try {
+            val ctx = app
+            if (ctx != null) nodeDomains.addAll(MirrorHub.getNodes(ctx).take(5).map { it.domain })
+        } catch (_: Exception) {}
+        for (d in nodeDomains.take(5)) sources.add("mirrorhub:$d" to "https://$d/$PROBE")
+        return sources
+    }
+
+    private fun speedLabel(key: String): String = when {
+        key.isEmpty() -> "GitHub 直连"
+        key.startsWith("mirrorhub:") -> "MirrorHub · ${key.removePrefix("mirrorhub:")}"
+        else -> key
+    }
+
+    private fun applyProbe(times: Map<String, Long>) {
+        // 这轮能读到真内容的节点才算数
+        setGoodNodes(times.keys.filter { it.startsWith("mirrorhub:") }.map { it.removePrefix("mirrorhub:") })
+        val best = times.minByOrNull { it.value }?.key ?: return
+        probedAt.set(System.currentTimeMillis())
+        lastGood = best
+        prefs()?.edit()?.putString(KEY_FASTEST, best)?.apply()
+        Log.i("DownloadSource", "probe done: fastest=$best (${times[best]}ms)")
     }
 
     /** 拉一点内容校验，光看状态码会被“整站 200 的 SPA”骗过去 */

@@ -180,6 +180,8 @@ internal fun SetupPanel(
     var editSgdbKey by remember { mutableStateOf(false) }
     var editDownloadPrefix by remember { mutableStateOf(false) }
     var editDownloadProxy by remember { mutableStateOf(false) }
+    var speedResults by remember { mutableStateOf<List<DownloadSource.Speed>?>(null) }
+    var speedRunning by remember { mutableStateOf(false) }
     if (editSgdbKey) SgdbKeyDialog(s.sgdbUserKey, onSave = { a.onSgdbKey(it); editSgdbKey = false }, onDismiss = { editSgdbKey = false })
 
     if (editDownloadPrefix) TextEntryDialog(
@@ -548,6 +550,57 @@ internal fun SetupPanel(
                                     stringResource(R.string.mode_sgdb_edit),
                                     onClick = { editDownloadProxy = true },
                                 )
+                                val modeLabel = when (s.downloadSource) {
+                                    DownloadSource.MODE_DIRECT -> stringResource(R.string.setup_download_source_direct)
+                                    DownloadSource.MODE_MIRROR -> s.downloadMirror.ifEmpty { DownloadSource.MIRRORS.first().host }
+                                    DownloadSource.MODE_CUSTOM -> s.downloadPrefix.ifEmpty { stringResource(R.string.setup_download_source_custom) }
+                                    else -> stringResource(R.string.setup_download_source_auto)
+                                }
+                                SettingsRow(
+                                    stringResource(R.string.setup_speed),
+                                    stringResource(R.string.setup_speed_hint),
+                                    control = {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                stringResource(R.string.setup_speed_current, modeLabel),
+                                                fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                            SecondaryButton(
+                                                stringResource(if (speedRunning) R.string.setup_speed_running else R.string.setup_speed_run),
+                                                enabled = !speedRunning, compact = true,
+                                            ) {
+                                                speedRunning = true
+                                                DownloadSource.measure { list ->
+                                                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                                                        speedResults = list
+                                                        speedRunning = false
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                )
+                                speedResults?.forEach { entry ->
+                                    SettingsRow(
+                                        entry.label,
+                                        if (entry.ms > 0) stringResource(R.string.setup_speed_ms, entry.ms) else stringResource(R.string.setup_speed_unavailable),
+                                        control = {
+                                            if (entry.ms > 0) SecondaryButton(stringResource(R.string.setup_speed_use), compact = true) {
+                                                when {
+                                                    entry.key.isEmpty() -> a.onDownloadSource(DownloadSource.MODE_DIRECT)
+                                                    entry.key.startsWith("mirrorhub:") -> {
+                                                        a.onDownloadSource(DownloadSource.MODE_CUSTOM)
+                                                        a.onDownloadPrefix("https://" + entry.key.removePrefix("mirrorhub:"))
+                                                    }
+                                                    else -> {
+                                                        a.onDownloadSource(DownloadSource.MODE_MIRROR)
+                                                        a.onDownloadMirror(entry.key)
+                                                    }
+                                                }
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                         BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -630,53 +683,6 @@ internal fun SetupPanel(
                                     }
                                 )
                             }
-                            ActionRow(
-                                "网络测速",
-                                "测试 GitHub 直连和各镜像站延迟",
-                                "测速",
-                                onClick = {
-                                    Thread {
-                                        try {
-                                            val results = mutableListOf<String>()
-                                            // 测 GitHub 直连
-                                            try {
-                                                val githubStart = System.currentTimeMillis()
-                                                java.net.URL("https://raw.githubusercontent.com/Droid-Deck/DroidDeck/main/README.md").openConnection().apply {
-                                                    connectTimeout = 5000
-                                                    readTimeout = 5000
-                                                    getInputStream().close()
-                                                }
-                                                val githubMs = System.currentTimeMillis() - githubStart
-                                                results.add("直连: ${githubMs}ms")
-                                            } catch (_: Exception) {
-                                                results.add("直连: 不可用")
-                                            }
-                                            // 测各镜像站
-                                            for (mirror in com.droiddeck.launcher.core.DownloadSource.MIRRORS) {
-                                                try {
-                                                    val start = System.currentTimeMillis()
-                                                    java.net.URL("https://${mirror.host}/Droid-Deck/DroidDeck/main/README.md").openConnection().apply {
-                                                        connectTimeout = 5000
-                                                        readTimeout = 5000
-                                                        getInputStream().close()
-                                                    }
-                                                    val ms = System.currentTimeMillis() - start
-                                                    results.add("${mirror.host}: ${ms}ms")
-                                                } catch (_: Exception) {
-                                                    results.add("${mirror.host}: 不可用")
-                                                }
-                                            }
-                                            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                                android.widget.Toast.makeText(ctx, results.joinToString("\n"), android.widget.Toast.LENGTH_LONG).show()
-                                            }
-                                        } catch (_: Exception) {
-                                            android.os.Handler(android.os.Looper.getMainLooper()).post {
-                                                android.widget.Toast.makeText(ctx, "测速失败", android.widget.Toast.LENGTH_LONG).show()
-                                            }
-                                        }
-                                    }.start()
-                                }
-                            )
                         }
                         SettingsGroup(stringResource(R.string.setup_group_memory)) {
                             ToggleRow(
