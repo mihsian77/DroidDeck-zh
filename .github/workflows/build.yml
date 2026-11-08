@@ -565,6 +565,35 @@ jobs:
           python3 tools/powervr/fetch.py
           bash tools/packs/build.sh app/build/packs
 
+      # Syncthing 的原生库从 submodule 里用 Go 交叉编译出来，产物不进仓库。
+      # 缓存键带上 submodule 里 syncthing 的 commit，换了上游源码就要重编。
+      - name: Pin the Syncthing source
+        id: syncthing-src
+        run: |
+          set -euo pipefail
+          git submodule update --init --recursive tools/syncthing/syncthing-android
+          echo "commit=$(git -C tools/syncthing/syncthing-android/syncthing/src/github.com/syncthing/syncthing rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Syncthing
+        id: syncthing
+        uses: actions/cache@v4
+        with:
+          path: app/src/main/jniLibs/arm64-v8a/libsyncthingnative.so
+          key: syncthing-${{ env.NDK_VERSION }}-${{ hashFiles('tools/syncthing/build.sh', 'tools/syncthing/syncthing-android/gradle/libs.versions.toml') }}-${{ steps.syncthing-src.outputs.commit }}
+
+      - uses: actions/setup-go@v5
+        if: steps.syncthing.outputs.cache-hit != 'true'
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Build Syncthing
+        if: steps.syncthing.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          export NDK="$ANDROID_HOME/ndk/$NDK_VERSION"
+          tools/syncthing/build.sh app/src/main/jniLibs/arm64-v8a
+
       - name: Build
         id: build
         env:
