@@ -786,8 +786,9 @@ jobs:
     needs: build
     # 包里只有 tools/packs/build.sh 打的那些 tar.zst，发到本仓库的内容寻址 tag。
     # 上游要往 Droid-Deck/DroidDeck-Components 发，得用对方 App token，这里换成本仓库。
+    # 调用方要放行 contents: write，否则被调 workflow 会报 requesting write/only read。
     permissions:
-      contents: read
+      contents: write
       actions: read
     uses: ./.github/workflows/publish-packs.yml
     secrets: inherit
