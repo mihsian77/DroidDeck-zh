@@ -25,21 +25,21 @@
     }
   },
   "preview": {
-    "tag": "test-8e87470",
-    "title": "测试包 8e87470",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：feat(ci): 构建 Syncthing 原生库\n\n版本：0.6.9-zh1（8e87470）\n文件名带 -test.8e87470，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "8e87470898e44accd9d9cb6942a8a58683553ded",
+    "tag": "test-26c4100",
+    "title": "测试包 26c4100",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：ci: 补三处上游步骤（纯打包与缓存，不碰 GPU 链路）\n\n版本：0.6.9-zh1（26c4100）\n文件名带 -test.26c4100，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "26c41008b89990d2afc847194de6c1b7dd25b214",
     "pr": 0,
     "version": "0.6.9-zh1",
     "versionCode": 18,
-    "publishedAt": 1794153857000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-8e87470",
+    "publishedAt": 1794158793000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-26c4100",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.6.9-zh1-test.8e87470.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-8e87470/DroidDeck-0.6.9-zh1-test.8e87470.apk",
+        "name": "DroidDeck-0.6.9-zh1-test.26c4100.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-26c4100/DroidDeck-0.6.9-zh1-test.26c4100.apk",
         "size": 124069190,
-        "sha256": "7277a4ac0900b541e826d9d8a8e4c00e353064c30fc2a071fce31f105154c790",
+        "sha256": "442eeb56f012c7b8e6c5106e9560c222f6a61906be454d855c604e0519dcbc76",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 18,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
@@ -48,6 +48,28 @@
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-26c4100",
+      "title": "测试包 26c4100",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：ci: 补三处上游步骤（纯打包与缓存，不碰 GPU 链路）\n\n版本：0.6.9-zh1（26c4100）\n文件名带 -test.26c4100，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "26c41008b89990d2afc847194de6c1b7dd25b214",
+      "pr": 0,
+      "version": "0.6.9-zh1",
+      "versionCode": 18,
+      "publishedAt": 1794158793000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-26c4100",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.6.9-zh1-test.26c4100.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-26c4100/DroidDeck-0.6.9-zh1-test.26c4100.apk",
+          "size": 124069190,
+          "sha256": "442eeb56f012c7b8e6c5106e9560c222f6a61906be454d855c604e0519dcbc76",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 18,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-8e87470",
       "title": "测试包 8e87470",
