@@ -25,8 +25,11 @@ object DownloadSource {
     private const val KEY_CUSTOM = "custom"
     private const val KEY_PROXY = "proxy"
     private const val KEY_FASTEST = "fastest"
+    private const val KEY_GOOD_NODES = "good_nodes"
 
-    private const val PROBE = "https://raw.githubusercontent.com/Droid-Deck/DroidDeck/main/README.md"
+    // 用我们自己的 catalog 当测速对象：文件小、内容可控，能识别“回了 200 但根本不是文件”的站点
+    private const val PROBE = "https://raw.githubusercontent.com/mihsian77/DroidDeck-zh/main/catalog.json"
+    private const val PROBE_MARK = "\"schema\""
     private const val PROBE_TIMEOUT_MS = 4_000
     private const val PROBE_COOLDOWN_MS = 30_000L
     private const val UA = "DroidDeck-Android"
@@ -66,6 +69,10 @@ object DownloadSource {
     fun init(context: Context) {
         app = context.applicationContext
         lastGood = prefs()?.getString(KEY_FASTEST, null)
+        // 节点列表单独刷新，别挡住测速
+        Thread {
+            runCatching { MirrorHub.refresh(context.applicationContext) }
+        }.apply { isDaemon = true }.start()
     }
 
     fun probe() {
@@ -80,25 +87,21 @@ object DownloadSource {
         Thread {
             try {
                 val times = ConcurrentHashMap<String, Long>()
-                // 准备所有要测的源：直连 + 普通镜像 + MirrorHub 节点
+                // 准备所有要测的源：直连 + 普通镜像 + 验证过的 MirrorHub 节点
                 val sources = mutableListOf<Pair<String, String>>()
-                // 直连
                 sources.add("" to PROBE)
-                // 普通镜像
                 for (m in MIRRORS) {
-                    sources.add(m.host to "https://${m.host}/$PROBE")
+                    sources.add(m.host to m.proxy(PROBE))
                 }
-                // MirrorHub 节点（最多测前 2 个）
+                // MirrorHub 节点：列表里有名的站点未必真能代理，先一起测，能读到真内容的才留下
+                val nodeDomains = LinkedHashSet(goodNodes())
                 try {
                     val ctx = app
-                    if (ctx != null) {
-                        val nodes = MirrorHub.getNodes(ctx)
-                        for (i in 0 until minOf(2, nodes.size)) {
-                            val node = nodes[i]
-                            sources.add("mirrorhub:$i" to "https://${node.domain}/$PROBE")
-                        }
-                    }
+                    if (ctx != null) nodeDomains.addAll(MirrorHub.getNodes(ctx).take(5).map { it.domain })
                 } catch (_: Exception) {}
+                for (d in nodeDomains.take(5)) {
+                    sources.add("mirrorhub:$d" to "https://$d/$PROBE")
+                }
 
                 val latch = CountDownLatch(sources.size)
                 for ((key, url) in sources) {
@@ -112,6 +115,8 @@ object DownloadSource {
                     }.apply { isDaemon = true }.start()
                 }
                 latch.await(PROBE_TIMEOUT_MS * 3L, TimeUnit.MILLISECONDS)
+                // 这轮能读到真内容的节点才算数
+                setGoodNodes(times.keys.filter { it.startsWith("mirrorhub:") }.map { it.removePrefix("mirrorhub:") })
                 val best = times.minByOrNull { it.value }?.key ?: return@Thread
                 lastGood = best
                 prefs()?.edit()?.putString(KEY_FASTEST, best)?.apply()
@@ -122,6 +127,7 @@ object DownloadSource {
         }.apply { isDaemon = true }.start()
     }
 
+    /** 拉一点内容校验，光看状态码会被“整站 200 的 SPA”骗过去 */
     private fun latency(url: String): Long {
         val started = System.nanoTime()
         var connection: HttpURLConnection? = null
@@ -135,14 +141,26 @@ object DownloadSource {
             }
             connection = c
             if (c.responseCode / 100 != 2) 0L else {
-                c.inputStream.use { it.read() }
-                (System.nanoTime() - started) / 1_000_000
+                // readNBytes 在 Android 上还没有，手动读一块
+                val buf = ByteArray(1024)
+                val body = c.inputStream.use { input ->
+                    val n = input.read(buf)
+                    if (n <= 0) "" else String(buf, 0, n, Charsets.UTF_8)
+                }
+                if (!body.contains(PROBE_MARK)) 0L else (System.nanoTime() - started) / 1_000_000
             }
         } catch (e: Exception) {
             0L
         } finally {
             runCatching { connection?.disconnect() }
         }
+    }
+
+    private fun goodNodes(): List<String> =
+        prefs()?.getString(KEY_GOOD_NODES, "")?.split('\n')?.filter { it.isNotBlank() } ?: emptyList()
+
+    private fun setGoodNodes(domains: List<String>) {
+        prefs()?.edit()?.putString(KEY_GOOD_NODES, domains.distinct().joinToString("\n"))?.apply()
     }
 
     fun isGithub(url: String): Boolean = GITHUB_HOSTS.any { url.startsWith("https://$it/") }
@@ -155,22 +173,11 @@ object DownloadSource {
         if (!isGithub(target)) return listOf(target)
         val api = target.startsWith("https://api.github.com/")
         val proxies = MIRRORS.filter { !api || it.api }.map { it.proxy(target) }
-        // MirrorHub dynamic nodes (our nodes)
+        // MirrorHub 节点：只用测速验证过能读到真内容的，SPA 站点一律不进候选
         val mirrorHubNodes: List<String> = try {
-            val ctx = app
-            if (ctx != null) {
-                val nodes = com.droiddeck.launcher.core.MirrorHub.getNodes(ctx)
-                val result = mutableListOf<String>()
-                for (i in 0 until minOf(2, nodes.size)) {
-                    val node = nodes[i]
-                    result.add("https://${node.domain}/$target")
-                }
-                result
-            } else {
-                emptyList<String>()
-            }
+            goodNodes().take(2).map { "https://$it/$target" }
         } catch (_: Exception) {
-            emptyList<String>()
+            emptyList()
         }
         val ordered = when (prefs.getString(KEY_MODE, MODE_AUTO) ?: MODE_AUTO) {
             MODE_DIRECT -> listOf(target)
@@ -189,9 +196,10 @@ object DownloadSource {
                     }
                     // MirrorHub 节点最快
                     lg?.startsWith("mirrorhub:") == true -> {
-                        val idx = lg.removePrefix("mirrorhub:").toIntOrNull() ?: 0
+                        val dom = lg.removePrefix("mirrorhub:")
                         // 把对应的 MirrorHub 节点排第一
-                        val first = mirrorHubNodes.getOrElse(idx) { mirrorHubNodes.firstOrNull() }
+                        val first = mirrorHubNodes.firstOrNull { it.startsWith("https://$dom/") }
+                            ?: mirrorHubNodes.firstOrNull()
                         if (first != null) result.add(first)
                         // 其他 MirrorHub 节点
                         for (m in mirrorHubNodes) if (m != first) result.add(m)
@@ -280,8 +288,11 @@ object DownloadSource {
 
     private fun Mirror.proxy(target: String): String = "https://$host/$target"
 
-    private fun host(url: String): String =
-        MIRRORS.firstOrNull { url.startsWith("https://${it.host}/") }?.host ?: ""
+    private fun host(url: String): String {
+        MIRRORS.firstOrNull { url.startsWith("https://${it.host}/") }?.let { return it.host }
+        val node = goodNodes().firstOrNull { url.startsWith("https://$it/") }
+        return if (node != null) "mirrorhub:$node" else ""
+    }
 
     private fun picked(prefs: SharedPreferences, api: Boolean): Mirror? {
         val chosen = MIRRORS.firstOrNull { it.host == (prefs.getString(KEY_MIRROR, "") ?: "") } ?: MIRRORS.firstOrNull()
