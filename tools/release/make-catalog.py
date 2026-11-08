@@ -15,6 +15,7 @@ TOKEN = os.environ.get("GH_TOKEN", "")
 PACKAGE = "com.droiddeck.launcher"
 OUT = sys.argv[1] if len(sys.argv) > 1 else "catalog.json"
 PREVIEW_HISTORY = int(os.environ.get("PREVIEW_HISTORY", "10"))
+STABLE_TAG = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+-zh[0-9]+")
 
 
 def api(path):
@@ -126,7 +127,9 @@ def main():
     # pack-* 是附加包的内容寻址 release，不是 App 版本，别让它们混进 stable。
     releases = [r for r in api("releases?per_page=100")
                 if not r["draft"] and not r["tag_name"].startswith("pack-")]
-    stable = next((r for r in releases if not r["prerelease"] and not r["tag_name"].startswith("test-")), None)
+    # 只看 <版本>-zhN 这种正式版 tag，别让 pack-*（内容寻址的附加包）、数据包这类
+    # 非预发布 release 顶掉 stable——它们同样不是 prerelease。
+    stable = next((r for r in releases if not r["prerelease"] and STABLE_TAG.fullmatch(r["tag_name"])), None)
     previews = [r for r in releases if r["prerelease"] and r["tag_name"].startswith("test-")]
     previews.sort(key=lambda r: r.get("published_at") or r["created_at"], reverse=True)
     preview = previews[0] if previews else None
