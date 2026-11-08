@@ -14,6 +14,7 @@ REPO = os.environ.get("REPO", "mihsian77/DroidDeck-zh")
 TOKEN = os.environ.get("GH_TOKEN", "")
 PACKAGE = "com.droiddeck.launcher"
 OUT = sys.argv[1] if len(sys.argv) > 1 else "catalog.json"
+PREVIEW_HISTORY = int(os.environ.get("PREVIEW_HISTORY", "10"))
 
 
 def api(path):
@@ -44,15 +45,25 @@ def gradle_version(tag, gradle):
     return version_name.group(1), int(version_code.group(1))
 
 
+# 测试包发布时文件名叫 DroidDeck-<版本>-test.<sha7>.apk，变体名也带这个尾巴，
+# 所以比较前先把 test 后缀去掉，否则 -antutu-test.<sha>.apk 会被当基础包选中。
+TEST_SUFFIX = re.compile(r"-test\.[0-9a-f]{7,40}\.apk$", re.I)
+
+
+def plain_name(name):
+    return TEST_SUFFIX.sub(".apk", name)
+
+
 def pick_apk(assets, version):
     """取基础变体：文件名形如 DroidDeck-<version>.apk，不带 -ludashi/-pubg/-antutu 后缀。"""
     apks = [a for a in assets if a["name"].lower().endswith(".apk")]
     for a in apks:
-        if a["name"] == f"DroidDeck-{version}.apk":
+        if plain_name(a["name"]) == f"DroidDeck-{version}.apk":
             return a
     for a in apks:
-        if re.fullmatch(r"DroidDeck-[0-9][^/]*\.apk", a["name"]) and not re.search(
-                r"-(standard|ludashi|pubg|antutu)\.apk$", a["name"]):
+        name = plain_name(a["name"])
+        if re.fullmatch(r"DroidDeck-[0-9][^/]*\.apk", name) and not re.search(
+                r"-(standard|ludashi|pubg|antutu)\.apk$", name):
             return a
     return None
 
@@ -115,7 +126,12 @@ def main():
     releases = [r for r in api("releases?per_page=40") if not r["draft"]]
     stable = next((r for r in releases if not r["prerelease"] and not r["tag_name"].startswith("test-")), None)
     previews = [r for r in releases if r["prerelease"] and r["tag_name"].startswith("test-")]
-    preview = max(previews, key=lambda r: r.get("published_at") or r["created_at"]) if previews else None
+    previews.sort(key=lambda r: r.get("published_at") or r["created_at"], reverse=True)
+    preview = previews[0] if previews else None
+
+    # recentPreviews 就是预览构建的历史列表，[0] 是最新。App 靠它在更新页显示
+    # “落后几个构建”，以及按 commit 判断当前装的是哪一版。
+    history = [entry(r, signer) for r in previews[:PREVIEW_HISTORY]]
 
     catalog = {
         "schema": 1,
@@ -123,14 +139,16 @@ def main():
         "ciRepo": REPO,
         "stable": entry(stable, signer) if stable else None,
         "preview": entry(preview, signer) if preview else None,
+        # 我们不发 PR 构建包，tests 保持空；App 的 TEST 渠道目前用不上。
         "tests": [],
-        "recentPreviews": [],
+        "recentPreviews": history,
     }
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(catalog, f, ensure_ascii=False, indent=2, sort_keys=False)
         f.write("\n")
     print(f"写出 {OUT}: stable={catalog['stable']['tag'] if catalog['stable'] else '-'} "
-          f"preview={catalog['preview']['tag'] if catalog['preview'] else '-'}")
+          f"preview={catalog['preview']['tag'] if catalog['preview'] else '-'} "
+          f"history={len(history)}")
 
 
 if __name__ == "__main__":
