@@ -31,7 +31,10 @@ internal class AddonPack(
 
     val available: Boolean get() = sha256.isNotEmpty()
     private val tag get() = "pack-$name-${sha256.take(16)}"
+    // tag 是按内容寻址的（pack-<name>-<sha16>），先问本仓库有没有我们自己发的包，
+    // 没有再回落到上游。两边同名 tag 的字节必须一致，不然校验会拒掉。
     private val urls get() = listOfNotNull(
+        "https://github.com/$REPO_ZH/releases/download/$tag/$name.tar.zst",
         "https://github.com/$REPO/releases/download/$tag/$name.tar.zst",
         BuildConfig.PR_NUMBER.takeIf { it > 0 }?.let { "https://github.com/$PR_REPO/releases/download/pr-$it/$tag.tar.zst" },
     )
@@ -130,6 +133,7 @@ internal class AddonPack(
     companion object {
         private const val TAG = "AddonPack"
         private const val REPO = "Droid-Deck/DroidDeck-Components"
+        private const val REPO_ZH = "mihsian77/DroidDeck-zh"
         private const val PR_REPO = "Droid-Deck/DroidDeck-CI"
         const val COMPLETE = ".complete"
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

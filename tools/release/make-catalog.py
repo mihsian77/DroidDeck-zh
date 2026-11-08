@@ -123,7 +123,9 @@ def entry(release, signer):
 
 def main():
     signer = open("keystore/release-signer.sha256", encoding="utf-8").read().strip()
-    releases = [r for r in api("releases?per_page=40") if not r["draft"]]
+    # pack-* 是附加包的内容寻址 release，不是 App 版本，别让它们混进 stable。
+    releases = [r for r in api("releases?per_page=100")
+                if not r["draft"] and not r["tag_name"].startswith("pack-")]
     stable = next((r for r in releases if not r["prerelease"] and not r["tag_name"].startswith("test-")), None)
     previews = [r for r in releases if r["prerelease"] and r["tag_name"].startswith("test-")]
     previews.sort(key=lambda r: r.get("published_at") or r["created_at"], reverse=True)

@@ -1,10 +1,9 @@
 name: Publish add-on packs
 
-# The add-on packs (tools/packs/build.sh) a Build APK run made, published to DroidDeck-Components under
-# content-addressed tags (pack-<name>-<first 16 hex of sha256>). The APK from that run pins each pack's
-# SHA-256 and downloads it from that tag. A tag is created once and never replaced.
-# Only main and release builds publish here; a PR test build attaches the packs main has not published
-# to its pr-N release on DroidDeck-CI (pr-release-publish.yml), which is deleted when the PR closes.
+# 把构建产出的附加包（tools/packs/build.sh 打的那几个）发到本仓库的 release，
+# tag 按内容寻址：pack-<name>-<sha256 前 16 位>。APK 里钉的就是这个 sha，按 tag 下载。
+# 同一个 tag 只发一次，之后不再覆盖。上游那套要求往 Droid-Deck/DroidDeck-Components
+# 发包，需要对方的 GitHub App token，这里改成发到我们自己的仓库，App 端优先从我们这取。
 
 on:
   workflow_call:
@@ -15,7 +14,7 @@ on:
         default: ''
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 jobs:
@@ -41,18 +40,10 @@ jobs:
           RUN: ${{ inputs.run_id }}
         run: gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n droiddeck-packs -D packs
 
-      - uses: actions/create-github-app-token@v2
-        id: components-token
-        with:
-          app-id: ${{ vars.DROIDDECK_CI_APP_ID }}
-          private-key: ${{ secrets.DROIDDECK_CI_APP_KEY }}
-          owner: Droid-Deck
-          repositories: DroidDeck-Components
-
       - name: Publish
         env:
-          GH_TOKEN: ${{ steps.components-token.outputs.token }}
-          REPO: Droid-Deck/DroidDeck-Components
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
           BUILD_RUN: ${{ inputs.run_id || github.run_id }}
         run: |
           set -euo pipefail
@@ -61,14 +52,15 @@ jobs:
               jq -r --arg n "$2" '.assets // [] | .[] | select(.name == $n) | .digest // empty'
           }
           commit=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN" --jq .head_sha 2>/dev/null || echo "$GITHUB_SHA")
-          for name in proot directaudio tracking xbox comet; do
+          # tools/packs/build.sh 打七个包，全都发，省得 App 端还去上游找 powervr/butler。
+          for name in proot directaudio tracking xbox comet powervr butler; do
             file="packs/$name.tar.zst"
             [ -f "$file" ] || { echo "::error::$name.tar.zst is missing from Build APK run $BUILD_RUN"; exit 1; }
             sha=$(sha256sum "$file" | cut -d' ' -f1)
             tag="pack-$name-${sha:0:16}"
             digest=$(published_digest "$tag" "$name.tar.zst")
             if [ -z "$digest" ]; then
-              notes="DroidDeck add-on pack \`$name\`, built by [Build APK run $BUILD_RUN]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN) from \`$commit\` with tools/packs/build.sh and published by [run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID).
+              notes="DroidDeck-zh add-on pack \`$name\`, built by [run $BUILD_RUN]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN) from \`$commit\` with tools/packs/build.sh. 内容寻址 tag，同一个 sha 只发一次。
 
           Size: $(stat -c %s "$file") bytes. SHA-256: $sha. APKs built in the same run pin this digest."
               gh release create "$tag" -R "$REPO" --title "$tag" --notes "$notes" --latest=false "$file" \
