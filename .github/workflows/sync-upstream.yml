@@ -114,7 +114,7 @@ jobs:
           done
           # 上游新增的 workflow 文件不带过来：GitHub App token 没有 workflows 权限，
           # 带进 main 会被 "refusing to allow a GitHub App to create or update workflow" 拒掉。
-          for f in $(git ls-tree --name-only HEAD .github/workflows/ | grep -v '^$'); do
+          for f in $(git ls-tree --name-only HEAD .github/workflows/ | sed 's|^\.github/workflows/||'); do
             if ! git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
               git rm -q --cached ".github/workflows/$f"
               rm -f ".github/workflows/$f"
@@ -141,7 +141,7 @@ jobs:
           done
           # 上游新增的 workflow 文件不带过来：GitHub App token 没有 workflows 权限，
           # 带进 main 会被 "refusing to allow a GitHub App to create or update workflow" 拒掉。
-          for f in $(git ls-tree --name-only HEAD .github/workflows/ | grep -v '^$'); do
+          for f in $(git ls-tree --name-only HEAD .github/workflows/ | sed 's|^\.github/workflows/||'); do
             if ! git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
               git rm -q --cached ".github/workflows/$f"
               rm -f ".github/workflows/$f"
