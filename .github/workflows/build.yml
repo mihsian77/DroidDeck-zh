@@ -367,6 +367,21 @@ jobs:
           install -Dm644 tools/linuxfs/desktop/firefox-droiddeck.js "$D/usr/lib/firefox/defaults/pref/droiddeck.js"
           ls -lR "$D"
 
+      # DiRT 3 / DiRT Showdown 的 ws2_32 替身，用 clang 交叉编成 i686 PE。
+      # 配方自己会装 clang/lld/llvm，缺包时只补缺的那几个。
+      - name: Build the DiRT ws2_32 stand-in
+        run: python3 tools/components/prepare.py dirt-ws2
+
+      # Venus 路由排 GL 问题用的探针，libX11/libGL 运行时 dlopen，编译不需要头文件。
+      - name: Build droiddeck-glprobe
+        run: |
+          set -euo pipefail
+          bash tools/ci/install-ubuntu-packages.sh gcc-aarch64-linux-gnu
+          D=app/src/main/assets/linuxfs
+          mkdir -p "$D/usr/local/bin"
+          aarch64-linux-gnu-gcc -O2 -Wall -o "$D/usr/local/bin/droiddeck-glprobe" tools/venus/glprobe.c -ldl
+          aarch64-linux-gnu-strip --strip-unneeded "$D/usr/local/bin/droiddeck-glprobe"
+
       - name: Fetch the Debian image the preloads build in
         if: false  # skipped: Docker Hub rate limits, we don't need x86 preloads on ARM64
         env:
