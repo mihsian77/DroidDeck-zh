@@ -385,6 +385,21 @@ jobs:
 
       # Xclipse（Exynos/AMD）机型走 libhybris 加载系统 Vulkan 时要过一层补丁，
       # SystemVulkanDriver 会把 VK_LAYER_PATH 指到 linuxfs/usr/local/lib/droiddeck-xclipse。
+      # Venus：宿主的 Mesa Venus ICD + virgl 的 vtest 服务端，都是别人的构建产物，
+      # 这里只按 pin 抓包校验 sha 再解开，不自己编。
+      - name: Fetch the Mali (Venus) component
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          . tools/venus/release.env
+          gh release download "${VENUS_TAG}" -R "${VENUS_REPO}" -p venus.tzst -O venus.tzst
+          echo "${VENUS_SHA256}  venus.tzst" | sha256sum -c -
+          tar --use-compress-program=unzstd -xf venus.tzst -C app/src/main
+          test -f app/src/main/jniLibs/arm64-v8a/libvirgl_test_server.so
+          test -f app/src/main/assets/venus/libvulkan_virtio.so
+
+      - name: Build the Xclipse Vulkan layer
       - name: Build the Xclipse Vulkan layer
         run: |
           set -euo pipefail
