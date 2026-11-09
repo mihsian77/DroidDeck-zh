@@ -503,6 +503,33 @@ jobs:
           set -euo pipefail
           curl -fsSL -o pa.tar.gz https://github.com/pulseaudio/pulseaudio/archive/refs/tags/v13.0.tar.gz
           mkdir -p pa13 && tar -xzf pa.tar.gz -C pa13 --strip-components=1 && rm pa.tar.gz
+      # release 直链走 objects.githubusercontent.com，今天持续 504；
+      # assets API 端点（Accept: application/octet-stream）还通着。先把三个包塞进
+      # fetch.sh 用的校验缓存，它命中缓存就不再碰直链。
+      - name: Seed the DirectAudio release assets through the asset API
+        run: |
+          set -euo pipefail
+          . tools/directaudio/release.env
+          cache="${HOME}/.cache/droiddeck-build"
+          mkdir -p "$cache"
+          api="https://api.github.com/repos/${DIRECTAUDIO_REPO}"
+          seed() {
+            local name=$1 sha=$2 kept="$cache/$2-$1" id
+            if [ -f "$kept" ] && echo "$sha  $kept" | sha256sum -c - >/dev/null 2>&1; then
+              echo "cached: $name"
+              return 0
+            fi
+            id=$(curl -fsSL "$api/releases/tags/${DIRECTAUDIO_TAG}" \
+              | python3 -c "import json,sys; n=sys.argv[1]; print([a['id'] for a in json.load(sys.stdin)['assets'] if a['name']==n][0])" "$name")
+            curl -fsSL --retry 5 --retry-all-errors -H "Accept: application/octet-stream" \
+              "$api/releases/assets/$id" -o "$kept.part"
+            echo "$sha  $kept.part" | sha256sum -c - > /dev/null
+            mv "$kept.part" "$kept"
+            echo "seeded: $name"
+          }
+          seed directaudio-linux-wine11.zip "${DIRECTAUDIO_WINE11_SHA256}"
+          seed directaudio-linux-wine11-systhread.zip "${DIRECTAUDIO_SYSTHREAD_SHA256}"
+          seed directaudio-linux-sink.zip "${DIRECTAUDIO_SINK_SHA256}"
       - name: Fetch DirectAudio (tools/directaudio/release.env)
         run: tools/directaudio/fetch.sh "$PWD" "$PWD/sink-out"
       - name: Build the AAudio sink into the audio bundle
