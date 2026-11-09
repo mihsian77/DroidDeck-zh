@@ -383,8 +383,6 @@ jobs:
           aarch64-linux-gnu-gcc -O2 -Wall -o "$D/usr/local/bin/droiddeck-glprobe" tools/venus/glprobe.c -ldl
           aarch64-linux-gnu-strip --strip-unneeded "$D/usr/local/bin/droiddeck-glprobe"
 
-      # Xclipse（Exynos/AMD）机型走 libhybris 加载系统 Vulkan 时要过一层补丁，
-      # SystemVulkanDriver 会把 VK_LAYER_PATH 指到 linuxfs/usr/local/lib/droiddeck-xclipse。
       # Venus：宿主的 Mesa Venus ICD + virgl 的 vtest 服务端，都是别人的构建产物，
       # 这里只按 pin 抓包校验 sha 再解开，不自己编。
       - name: Fetch the Mali (Venus) component
@@ -398,8 +396,10 @@ jobs:
           tar --use-compress-program=unzstd -xf venus.tzst -C app/src/main
           test -f app/src/main/jniLibs/arm64-v8a/libvirgl_test_server.so
           test -f app/src/main/assets/venus/libvulkan_virtio.so
+          rm -f venus.tzst
 
-      - name: Build the Xclipse Vulkan layer
+      # Xclipse（Exynos/AMD）机型走 libhybris 加载系统 Vulkan 时要过一层补丁，
+      # SystemVulkanDriver 会把 VK_LAYER_PATH 指到 linuxfs/usr/local/lib/droiddeck-xclipse。
       - name: Build the Xclipse Vulkan layer
         run: |
           set -euo pipefail
