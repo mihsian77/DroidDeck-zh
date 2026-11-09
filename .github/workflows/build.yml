@@ -398,6 +398,17 @@ jobs:
           test -f app/src/main/assets/venus/libvulkan_virtio.so
           rm -f venus.tzst
 
+      # Mali bridge：guest 侧客户端和 ICD 走配方编，宿主侧 libvkbridge_server.so
+      # 由 app/build.gradle 的 buildVkBridgeServer 任务用 NDK 编，前提是 submodule 在。
+      - name: Check out MaliBridge
+        run: git submodule update --init external/MaliBridge
+
+      - name: Build the Mali bridge's Linux side
+        run: |
+          set -euo pipefail
+          bash tools/ci/install-ubuntu-packages.sh gcc-aarch64-linux-gnu libc6-dev-arm64-cross libvulkan-dev
+          python3 tools/components/prepare.py vkbridge
+
       # Xclipse（Exynos/AMD）机型走 libhybris 加载系统 Vulkan 时要过一层补丁，
       # SystemVulkanDriver 会把 VK_LAYER_PATH 指到 linuxfs/usr/local/lib/droiddeck-xclipse。
       - name: Build the Xclipse Vulkan layer
