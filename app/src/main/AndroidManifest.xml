@@ -195,7 +195,6 @@
             </intent-filter>
         </activity>
 
-
         <activity
             android:name=".PinRequestActivity"
             android:exported="true"
@@ -208,13 +207,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".input.ControllerEditorActivity"
-            android:exported="false"
-            android:theme="@style/SessionTheme"
-            android:screenOrientation="sensorLandscape"
-            android:resizeableActivity="true"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|uiMode|density" />
 
         <activity
             android:name=".sync.SyncthingWebActivity"
@@ -360,6 +352,14 @@
                 <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
             </intent-filter>
         </provider>
+        <receiver
+            android:name=".agent.AgentCallReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="${applicationId}.AGENT_CALL" />
+            </intent-filter>
+        </receiver>
         <provider
             android:name=".agent.AgentBridgeProvider"
             android:authorities="${applicationId}.agent"

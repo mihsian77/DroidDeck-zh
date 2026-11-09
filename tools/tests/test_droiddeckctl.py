@@ -344,6 +344,11 @@ class DroiddeckctlTest(FakeAdbTest):
         self.assertEqual(248, summary["offCadence"])
         self.assertEqual(13.8, summary["offCadencePercent"])
 
+    def test_pacing_reads_a_dump_with_windows_line_ends(self):
+        summary = ctl.pacing_summary(TIMESTATS_SPLIT.replace("\n", "\r\n"), "com.droiddeck.launcher")
+        self.assertEqual(ctl.pacing_summary(TIMESTATS_SPLIT, "com.droiddeck.launcher"), summary)
+        self.assertEqual(1800, summary["frames"])
+
     def test_pacing_falls_back_to_the_sessions_surfaceview(self):
         summary = ctl.pacing_summary(TIMESTATS_SURFACEVIEW, "com.droiddeck.launcher")
         self.assertEqual(1, len(summary["layers"]))
@@ -392,6 +397,28 @@ class DroiddeckctlTest(FakeAdbTest):
             code, out = self.run_ctl("pacing", "--seconds", "1")
         self.assertEqual(4, code)
         self.assertEqual("NO_FRAMES", out["error"]["code"])
+
+    def test_provider_call_falls_back_to_a_broadcast_without_content(self):
+        calls = []
+        answers = iter([b"", b'{"ok": true, "command": "state"}'])
+
+        def adb(_adb, _serial, *args, timeout=30):
+            calls.append(args)
+            if args[:2] == ("shell", "content"):
+                return ctl.subprocess.CompletedProcess(args, 127, b"", b"/system/bin/sh: content: inaccessible or not found")
+            if args[:2] == ("shell", "am"):
+                return ctl.subprocess.CompletedProcess(args, 0, b"Broadcast completed: result=0", b"")
+            return ctl.subprocess.CompletedProcess(args, 0, next(answers), b"")
+
+        with unittest.mock.patch.object(ctl, "run_adb", adb), unittest.mock.patch.object(ctl.time, "sleep"):
+            answer = ctl.provider_call("adb", "fake-1", "state", arg="a b", request={"x": 1})
+        self.assertEqual({"ok": True, "command": "state"}, answer)
+        broadcast = calls[1]
+        self.assertEqual(("shell", "am", "broadcast", "-a", ctl.PACKAGE + ".AGENT_CALL", "-p", ctl.PACKAGE), broadcast[:7])
+        self.assertIn("'a b'", broadcast)
+        self.assertEqual(ctl.encode_request({"x": 1}), broadcast[broadcast.index("request") + 1])
+        call_id = broadcast[broadcast.index("id") + 1]
+        self.assertIn("agent-calls/%s.json" % call_id, calls[-1][1])
 
     def test_pacing_turns_timestats_off_when_the_dump_fails(self):
         calls = []
