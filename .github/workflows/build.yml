@@ -383,6 +383,20 @@ jobs:
           aarch64-linux-gnu-gcc -O2 -Wall -o "$D/usr/local/bin/droiddeck-glprobe" tools/venus/glprobe.c -ldl
           aarch64-linux-gnu-strip --strip-unneeded "$D/usr/local/bin/droiddeck-glprobe"
 
+      # Xclipse（Exynos/AMD）机型走 libhybris 加载系统 Vulkan 时要过一层补丁，
+      # SystemVulkanDriver 会把 VK_LAYER_PATH 指到 linuxfs/usr/local/lib/droiddeck-xclipse。
+      - name: Build the Xclipse Vulkan layer
+        run: |
+          set -euo pipefail
+          bash tools/ci/install-ubuntu-packages.sh gcc-aarch64-linux-gnu libc6-dev-arm64-cross libvulkan-dev
+          D=app/src/main/assets/linuxfs
+          mkdir -p "$D/usr/local/lib/droiddeck-xclipse"
+          aarch64-linux-gnu-gcc -shared -fPIC -O2 -Wall -Wextra -Wno-unused-parameter -fvisibility=hidden -pthread \
+            -o "$D/usr/local/lib/droiddeck-xclipse/libVkLayer_droiddeck_xclipse.so" \
+            tools/linuxfs/xclipse-layer/xclipse_layer.c -ldl
+          aarch64-linux-gnu-strip --strip-unneeded "$D/usr/local/lib/droiddeck-xclipse/libVkLayer_droiddeck_xclipse.so"
+          install -m644 tools/linuxfs/xclipse-layer/VkLayer_droiddeck_xclipse.json "$D/usr/local/lib/droiddeck-xclipse/"
+
       - name: Fetch the Debian image the preloads build in
         if: false  # skipped: Docker Hub rate limits, we don't need x86 preloads on ARM64
         env:
