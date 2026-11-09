@@ -376,7 +376,8 @@ jobs:
       - name: Build droiddeck-glprobe
         run: |
           set -euo pipefail
-          bash tools/ci/install-ubuntu-packages.sh gcc-aarch64-linux-gnu
+          # 交叉 gcc 不带 arm64 的 libc 头，缺了 libc6-dev-arm64-cross 会串到宿主的 /usr/include
+          bash tools/ci/install-ubuntu-packages.sh gcc-aarch64-linux-gnu libc6-dev-arm64-cross
           D=app/src/main/assets/linuxfs
           mkdir -p "$D/usr/local/bin"
           aarch64-linux-gnu-gcc -O2 -Wall -o "$D/usr/local/bin/droiddeck-glprobe" tools/venus/glprobe.c -ldl
