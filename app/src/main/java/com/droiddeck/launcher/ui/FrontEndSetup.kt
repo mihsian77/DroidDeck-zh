@@ -1,7 +1,6 @@
 package com.droiddeck.launcher.ui
 
 import androidx.compose.ui.platform.LocalContext
-import com.droiddeck.launcher.files.InAppFilePicker
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusRequester
 import android.os.Build
