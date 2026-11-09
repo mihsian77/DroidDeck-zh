@@ -3861,4 +3861,25 @@
     <string name="setup_speed_ms">%1$d ms</string>
     <string name="setup_speed_unavailable">Unavailable</string>
     <string name="setup_speed_current">Current: %1$s</string>
+    <string name="addons_category_all">All categories</string>
+    <string name="addons_download">Download addons…</string>
+    <string name="addons_no_file">No file for this game version</string>
+    <string name="addons_none_found">No addons found</string>
+    <string name="addons_sort_downloads">Most downloaded</string>
+    <string name="addons_sort_name">Name</string>
+    <string name="addons_source_curse">CurseForge</string>
+    <string name="addons_source_wowi">WoWInterface</string>
+    <string name="addons_unreachable">Could not reach %1$s</string>
+    <string name="comp_auto_install_failed">Couldn\'t install %1$s.</string>
+    <string name="ctrl_tint_gray">Gray</string>
+    <string name="drivers_mali_bridge_auto">No open driver covers this Mali yet: the Mali bridge is on.</string>
+    <string name="drivers_mali_bridge_fallback">%1$s isn\'t published yet: the Mali bridge is on until it is.</string>
+    <string name="gpu_auto_system_hint">Uses the built-in drivers for this GPU</string>
+    <string name="input_layout_import_failed">Could not import this layout</string>
+    <string name="input_reset_positions">Reset positions</string>
+    <string name="input_show_label">Show label</string>
+    <string name="setup_android_text_field_keyboard">Android keyboard for text fields</string>
+    <string name="setup_low_storage_warning">Warn when storage is low</string>
+    <string name="setup_low_storage_warning_hint">Ask before starting Steam when free space is under 10 GB.</string>
+    <string name="storage_low_never">Don\'t warn me about this again</string>
 </resources>

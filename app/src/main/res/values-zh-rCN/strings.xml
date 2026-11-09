@@ -3670,4 +3670,25 @@
     <string name="setup_speed_ms">%1$d ms</string>
     <string name="setup_speed_unavailable">不可用</string>
     <string name="setup_speed_current">当前：%1$s</string>
+    <string name="addons_category_all">全部类别</string>
+    <string name="addons_download">下载插件…</string>
+    <string name="addons_no_file">此游戏版本没有对应的文件</string>
+    <string name="addons_none_found">没有找到插件</string>
+    <string name="addons_sort_downloads">按下载量</string>
+    <string name="addons_sort_name">按名称</string>
+    <string name="addons_source_curse">CurseForge</string>
+    <string name="addons_source_wowi">WoWInterface</string>
+    <string name="addons_unreachable">无法连接 %1$s</string>
+    <string name="comp_auto_install_failed">无法安装 %1$s。</string>
+    <string name="ctrl_tint_gray">灰色</string>
+    <string name="drivers_mali_bridge_auto">没有开源驱动能覆盖这颗 Mali，已启用 Mali bridge。</string>
+    <string name="drivers_mali_bridge_fallback">%1$s 尚未发布，发布前先用 Mali bridge。</string>
+    <string name="gpu_auto_system_hint">使用这颗 GPU 的内置驱动</string>
+    <string name="input_layout_import_failed">无法导入此布局</string>
+    <string name="input_reset_positions">重置位置</string>
+    <string name="input_show_label">显示标签</string>
+    <string name="setup_android_text_field_keyboard">文本框使用的 Android 键盘</string>
+    <string name="setup_low_storage_warning">存储空间不足时提醒</string>
+    <string name="setup_low_storage_warning_hint">可用空间低于 10 GB 时，启动 Steam 前先询问。</string>
+    <string name="storage_low_never">不再提醒</string>
 </resources>
