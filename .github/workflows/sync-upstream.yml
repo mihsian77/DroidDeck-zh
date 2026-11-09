@@ -112,7 +112,16 @@ jobs:
               echo "KEEP (fork-owned): .github/workflows/$f" >> "$GITHUB_STEP_SUMMARY"
             fi
           done
-          git add .github/workflows
+          # 上游新增的 workflow 文件不带过来：GitHub App token 没有 workflows 权限，
+          # 带进 main 会被 "refusing to allow a GitHub App to create or update workflow" 拒掉。
+          for f in $(git ls-tree --name-only HEAD .github/workflows/ | grep -v '^$'); do
+            if ! git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
+              git rm -q --cached ".github/workflows/$f"
+              rm -f ".github/workflows/$f"
+              echo "DROP (upstream-only workflow): $f" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          git add -A .github/workflows
           git commit --no-edit -m "sync: keep fork-owned workflows" || true
 
       - name: Merge directly to main (no PR needed)
@@ -130,7 +139,16 @@ jobs:
               git checkout "$MERGE_BASE" -- ".github/workflows/$f"
             fi
           done
-          git add .github/workflows
+          # 上游新增的 workflow 文件不带过来：GitHub App token 没有 workflows 权限，
+          # 带进 main 会被 "refusing to allow a GitHub App to create or update workflow" 拒掉。
+          for f in $(git ls-tree --name-only HEAD .github/workflows/ | grep -v '^$'); do
+            if ! git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
+              git rm -q --cached ".github/workflows/$f"
+              rm -f ".github/workflows/$f"
+              echo "DROP (upstream-only workflow): $f" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          git add -A .github/workflows
           git commit --no-edit -m "sync: keep fork-owned workflows" || true
           # Push directly to main
           git push origin main
