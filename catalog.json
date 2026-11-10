@@ -5,19 +5,19 @@
   "stable": {
     "tag": "0.7.0-zh1",
     "title": "0.7.0-zh1 (stable)",
-    "summary": "## 0.7.0-zh1 (stable)\n\nchore: 更新应用内更新用的 catalog\n\n基于上游 DroidDeck 源码编译的中文优化版，已确认稳定可用。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n- 此为稳定版，安装前建议先备份旧版本",
-    "commit": "1af27bb27433752a35de578c54a5e3bbebed07e3",
+    "summary": "## 0.7.0-zh1 (stable)\n\nsync: auto-merged upstream with conflict resolution\n\n基于上游 DroidDeck 源码编译的中文优化版，已确认稳定可用。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n-…",
+    "commit": "fb355c6acf3e043231d6630ef1a5eabfd1ec95c1",
     "pr": 0,
     "version": "0.7.0-zh1",
     "versionCode": 19,
-    "publishedAt": 1794243482000,
+    "publishedAt": 1794303311000,
     "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.0-zh1",
     "apks": {
       "com.droiddeck.launcher": {
         "name": "DroidDeck-0.7.0-zh1.apk",
         "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.0-zh1/DroidDeck-0.7.0-zh1.apk",
-        "size": 128953492,
-        "sha256": "60f0ec88655e55b047d617fbcecdc0dbb73904c0e721d6070396d977fc8c5908",
+        "size": 128965780,
+        "sha256": "6200300e24c177a2cf4a16cbb84cacb59c25051270f9ba684cc0c139340f17a2",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 19,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
