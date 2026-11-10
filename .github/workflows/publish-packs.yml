@@ -26,6 +26,12 @@ jobs:
       group: publish-packs
       cancel-in-progress: false
     steps:
+      - name: Check out the repo (only to keep the proot pin current)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: src
+
       - name: The packs (this run's build)
         if: inputs.run_id == ''
         uses: actions/download-artifact@v4
@@ -73,3 +79,28 @@ jobs:
             fi
             echo "- \`$name\`: [$tag]($GITHUB_SERVER_URL/$REPO/releases/tag/$tag) \`$sha\`" >> "$GITHUB_STEP_SUMMARY"
           done
+
+      # 上游改 proot 构建时产物 sha 会变，App 里钉的 pin 跟不上就一直发新包并在构建里告警。
+      # 这里直接把实测 sha 写回 release.env，省得每次人工去追。
+      - name: Keep the proot pin current
+        working-directory: src
+        run: |
+          set -euo pipefail
+          sha=$(sha256sum ../packs/proot.tar.zst | cut -d' ' -f1)
+          size=$(stat -c %s ../packs/proot.tar.zst)
+          env_file=tools/packs/proot/release.env
+          current=$(sed -n 's/^PROOT_PACK_SHA256=//p' "$env_file")
+          if [ "$current" = "$sha" ]; then
+            echo "pin already matches ${sha:0:16}"
+            exit 0
+          fi
+          sed -i "s|^PROOT_PACK_SHA256=.*|PROOT_PACK_SHA256=$sha|" "$env_file"
+          sed -i "s|^PROOT_PACK_SIZE=.*|PROOT_PACK_SIZE=$size|" "$env_file"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$env_file"
+          git commit -q -m "chore: 跟上上游 proot 构建（${sha:0:16}，$size 字节）"
+          for i in 1 2 3; do
+            git pull --rebase --autostash -q && git push -q && break || sleep 5
+          done
+          echo "pin was ${current:0:16}, now ${sha:0:16}"

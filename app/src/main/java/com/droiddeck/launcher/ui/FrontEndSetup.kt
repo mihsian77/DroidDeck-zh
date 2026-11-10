@@ -694,7 +694,7 @@ internal fun SetupPanel(
                                     "退出",
                                     onClick = {
                                         java.io.File(ctx.filesDir, ".droiddeck-steam-logout").createNewFile()
-                                        android.widget.Toast.makeText(ctx, "已标记退出，下次启动 Steam 生效", android.widget.Toast.LENGTH_LONG).show()
+                                        android.widget.Toast.makeText(ctx, ctx.getString(R.string.steam_logout_marked), android.widget.Toast.LENGTH_LONG).show()
                                     }
                                 )
                             }

@@ -3781,4 +3781,14 @@
     <string name="display_position_right">右侧</string>
     <string name="theme_white_red">赤雪</string>
     <string name="theme_white_red_detail">白色界面配红色点缀。</string>
+    <string name="runtime_import_success">导入完成</string>
+    <string name="runtime_import_failed">导入失败：%1$s</string>
+    <string name="runtime_install_not_folder">不是文件夹</string>
+    <string name="runtime_install_progress">正在安装 %1$s</string>
+    <string name="runtime_install_summary">一键安装完成：成功 %1$d 个，跳过 %2$d 个</string>
+    <string name="runtime_install_failed">安装失败：%1$s</string>
+    <string name="runtime_install_busy">正在安装中，请稍候</string>
+    <string name="runtime_update_check_failed">获取最新版本失败，请检查网络</string>
+    <string name="runtime_download_failed">下载失败：%1$s</string>
+    <string name="steam_logout_marked">已标记退出，下次启动 Steam 生效</string>
 </resources>

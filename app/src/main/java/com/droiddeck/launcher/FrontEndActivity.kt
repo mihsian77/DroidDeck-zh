@@ -307,11 +307,11 @@ class FrontEndActivity : ComponentActivity() {
                         val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
                         com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, file, root, null)
                         runOnUiThread {
-                            android.widget.Toast.makeText(this, "导入完成", android.widget.Toast.LENGTH_LONG).show()
+                            android.widget.Toast.makeText(this, R.string.runtime_import_success, android.widget.Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
                         runOnUiThread {
-                            android.widget.Toast.makeText(this, "导入失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            android.widget.Toast.makeText(this, getString(R.string.runtime_import_failed, e.message), android.widget.Toast.LENGTH_LONG).show()
                         }
                     }
                 }.start()
@@ -328,7 +328,7 @@ class FrontEndActivity : ComponentActivity() {
                     try {
                         val dir = java.io.File(dirPath)
                         if (!dir.isDirectory) {
-                            runOnUiThread { android.widget.Toast.makeText(this, "不是文件夹", android.widget.Toast.LENGTH_LONG).show() }
+                            runOnUiThread { android.widget.Toast.makeText(this, R.string.runtime_install_not_folder, android.widget.Toast.LENGTH_LONG).show() }
                             return@Thread
                         }
                         var installed = 0
@@ -339,7 +339,7 @@ class FrontEndActivity : ComponentActivity() {
                             try {
                                 when {
                                     name.contains("linuxfs") && (name.endsWith(".tar.zst") || name.endsWith(".tar.gz")) -> {
-                                        runOnUiThread { android.widget.Toast.makeText(this, "正在安装 ${f.name}", android.widget.Toast.LENGTH_SHORT).show() }
+                                        runOnUiThread { android.widget.Toast.makeText(this, getString(R.string.runtime_install_progress, f.name), android.widget.Toast.LENGTH_SHORT).show() }
                                         com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, f, root, null)
                                         installed++
                                     }
@@ -351,11 +351,11 @@ class FrontEndActivity : ComponentActivity() {
                             }
                         }
                         runOnUiThread {
-                            android.widget.Toast.makeText(this, "一键安装完成: 成功 $installed 个, 跳过 $skipped 个", android.widget.Toast.LENGTH_LONG).show()
+                            android.widget.Toast.makeText(this, getString(R.string.runtime_install_summary, installed, skipped), android.widget.Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
                         runOnUiThread {
-                            android.widget.Toast.makeText(this, "安装失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            android.widget.Toast.makeText(this, getString(R.string.runtime_install_failed, e.message), android.widget.Toast.LENGTH_LONG).show()
                         }
                     } finally {
                         busy = false
@@ -368,7 +368,7 @@ class FrontEndActivity : ComponentActivity() {
 
     fun quickInstallRuntime() {
         if (busy || LinuxRuntimeInstaller.isBusy()) {
-            android.widget.Toast.makeText(this, "正在安装中，请稍候", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(this, R.string.runtime_install_busy, android.widget.Toast.LENGTH_SHORT).show()
             return
         }
         Thread {
@@ -378,12 +378,12 @@ class FrontEndActivity : ComponentActivity() {
                     if (release != null) {
                         install(release)
                     } else {
-                        android.widget.Toast.makeText(this, "获取最新版本失败，请检查网络", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(this, R.string.runtime_update_check_failed, android.widget.Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    android.widget.Toast.makeText(this, "下载失败: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(this, getString(R.string.runtime_download_failed, e.message), android.widget.Toast.LENGTH_LONG).show()
                 }
             }
         }.start()
