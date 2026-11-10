@@ -3777,4 +3777,8 @@
     <string name="wincomp_repair_queued">已排队更新。</string>
     <string name="wincomp_repair_required">此下载需要更新。</string>
     <string name="wincomp_retry">重试更新</string>
+    <string name="display_position_left">左侧</string>
+    <string name="display_position_right">右侧</string>
+    <string name="theme_white_red">赤雪</string>
+    <string name="theme_white_red_detail">白色界面配红色点缀。</string>
 </resources>

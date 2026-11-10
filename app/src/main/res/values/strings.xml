@@ -3882,4 +3882,8 @@
     <string name="setup_low_storage_warning">Warn when storage is low</string>
     <string name="setup_low_storage_warning_hint">Ask before starting Steam when free space is under 10 GB.</string>
     <string name="storage_low_never">Don\'t warn me about this again</string>
+    <string name="display_position_left">Left</string>
+    <string name="display_position_right">Right</string>
+    <string name="theme_white_red">Scarlet Snow</string>
+    <string name="theme_white_red_detail">White surfaces with red accents.</string>
 </resources>
