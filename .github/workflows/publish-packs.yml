@@ -1,10 +1,5 @@
 name: Publish add-on packs
 
-# 把构建产出的附加包（tools/packs/build.sh 打的那几个）发到本仓库的 release，
-# tag 按内容寻址：pack-<name>-<sha256 前 16 位>。APK 里钉的就是这个 sha，按 tag 下载。
-# 同一个 tag 只发一次，之后不再覆盖。上游那套要求往 Droid-Deck/DroidDeck-Components
-# 发包，需要对方的 GitHub App token，这里改成发到我们自己的仓库，App 端优先从我们这取。
-
 on:
   workflow_call:
     inputs:
@@ -14,7 +9,7 @@ on:
         default: ''
 
 permissions:
-  contents: write
+  contents: read
   actions: read
 
 jobs:
@@ -26,12 +21,6 @@ jobs:
       group: publish-packs
       cancel-in-progress: false
     steps:
-      - name: Check out the repo (only to keep the proot pin current)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          path: src
-
       - name: The packs (this run's build)
         if: inputs.run_id == ''
         uses: actions/download-artifact@v4
@@ -46,10 +35,18 @@ jobs:
           RUN: ${{ inputs.run_id }}
         run: gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n droiddeck-packs -D packs
 
+      - uses: actions/create-github-app-token@v2
+        id: components-token
+        with:
+          app-id: ${{ vars.DROIDDECK_CI_APP_ID }}
+          private-key: ${{ secrets.DROIDDECK_CI_APP_KEY }}
+          owner: Droid-Deck
+          repositories: DroidDeck-Components
+
       - name: Publish
         env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ steps.components-token.outputs.token }}
+          REPO: Droid-Deck/DroidDeck-Components
           BUILD_RUN: ${{ inputs.run_id || github.run_id }}
         run: |
           set -euo pipefail
@@ -58,15 +55,14 @@ jobs:
               jq -r --arg n "$2" '.assets // [] | .[] | select(.name == $n) | .digest // empty'
           }
           commit=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN" --jq .head_sha 2>/dev/null || echo "$GITHUB_SHA")
-          # tools/packs/build.sh 打七个包，全都发，省得 App 端还去上游找 powervr/butler。
-          for name in proot directaudio tracking xbox comet powervr butler; do
+          for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
             file="packs/$name.tar.zst"
             [ -f "$file" ] || { echo "::error::$name.tar.zst is missing from Build APK run $BUILD_RUN"; exit 1; }
             sha=$(sha256sum "$file" | cut -d' ' -f1)
             tag="pack-$name-${sha:0:16}"
             digest=$(published_digest "$tag" "$name.tar.zst")
             if [ -z "$digest" ]; then
-              notes="DroidDeck-zh add-on pack \`$name\`, built by [run $BUILD_RUN]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN) from \`$commit\` with tools/packs/build.sh. 内容寻址 tag，同一个 sha 只发一次。
+              notes="DroidDeck add-on pack \`$name\`, built by [Build APK run $BUILD_RUN]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN) from \`$commit\` with tools/packs/build.sh and published by [run $GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID).
 
           Size: $(stat -c %s "$file") bytes. SHA-256: $sha. APKs built in the same run pin this digest."
               gh release create "$tag" -R "$REPO" --title "$tag" --notes "$notes" --latest=false "$file" \
@@ -79,28 +75,3 @@ jobs:
             fi
             echo "- \`$name\`: [$tag]($GITHUB_SERVER_URL/$REPO/releases/tag/$tag) \`$sha\`" >> "$GITHUB_STEP_SUMMARY"
           done
-
-      # 上游改 proot 构建时产物 sha 会变，App 里钉的 pin 跟不上就一直发新包并在构建里告警。
-      # 这里直接把实测 sha 写回 release.env，省得每次人工去追。
-      - name: Keep the proot pin current
-        working-directory: src
-        run: |
-          set -euo pipefail
-          sha=$(sha256sum ../packs/proot.tar.zst | cut -d' ' -f1)
-          size=$(stat -c %s ../packs/proot.tar.zst)
-          env_file=tools/packs/proot/release.env
-          current=$(sed -n 's/^PROOT_PACK_SHA256=//p' "$env_file")
-          if [ "$current" = "$sha" ]; then
-            echo "pin already matches ${sha:0:16}"
-            exit 0
-          fi
-          sed -i "s|^PROOT_PACK_SHA256=.*|PROOT_PACK_SHA256=$sha|" "$env_file"
-          sed -i "s|^PROOT_PACK_SIZE=.*|PROOT_PACK_SIZE=$size|" "$env_file"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$env_file"
-          git commit -q -m "chore: 跟上上游 proot 构建（${sha:0:16}，$size 字节）"
-          for i in 1 2 3; do
-            git pull --rebase --autostash -q && git push -q && break || sleep 5
-          done
-          echo "pin was ${current:0:16}, now ${sha:0:16}"
