@@ -25,29 +25,51 @@
     }
   },
   "preview": {
-    "tag": "test-69e3eb4",
-    "title": "测试包 69e3eb4",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：chore: proot pin 由 packs job 自动写回，导入/安装提示改走资源\n\n版本：0.7.0-zh1（69e3eb4）\n文件名带 -test.69e3eb4，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "69e3eb4918f459bf31ae5a97a9dd384acfae0372",
+    "tag": "test-2546edf",
+    "title": "测试包 2546edf",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：feat: 接上上游第八个 add-on pack（ubisoft）\n\n版本：0.7.1-zh1（2546edf）\n文件名带 -test.2546edf，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "2546edf5f0814c9bac9fbd41abac5e7819d58770",
     "pr": 0,
-    "version": "0.7.0-zh1",
-    "versionCode": 20,
-    "publishedAt": 1794310962000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-69e3eb4",
+    "version": "0.7.1-zh1",
+    "versionCode": 21,
+    "publishedAt": 1794368582000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-2546edf",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.0-zh1-test.69e3eb4.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-69e3eb4/DroidDeck-0.7.0-zh1-test.69e3eb4.apk",
-        "size": 128945300,
-        "sha256": "a6e0830c94dcd5472d71dcf11c14f62cab6dfe1bcc6ade4f20c4cf0e5de8ac86",
+        "name": "DroidDeck-0.7.1-zh1-test.2546edf.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-2546edf/DroidDeck-0.7.1-zh1-test.2546edf.apk",
+        "size": 129314647,
+        "sha256": "3f864b8d5a7bd35aa4cdb41fcc0e76fbc827a18e4436485e7afaac0035fe9ff1",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 20,
+        "versionCode": 21,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-2546edf",
+      "title": "测试包 2546edf",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：feat: 接上上游第八个 add-on pack（ubisoft）\n\n版本：0.7.1-zh1（2546edf）\n文件名带 -test.2546edf，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "2546edf5f0814c9bac9fbd41abac5e7819d58770",
+      "pr": 0,
+      "version": "0.7.1-zh1",
+      "versionCode": 21,
+      "publishedAt": 1794368582000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-2546edf",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.7.1-zh1-test.2546edf.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-2546edf/DroidDeck-0.7.1-zh1-test.2546edf.apk",
+          "size": 129314647,
+          "sha256": "3f864b8d5a7bd35aa4cdb41fcc0e76fbc827a18e4436485e7afaac0035fe9ff1",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 21,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-69e3eb4",
       "title": "测试包 69e3eb4",
@@ -240,28 +262,6 @@
           "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-85ddcf8/DroidDeck-0.6.9-zh1-test.85ddcf8.apk",
           "size": 124073478,
           "sha256": "8edaeb61207b22e4a5d120fa7b7a79200c5245f109e4d8279a060691126aad67",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 18,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-52a3f1e",
-      "title": "测试包 52a3f1e",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：fix(packs): proot pin 跟到当前构建，并补上 pin 偏差告警\n\n版本：0.6.9-zh1（52a3f1e）\n文件名带 -test.52a3f1e，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "52a3f1eda8358349a304f3c7de367ef71fd09667",
-      "pr": 0,
-      "version": "0.6.9-zh1",
-      "versionCode": 18,
-      "publishedAt": 1794160330000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-52a3f1e",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.6.9-zh1-test.52a3f1e.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-52a3f1e/DroidDeck-0.6.9-zh1-test.52a3f1e.apk",
-          "size": 124069190,
-          "sha256": "114f4e0c7bba0dfae50d4b47b4374020c6e57da1a2889866af57e0c7a62760c6",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 18,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
