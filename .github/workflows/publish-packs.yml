@@ -80,6 +80,29 @@ jobs:
             echo "- \`$name\`: [$tag]($GITHUB_SERVER_URL/$REPO/releases/tag/$tag) \`$sha\`" >> "$GITHUB_STEP_SUMMARY"
           done
 
+      # ubisoft 的 droiddeck-upc.exe 每次构建都重新交叉编译，二进制里带时间戳，tar 的 sha
+      # 每次都不一样。按内容寻址发 release，就会每构建多一个包，永久堆积。这里同名前缀
+      # 只留最近几个，超出的 release 连 tag 一起删。包是 build 期打进 APK 的，运行时不按
+      # tag 下载，删旧的不影响已装用户；留 3 个够拿旧 commit 重新构建。
+      - name: Prune superseded packs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: 3
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > /tmp/releases.json
+          for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
+            mapfile -t stale < <(jq -r --arg p "pack-$name-" --argjson k "$KEEP" \
+              '[.[] | select(.tag_name | startswith($p))] | sort_by(.created_at) | reverse | .[$k:] | .[].tag_name' \
+              /tmp/releases.json)
+            for tag in "${stale[@]}"; do
+              [ -n "$tag" ] || continue
+              echo "prune $tag"
+              gh release delete "$tag" -R "$GITHUB_REPOSITORY" --yes --cleanup-tag || \
+                echo "::warning::could not delete $tag"
+            done
+          done
+
       # 上游改 proot 构建时产物 sha 会变，App 里钉的 pin 跟不上就一直发新包并在构建里告警。
       # 这里直接把实测 sha 写回 release.env，省得每次人工去追。
       - name: Keep the proot pin current
