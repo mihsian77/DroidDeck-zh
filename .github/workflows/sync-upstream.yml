@@ -103,14 +103,14 @@ jobs:
             git -c core.editor=true commit --no-edit -m "sync: auto-merged upstream with conflict resolution" || \
               git commit --allow-empty -m "sync: auto-merged upstream"
           fi
-          # 只保留我们自己维护的 workflow，其余跟随上游。
-          # build.yml 是我们自己维护的（预发布 job、跳过的上游 CI job 都在里面），
-          # 上游加新构建步骤时靠 fork-drift.yml 每周提醒，不靠整目录覆盖。
-          for f in build.yml sync-upstream.yml sync-data-packages.yml update-catalog.yml; do
-            if git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
-              git checkout "$MERGE_BASE" -- ".github/workflows/$f"
-              echo "KEEP (fork-owned): .github/workflows/$f" >> "$GITHUB_STEP_SUMMARY"
-            fi
+          # workflow 一律保留我们的版本。App token 没有 workflows 权限，提交里只要带
+          # 一处 workflow 变更，push 就会被 "refusing to allow a GitHub App to create
+          # or update workflow" 拒掉——上游改 build.yml、publish-packs.yml 都会触发，
+          # 所以不按名单挑，凡 base 里存在的 workflow 全部恢复成我们的。
+          # 上游的 workflow 改动靠 fork-drift.yml 每周提醒，人工决定要不要移植。
+          for f in $(git ls-tree --name-only "$MERGE_BASE" .github/workflows/ | sed 's|^\.github/workflows/||'); do
+            git checkout "$MERGE_BASE" -- ".github/workflows/$f"
+            echo "KEEP (fork-owned): .github/workflows/$f" >> "$GITHUB_STEP_SUMMARY"
           done
           # 上游新增的 workflow 文件不带过来：GitHub App token 没有 workflows 权限，
           # 带进 main 会被 "refusing to allow a GitHub App to create or update workflow" 拒掉。
@@ -133,11 +133,9 @@ jobs:
           # Switch to main and merge the sync branch.
           git checkout main
           git merge "$BRANCH" --no-edit
-          # 同样只恢复我们自己维护的那几个 workflow
-          for f in build.yml sync-upstream.yml sync-data-packages.yml update-catalog.yml; do
-            if git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
-              git checkout "$MERGE_BASE" -- ".github/workflows/$f"
-            fi
+          # 同上面一样：base 里存在的 workflow 全部恢复成我们的版本
+          for f in $(git ls-tree --name-only "$MERGE_BASE" .github/workflows/ | sed 's|^\.github/workflows/||'); do
+            git checkout "$MERGE_BASE" -- ".github/workflows/$f"
           done
           # 上游新增的 workflow 文件不带过来：GitHub App token 没有 workflows 权限，
           # 带进 main 会被 "refusing to allow a GitHub App to create or update workflow" 拒掉。
