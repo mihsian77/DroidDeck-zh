@@ -18,6 +18,21 @@ jobs:
   sync:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # 白名单文件清单。改下面 case 那段时这里也要跟着改——这里只用来做丢弃检查。
+    env:
+      WHITELIST_FILES: |
+        app/build.gradle
+        app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt
+        app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt
+        app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java
+        app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt
+        app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt
+        app/src/main/java/com/droiddeck/launcher/ui/UpdatesPage.kt
+        tools/linuxfs/overlay/usr/local/bin/droiddeck-session
+        tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf
+        tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc
+        proton-seed.json
+        app/src/main/res/values/strings.xml
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,6 +67,27 @@ jobs:
             echo "branch=auto-sync/upstream-${DATE}-${UPSTREAM_SHA}" >> "$GITHUB_OUTPUT"
             git log --oneline "${BASE}..upstream/main" > /tmp/upstream-commits.txt
             echo "commit_count=$BEHIND" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 白名单是整文件保留 ours。上游这批提交里如果动了名单里的文件，冲突解决会把这些
+      # 改动整段丢掉，而且合并成功、不报错。这里先把「会被丢掉什么」算出来，合并后打印。
+      - name: Check whitelist drift
+        if: steps.check.outputs.has_updates == 'true'
+        run: |
+          set -euo pipefail
+          BASE=$(git merge-base HEAD upstream/main)
+          : > /tmp/whitelist-drift.txt
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            stat=$(git diff --numstat "$BASE" upstream/main -- "$f" || true)
+            [ -n "$stat" ] || continue
+            echo "$f|$(echo "$stat" | awk '{a+=$1; d+=$2} END {printf \"+%d -%d\", a, d}')" >> /tmp/whitelist-drift.txt
+          done <<< "$WHITELIST_FILES"
+          if [ -s /tmp/whitelist-drift.txt ]; then
+            echo "上游这批提交动了白名单里的文件："
+            cat /tmp/whitelist-drift.txt
+          else
+            echo "上游这批提交没碰白名单文件"
           fi
 
       - name: Create sync branch and merge
@@ -123,6 +159,30 @@ jobs:
           done
           git add -A .github/workflows
           git commit --no-edit -m "sync: keep fork-owned workflows" || true
+
+      - name: Report whitelist drift
+        if: steps.check.outputs.has_updates == 'true'
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/whitelist-drift.txt ]; then
+            echo "白名单文件没有漂移，上游这批改动全部合了进来"
+            exit 0
+          fi
+          {
+            echo "### 白名单漂移：以下文件的上游改动已被 ours 覆盖"
+            echo ""
+            echo "| 文件 | 上游这批提交改了多少行 |"
+            echo "|---|---|"
+            while IFS='|' read -r f stat; do
+              echo "| \`$f\` | $stat |"
+            done < /tmp/whitelist-drift.txt
+            echo ""
+            echo "冲突解决取 ours 时上面这些行会被整段丢掉。构建前跑一遍本地 diff 检查，"
+            echo "确认丢的不是关键修复；必要时手工把上游改动补进来。"
+          } >> "$GITHUB_STEP_SUMMARY"
+          while IFS='|' read -r f stat; do
+            echo "::warning::$f 的上游改动（$stat）被白名单覆盖，需人工确认"
+          done < /tmp/whitelist-drift.txt
 
       - name: Merge directly to main (no PR needed)
         if: steps.check.outputs.has_updates == 'true'
