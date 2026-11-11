@@ -27,6 +27,23 @@ DroidDeck brings the SteamOS experience to Android: Steam Gaming Mode, full Linu
 
 > DroidDeck has no website. Only download it from this repository's [Releases](https://github.com/Droid-Deck/DroidDeck/releases).
 
+## 中文优化版（本仓库）
+
+本仓库是 [Droid-Deck/DroidDeck](https://github.com/Droid-Deck/DroidDeck) 的中文优化 fork，跟上游滚动同步，上游功能原样保留。额外做了这些：
+
+| 改动 | 说明 |
+|---|---|
+| 中文精翻 | 界面、设置项、错误提示全量中文化，术语按 Wine/Proton 习惯统一 |
+| 中文字体 | 运行环境里装文泉驿微米黑并加 fontconfig 兜底，Steam 中文不乱码 |
+| 自维护分发 | APK、add-on pack、更新目录都发在本仓库，不依赖上游 CI；应用内更新读自己的 `catalog.json` |
+| 下载加速 | MirrorHub 按实测延迟选节点；数据包支持本地导入，离线也能装 |
+| GPU 兼容层 | MaliBridge、Venus、Xclipse 三条链路已编入并随包分发 |
+| Steam 区域预设 | 首次启动把下载区域设为 China - Shanghai，只写一次，不动已有配置 |
+
+签名用的是本仓库自己的 release key，和上游 testkey 签的包不能互相覆盖安装，换过来之前先卸载。
+
+**验证状态**：构建与 CI 全流程通过。GPU 兼容层与 add-on pack 只验证到「文件在包里 + sha 匹配 + ELF 架构正确 + ICD json 指向有效」这一层；Vulkan 设备枚举、与 Turnip 共存、实际帧率、Ubisoft launcher 能不能起来，都没有逐机型真机验证。遇到问题请附日志开 issue。
+
 <p align="center">
   <img src="docs/releases/media/0.6.7/library.gif" width="49%" alt="The Library switching source chips, changing the card size and opening the Filter menu">
   <img src="docs/releases/media/0.3.0/in-game.gif" width="49%" alt="A Windows game running through Proton with the on-screen controls">

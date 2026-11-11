@@ -72,7 +72,7 @@ jobs:
 
           ${subject}
 
-          基于上游 DroidDeck 源码编译的中文优化版，已确认稳定可用。
+          基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。
 
           ### 独家功能
           - 全量中文精翻（Linux/Wine/Steam 术语）
@@ -84,6 +84,7 @@ jobs:
 
           ### 注意
           - 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象
+          - GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节
           - 此为稳定版，安装前建议先备份旧版本
 
           SHA-256:
