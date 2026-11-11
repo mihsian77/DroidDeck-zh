@@ -1,0 +1,28 @@
+#!/bin/bash
+# 首次运行时给 Steam 预设下载区域（China - Shanghai）。
+# 已有 config.vdf 一律不碰，避免覆盖用户自己的设置。
+# 单独成文件是为了不跟上游 droiddeck-session 绑在一起：上游那个脚本每天都在改，
+# 挂在同步白名单里会把上游的 Steam 修复全挡在外面。
+set -u
+steam_root="${1:-}"
+[ -n "$steam_root" ] || exit 0
+steam_config="$steam_root/config/config.vdf"
+[ -f "$steam_config" ] && exit 0
+mkdir -p "$steam_root/config" 2>/dev/null || exit 0
+cat > "$steam_config" << 'STEAMCFG'
+"InstallConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"DownloadRegion"		"China - Shanghai"
+				"AutoUpdateWindowEnabled"		"0"
+			}
+		}
+	}
+}
+STEAMCFG
+echo "== steam: China - Shanghai download region preset (first run)"

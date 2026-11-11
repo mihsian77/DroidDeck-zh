@@ -707,29 +707,8 @@ case $mode in
         steam_client=(env STEAM_RUNTIME_STEAMRT="$_bl_srt_shim" PATH="$_bl_srt_shim/bin:$PATH" "${steam_client[@]}")
       fi
     fi
-    # First run only: preset China - Shanghai download region.
-    # Never rewrite an existing config.vdf.
-    steam_config="$steam_root/config/config.vdf"
-    if [ ! -f "$steam_config" ]; then
-      mkdir -p "$steam_root/config"
-      cat > "$steam_config" << 'STEAMCFG'
-"InstallConfigStore"
-{
-	"Software"
-	{
-		"Valve"
-		{
-			"Steam"
-			{
-				"DownloadRegion"		"China - Shanghai"
-				"AutoUpdateWindowEnabled"		"0"
-			}
-		}
-	}
-}
-STEAMCFG
-      echo "== steam: China - Shanghai download region preset (first run)"
-    fi
+    # droiddeck-zh: 预设 Steam 下载区域，独立脚本 droiddeck-zh-steam-preset
+    command -v droiddeck-zh-steam-preset >/dev/null 2>&1 && droiddeck-zh-steam-preset "$steam_root" || true
     _bl_proton_root=$steam_root
     if [ "$steam_x64" = 1 ]; then
       _bl_proton_root=$XDG_DATA_HOME/Steam

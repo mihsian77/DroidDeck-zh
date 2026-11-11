@@ -28,7 +28,6 @@ jobs:
         app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt
         app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt
         app/src/main/java/com/droiddeck/launcher/ui/UpdatesPage.kt
-        tools/linuxfs/overlay/usr/local/bin/droiddeck-session
         tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf
         tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc
         proton-seed.json
@@ -118,7 +117,6 @@ jobs:
                 app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt|\
                 app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt|\
                 app/src/main/java/com/droiddeck/launcher/ui/UpdatesPage.kt|\
-                tools/linuxfs/overlay/usr/local/bin/droiddeck-session|\
                 tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf|\
                 tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc|\
                 proton-seed.json)
@@ -183,6 +181,20 @@ jobs:
           while IFS='|' read -r f stat; do
             echo "::warning::$f 的上游改动（$stat）被白名单覆盖，需人工确认"
           done < /tmp/whitelist-drift.txt
+
+      # droiddeck-session 已摘出白名单，改由 git 正常合并；我们在里面只留两行调用。
+      # 上游动了那段附近代码时可能把这两行冲掉，这里检查一下，冲掉了就报警。
+      - name: Check zh patches survived
+        if: steps.check.outputs.has_updates == 'true'
+        run: |
+          set -euo pipefail
+          f=tools/linuxfs/overlay/usr/local/bin/droiddeck-session
+          if grep -q "droiddeck-zh-steam-preset" "$f"; then
+            echo "droiddeck-session 里的中文预设调用还在"
+          else
+            echo "::warning::$f 里 droiddeck-zh-steam-preset 调用被上游改动冲掉了，需要手工补回"
+            echo "| $f | 中文预设调用丢失，需补回 |" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Merge directly to main (no PR needed)
         if: steps.check.outputs.has_updates == 'true'
