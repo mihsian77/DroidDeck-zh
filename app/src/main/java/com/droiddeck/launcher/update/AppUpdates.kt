@@ -24,7 +24,7 @@ object AppUpdates {
     private const val KEY_CHANNEL = "channel"
     private const val CATALOG_SCHEMA = 1
 
-    enum class Channel { STABLE, NIGHTLY, TEST }
+    enum class Channel { STABLE, NIGHTLY }
 
     data class Follow(val channel: Channel, val pr: Int = 0)
 
@@ -61,7 +61,6 @@ object AppUpdates {
     class Catalog(
         val stable: Release?,
         val preview: Release?,
-        val tests: List<Release>,
         val checkedAt: Long,
         val recentPreviews: List<PreviewChange> = emptyList(),
     )
@@ -137,7 +136,6 @@ object AppUpdates {
     fun release(catalog: Catalog, follow: Follow): Release? = when (follow.channel) {
         Channel.STABLE -> catalog.stable
         Channel.NIGHTLY -> catalog.preview
-        Channel.TEST -> catalog.tests.firstOrNull { it.pr == follow.pr }
     }
 
     fun offer(catalog: Catalog, follow: Follow, me: Installed = installed()): Offer {
@@ -150,7 +148,6 @@ object AppUpdates {
                 else -> Offer.AHEAD
             }
             Channel.NIGHTLY -> if (me.pr != 0) Offer.SWITCH else Offer.UPDATE
-            Channel.TEST -> if (me.pr == r.pr) Offer.UPDATE else Offer.SWITCH
         }
     }
 
@@ -220,7 +217,6 @@ object AppUpdates {
     internal class Guess(val follow: Follow, val certain: Boolean)
 
     internal fun guessFollow(catalog: Catalog?, me: Installed): Guess {
-        if (me.pr != 0) return Guess(Follow(Channel.TEST, me.pr), true)
         val stable = catalog?.stable
         if (stable != null && isRunning(stable, me)) return Guess(Follow(Channel.STABLE), true)
         val publishedPreview = catalog != null && me.updatable && (
@@ -232,8 +228,7 @@ object AppUpdates {
     }
 
     fun setFollow(context: Context, follow: Follow) {
-        val value = if (follow.channel == Channel.TEST) "test:${follow.pr}"
-        else follow.channel.name.lowercase()
+        val value = follow.channel.name.lowercase()
         prefs(context).edit().putString(KEY_CHANNEL, value).apply()
     }
 
@@ -242,9 +237,6 @@ object AppUpdates {
         return when {
             v == "stable" -> Follow(Channel.STABLE)
             v == "nightly" || v == "preview" -> Follow(Channel.NIGHTLY)
-            v.startsWith("test:") -> v.removePrefix("test:").toIntOrNull()?.let {
-                Follow(Channel.TEST, it)
-            }
             else -> null
         }
     }
@@ -279,15 +271,10 @@ object AppUpdates {
                 "The update catalog has an unsupported format (schema $schema, source $sourceRepo, CI $ciRepo)",
             )
         }
-        val tests = root.optJSONArray("tests") ?: JSONArray()
         val recentPreviews = root.optJSONArray("recentPreviews") ?: JSONArray()
         return Catalog(
             root.optJSONObject("stable")?.let { readPublishedRelease(it, packageName) },
             root.optJSONObject("preview")?.let { readPublishedRelease(it, packageName) },
-            (0 until tests.length())
-                .map { readPublishedRelease(tests.getJSONObject(it), packageName) }
-                .filter { it.pr > 0 }
-                .sortedByDescending { it.publishedAt },
             checkedAt,
             (0 until recentPreviews.length())
                 .mapNotNull { recentPreviews.optJSONObject(it)?.let(::readPublishedPreviewChange) }
@@ -452,7 +439,7 @@ object AppUpdates {
     internal fun writeCatalog(c: Catalog): JSONObject = JSONObject()
         .put("stable", c.stable?.let(::writeRelease))
         .put("preview", c.preview?.let(::writeRelease))
-        .put("tests", JSONArray().apply { c.tests.forEach { put(writeRelease(it)) } })
+
         .put("recentPreviews", JSONArray().apply { c.recentPreviews.forEach { put(writePreviewChange(it)) } })
         .put("checkedAt", c.checkedAt)
 
@@ -463,13 +450,11 @@ object AppUpdates {
         .put("publishedAt", c.publishedAt)
 
     internal fun readCachedCatalog(o: JSONObject): Catalog {
-        val tests = o.optJSONArray("tests") ?: JSONArray()
         val preview = o.optJSONObject("preview") ?: o.optJSONObject("nightly")
         val recentPreviews = o.optJSONArray("recentPreviews") ?: JSONArray()
         return Catalog(
             o.optJSONObject("stable")?.let(::readCachedRelease),
             preview?.let(::readCachedRelease),
-            (0 until tests.length()).map { readCachedRelease(tests.getJSONObject(it)) },
             o.optLong("checkedAt"),
             (0 until recentPreviews.length())
                 .mapNotNull { recentPreviews.optJSONObject(it)?.let(::readCachedPreviewChange) }
