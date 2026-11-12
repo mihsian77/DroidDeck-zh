@@ -32,10 +32,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          # 只认当前提交自己的构建：否则同步刚 bump 完版本号就发版，会拿到上一个
+          # 提交的 APK，tag 是新的、包是旧的。
           run_id=$(gh run list --workflow build.yml --branch main --status success \
-            --json databaseId --jq '.[0].databaseId' -L 20)
+            --json databaseId,headSha \
+            --jq "[.[] | select(.headSha==\"$GITHUB_SHA\")][0].databaseId" -L 20)
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::no successful main build found to promote"
+            echo "::error::当前提交 $GITHUB_SHA 还没有成功的构建，等它绿了再发"
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"

@@ -287,8 +287,10 @@ jobs:
           set -euo pipefail
           sleep 10
           UPSTREAM_TAG="${{ steps.check_release.outputs.upstream_tag }}"
-          # Trigger release-stable with new version label
-          gh workflow run release-stable.yml --ref main -f label="${UPSTREAM_TAG}-zh1" || echo "::warning::release trigger failed"
+          # 只写摘要，不在这里发版：release-stable 现在只认当前提交的构建，
+          # 而这次 bump 的构建还没跑完，直接发会拿错包。构建绿了手动 dispatch。
+          echo " | 上游发了 `${UPSTREAM_TAG}`，版本号已改好，构建绿后手动 dispatch release-stable |" >> "$GITHUB_STEP_SUMMARY"
+          echo "Version prepared for ${UPSTREAM_TAG}-zh1; release after the build is green."
 
       - name: Build the merged tree
         if: steps.check.outputs.has_updates == 'true'
