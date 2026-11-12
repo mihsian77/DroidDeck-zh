@@ -35,7 +35,10 @@ internal class AddonPack(
     private val tag get() = "pack-$name-${sha256.take(16)}"
     // tag 是按内容寻址的（pack-<name>-<sha16>），先问本仓库有没有我们自己发的包，
     // 没有再回落到上游。两边同名 tag 的字节必须一致，不然校验会拒掉。
+    // 所有包都放在一个 packs release 里，资产名带 sha：packs/<name>-<sha16>.tar.zst。
+    // 排在前面先试；后面的老布局按内容寻址一个包一个 tag，留着兼容还没被清掉的旧包。
     private val urls get() = listOfNotNull(
+        "https://github.com/$REPO_ZH/releases/download/packs/$name-${sha256.take(16)}.tar.zst",
         "https://github.com/$REPO_ZH/releases/download/$tag/$name.tar.zst",
         "https://github.com/$REPO/releases/download/$tag/$name.tar.zst",
         BuildConfig.PR_NUMBER.takeIf { it > 0 }?.let { "https://github.com/$PR_REPO/releases/download/pr-$it/$tag.tar.zst" },

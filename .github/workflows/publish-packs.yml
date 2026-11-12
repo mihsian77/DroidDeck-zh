@@ -1,9 +1,11 @@
 name: Publish add-on packs
 
-# 把构建产出的附加包（tools/packs/build.sh 打的那几个）发到本仓库的 release，
-# tag 按内容寻址：pack-<name>-<sha256 前 16 位>。APK 里钉的就是这个 sha，按 tag 下载。
-# 同一个 tag 只发一次，之后不再覆盖。上游那套要求往 Droid-Deck/DroidDeck-Components
-# 发包，需要对方的 GitHub App token，这里改成发到我们自己的仓库，App 端优先从我们这取。
+# 把构建产出的附加包（tools/packs/build.sh 打的那几个）发到本仓库的一个 `packs` release，
+# 资产名带 sha：<name>-<sha256 前 16 位>.tar.zst。APK 里钉的就是这个 sha，按资产名取。
+# 以前是一个包一个 release（tag = pack-<name>-<sha16>），九个包九个条目，列表一半是它；
+# 现在收成一个 release，App 端先走这条路径，老路径留着兼容。
+# 上游那套要求往 Droid-Deck/DroidDeck-Components 发包，需要对方的 GitHub App token，
+# 这里改成发到我们自己的仓库。
 
 on:
   workflow_call:
@@ -46,60 +48,58 @@ jobs:
           RUN: ${{ inputs.run_id }}
         run: gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n droiddeck-packs -D packs
 
-      - name: Publish
+      - name: Publish into the packs release
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           BUILD_RUN: ${{ inputs.run_id || github.run_id }}
         run: |
           set -euo pipefail
-          published_digest() {
-            { gh api "repos/$REPO/releases/tags/$1" 2>/dev/null || echo '{}'; } |
-              jq -r --arg n "$2" '.assets // [] | .[] | select(.name == $n) | .digest // empty'
-          }
-          commit=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN" --jq .head_sha 2>/dev/null || echo "$GITHUB_SHA")
-          # tools/packs/build.sh 打七个包，全都发，省得 App 端还去上游找 powervr/butler。
+          tag=packs
+          notes="DroidDeck-zh add-on packs. 资产名是 \`<name>-<sha256 前 16 位>.tar.zst\`，APK 里钉的就是这个 sha。同名只会留最新的一份，旧的删掉。"
+          if ! gh release view "$tag" -R "$REPO" >/dev/null 2>&1; then
+            gh release create "$tag" -R "$REPO" --title "add-on packs" \
+              --notes "$notes" --latest=false
+          fi
           for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
             file="packs/$name.tar.zst"
             [ -f "$file" ] || { echo "::error::$name.tar.zst is missing from Build APK run $BUILD_RUN"; exit 1; }
             sha=$(sha256sum "$file" | cut -d' ' -f1)
-            tag="pack-$name-${sha:0:16}"
-            digest=$(published_digest "$tag" "$name.tar.zst")
-            if [ -z "$digest" ]; then
-              notes="DroidDeck-zh add-on pack \`$name\`, built by [run $BUILD_RUN]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN) from \`$commit\` with tools/packs/build.sh. 内容寻址 tag，同一个 sha 只发一次。
-
-          Size: $(stat -c %s "$file") bytes. SHA-256: $sha. APKs built in the same run pin this digest."
-              gh release create "$tag" -R "$REPO" --title "$tag" --notes "$notes" --latest=false "$file" \
-                || echo "::warning::creating $tag failed; checking whether another run published it"
-              digest=$(published_digest "$tag" "$name.tar.zst")
+            asset="$name-${sha:0:16}.tar.zst"
+            have=$(gh api "repos/$REPO/releases/tags/$tag" \
+              --jq --arg n "$asset" '.assets[] | select(.name == $n) | .digest // empty')
+            if [ "$have" = "sha256:$sha" ]; then
+              echo "$asset 已经在 packs release 里，跳过上传"
+            else
+              gh release upload "$tag" "$file#$asset" -R "$REPO" --clobber
             fi
-            if [ "$digest" != "sha256:$sha" ]; then
-              echo "::error::$tag holds ${digest:-nothing} for $name.tar.zst, not sha256:$sha"
+            got=$(gh api "repos/$REPO/releases/tags/$tag" \
+              --jq --arg n "$asset" '.assets[] | select(.name == $n) | .digest // empty')
+            if [ "$got" != "sha256:$sha" ]; then
+              echo "::error::$asset 传上去是 ${got:-nothing}，不是 sha256:$sha"
               exit 1
             fi
-            echo "- \`$name\`: [$tag]($GITHUB_SERVER_URL/$REPO/releases/tag/$tag) \`$sha\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "- \`$name\`: \`$asset\` \`${sha:0:16}\`" >> "$GITHUB_STEP_SUMMARY"
           done
 
-      # ubisoft 的 droiddeck-upc.exe 每次构建都重新交叉编译，二进制里带时间戳，tar 的 sha
-      # 每次都不一样。按内容寻址发 release，就会每构建多一个包，永久堆积。这里同名前缀
-      # 只留最近几个，超出的 release 连 tag 一起删。包是 build 期打进 APK 的，运行时不按
-      # tag 下载，删旧的不影响已装用户；留 3 个够拿旧 commit 重新构建。
-      - name: Prune superseded packs
+      # 同名只留最新一份：ubisoft 的 exe 每次重新编译都带时间戳，sha 每次都不同，
+      # 不清就会在 packs release 里无限堆积（以前是一个个 release 堆）。
+      - name: Prune superseded pack assets
         env:
           GH_TOKEN: ${{ github.token }}
-          KEEP: 1
         run: |
           set -euo pipefail
-          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > /tmp/releases.json
+          tag=packs
           for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
-            mapfile -t stale < <(jq -r --arg p "pack-$name-" --argjson k "$KEEP" \
-              '[.[] | select(.tag_name | startswith($p))] | sort_by(.created_at) | reverse | .[$k:] | .[].tag_name' \
-              /tmp/releases.json)
-            for tag in "${stale[@]}"; do
-              [ -n "$tag" ] || continue
-              echo "prune $tag"
-              gh release delete "$tag" -R "$GITHUB_REPOSITORY" --yes --cleanup-tag || \
-                echo "::warning::could not delete $tag"
+            newest=$(sha256sum "packs/$name.tar.zst" | cut -d' ' -f1 | cut -c1-16)
+            mapfile -t stale < <(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
+              --jq --arg p "$name-" '.assets[] | select(.name | startswith($p)) | .name' |
+              grep -v "^${name}-${newest}\.tar\.zst$" || true)
+            for asset in "${stale[@]}"; do
+              [ -n "$asset" ] || continue
+              echo "prune $asset"
+              gh release delete-asset "$tag" "$asset" -R "$GITHUB_REPOSITORY" --yes || \
+                echo "::warning::could not delete $asset"
             done
           done
 
