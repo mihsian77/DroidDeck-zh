@@ -66,15 +66,16 @@ jobs:
             [ -f "$file" ] || { echo "::error::$name.tar.zst is missing from Build APK run $BUILD_RUN"; exit 1; }
             sha=$(sha256sum "$file" | cut -d' ' -f1)
             asset="$name-${sha:0:16}.tar.zst"
+            # gh api 的 --jq 只吃一个过滤器，不能带 --arg；变量直接拼进去。
             have=$(gh api "repos/$REPO/releases/tags/$tag" \
-              --jq --arg n "$asset" '.assets[] | select(.name == $n) | .digest // empty')
+              --jq ".assets[] | select(.name == \"$asset\") | .digest // empty")
             if [ "$have" = "sha256:$sha" ]; then
               echo "$asset 已经在 packs release 里，跳过上传"
             else
               gh release upload "$tag" "$file#$asset" -R "$REPO" --clobber
             fi
             got=$(gh api "repos/$REPO/releases/tags/$tag" \
-              --jq --arg n "$asset" '.assets[] | select(.name == $n) | .digest // empty')
+              --jq ".assets[] | select(.name == \"$asset\") | .digest // empty")
             if [ "$got" != "sha256:$sha" ]; then
               echo "::error::$asset 传上去是 ${got:-nothing}，不是 sha256:$sha"
               exit 1
@@ -93,7 +94,7 @@ jobs:
           for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
             newest=$(sha256sum "packs/$name.tar.zst" | cut -d' ' -f1 | cut -c1-16)
             mapfile -t stale < <(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
-              --jq --arg p "$name-" '.assets[] | select(.name | startswith($p)) | .name' |
+              --jq ".assets[] | select(.name | startswith(\"$name-\")) | .name" |
               grep -v "^${name}-${newest}\.tar\.zst$" || true)
             for asset in "${stale[@]}"; do
               [ -n "$asset" ] || continue
