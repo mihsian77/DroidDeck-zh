@@ -87,7 +87,7 @@ jobs:
       - name: Prune superseded packs
         env:
           GH_TOKEN: ${{ github.token }}
-          KEEP: 3
+          KEEP: 1
         run: |
           set -euo pipefail
           gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > /tmp/releases.json

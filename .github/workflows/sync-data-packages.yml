@@ -223,6 +223,16 @@ jobs:
             /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/desktop.tar.zst /tmp/proton.tar.zst /tmp/data-packages.json \
             --repo "$GITHUB_REPOSITORY" --clobber
 
+          # 数据包只保留这一份：把别的 release 上的同名资产删掉，避免每个正式版
+          # 都挂着 2.7 GB 的相同文件。数据包与 App 版本无关，旧版用户装的也是这份。
+          gh release list -R "$GITHUB_REPOSITORY" -L 200 --json tagName --jq '.[].tagName' |
+            while IFS= read -r other; do
+              [ -n "$other" ] && [ "$other" != "$TAG" ] || continue
+              for asset in droiddeck-bundle.zip linuxfs.tar.zst desktop.tar.zst proton.tar.zst data-packages.json; do
+                gh release delete-asset "$other" "$asset" -R "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
+              done
+            done
+
           # 正式版标成 Latest，这样 release 页上它排在最前面，预发布包自然排在后面
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --latest
 

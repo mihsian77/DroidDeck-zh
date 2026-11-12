@@ -87,6 +87,8 @@ jobs:
           if [ -z "$subject" ]; then
             subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
           fi
+          # sha256 只给 catalog 用，不再往 release 上挂文件：GitHub 每个资产自带
+          # digest，catalog.json 里也有一份，再传两个 txt 是第三份重复数据。
           cd apk
           sha256sum *.apk > SHA256SUMS.txt
           cd ..
@@ -107,15 +109,10 @@ jobs:
           ### 注意
           - 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象
           - GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节
-          - 此为稳定版，安装前建议先备份旧版本
-
-          SHA-256:
-          \`\`\`
-          $(cat apk/SHA256SUMS.txt)
-          \`\`\`"
+          - 此为稳定版，安装前建议先备份旧版本"
           # Remove an older stable with the same tag if any, then publish as non-prerelease.
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" --target main --title "$tag (stable)" --notes "$notes" apk/*
+          gh release create "$tag" --target main --title "$tag (stable)" --notes "$notes" apk/*.apk
           url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag"
           echo "release=$url" >> "$GITHUB_OUTPUT"
           echo "Published $url"
@@ -149,3 +146,15 @@ jobs:
           git commit -q -m "catalog: promote ${tag} to stable"
           git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:catalog
           echo "catalog.json pushed to catalog branch"
+
+      - name: Attach data packages to this release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
+          [ -n "$tag" ] || { echo "::error::no versionName"; exit 1; }
+          # 数据包跟 APK 放同一个 release。不在这里补的话得等第二天 6 点的定时任务，
+          # 中间这段时间新正式版是光秃秃的，列表看着不一致。
+          gh workflow run sync-data-packages.yml --ref main -f target_tag="$tag"
+          echo " | 已在后台把数据包挂到 $tag |" >> "$GITHUB_STEP_SUMMARY"
