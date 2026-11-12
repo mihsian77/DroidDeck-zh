@@ -3915,8 +3915,6 @@
     <string name="perf_native_userland">不经过 proot 直接运行（实验性）</string>
     <string name="perf_native_userland_hint">在 Android 上直接启动 Linux 侧。下次运行生效；有东西起不来就关掉。</string>
     <string name="rail_agent">Agent</string>
-    <string name="setup_build_watermark">构建标签水印</string>
-    <string name="setup_build_watermark_hint">在屏幕上显示测试包或 Lab 构建的标签，默认开启。</string>
     <string name="storage_tool_anticheat">带反作弊的游戏会用到，Steam 即使关着也会下载。删掉后这些游戏会卡在 0% 装不完。</string>
     <string name="upd_lab">Lab 构建</string>
 </resources>
