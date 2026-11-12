@@ -61,23 +61,35 @@ jobs:
             gh release create "$tag" -R "$REPO" --title "add-on packs" \
               --notes "$notes" --latest=false
           fi
+          rel_id=$(gh api "repos/$REPO/releases/tags/$tag" --jq .id)
           for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
             file="packs/$name.tar.zst"
             [ -f "$file" ] || { echo "::error::$name.tar.zst is missing from Build APK run $BUILD_RUN"; exit 1; }
             sha=$(sha256sum "$file" | cut -d' ' -f1)
+            size=$(stat -c %s "$file")
             asset="$name-${sha:0:16}.tar.zst"
-            # gh api 的 --jq 只吃一个过滤器，不能带 --arg；变量直接拼进去。
             have=$(gh api "repos/$REPO/releases/tags/$tag" \
-              --jq ".assets[] | select(.name == \"$asset\") | .digest // empty")
-            if [ "$have" = "sha256:$sha" ]; then
-              echo "$asset 已经在 packs release 里，跳过上传"
-            else
-              gh release upload "$tag" "$file#$asset" -R "$REPO" --clobber
+              --jq ".assets[] | select(.name == \"$asset\") | .size")
+            if [ "$have" = "$size" ]; then
+              echo "$asset 已经在 packs release 里（$size 字节），跳过"
+              echo "- \`$name\`: \`$asset\` \`${sha:0:16}\`" >> "$GITHUB_STEP_SUMMARY"
+              continue
             fi
-            got=$(gh api "repos/$REPO/releases/tags/$tag" \
-              --jq ".assets[] | select(.name == \"$asset\") | .digest // empty")
-            if [ "$got" != "sha256:$sha" ]; then
-              echo "::error::$asset 传上去是 ${got:-nothing}，不是 sha256:$sha"
+            [ -n "$have" ] && gh release delete-asset "$tag" "$asset" -R "$REPO" --yes
+            # gh release upload 只按 basename 命名资产，改不了名；这里直接走上传接口。
+            gh api --method POST \
+              "https://uploads.github.com/repos/$REPO/releases/$rel_id/assets?name=$asset" \
+              -H "Content-Type: application/octet-stream" --input "$file" >/dev/null
+            info=$(gh api "repos/$REPO/releases/tags/$tag" \
+              --jq ".assets[] | select(.name == \"$asset\") | \"\(.size) \(.digest // "")\"" )
+            got_size=${info%% *}
+            got=${info#* }
+            if [ "$got_size" != "$size" ]; then
+              echo "::error::$asset 传上去是 ${got_size:-0} 字节，不是 $size"
+              exit 1
+            fi
+            if [ -n "$got" ] && [ "$got" != "sha256:$sha" ]; then
+              echo "::error::$asset 的 digest 是 $got，不是 sha256:$sha"
               exit 1
             fi
             echo "- \`$name\`: \`$asset\` \`${sha:0:16}\`" >> "$GITHUB_STEP_SUMMARY"
