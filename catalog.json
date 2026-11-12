@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.7.1-zh1",
-    "title": "0.7.1-zh1 (stable)",
-    "summary": "## 0.7.1-zh1 (stable)\n\nchore: 更新应用内更新用的 catalog\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n- GPU 兼容层与 add-on pack 未逐机型…",
-    "commit": "e2479795d5aac06dd8d7d148ab268933fed8f5fb",
+    "tag": "0.7.1-zh2",
+    "title": "0.7.1-zh2 (stable)",
+    "summary": "## 0.7.1-zh2 (stable)\n\nci(release): 按源码树判断能不能发，不比 sha\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n- GPU 兼容层与 add-on pac…",
+    "commit": "bfc14ffc928d147df213640879e365eeb7ecd1b5",
     "pr": 0,
-    "version": "0.7.1-zh1",
-    "versionCode": 21,
-    "publishedAt": 1794388552000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh1",
+    "version": "0.7.1-zh2",
+    "versionCode": 22,
+    "publishedAt": 1794471644000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh2",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh1.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh1/DroidDeck-0.7.1-zh1.apk",
-        "size": 129310651,
-        "sha256": "edc8f08adf912cf0c3068f3488a11897083a66e348d1ff6e9187d50f68535546",
+        "name": "DroidDeck-0.7.1-zh2.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh2/DroidDeck-0.7.1-zh2.apk",
+        "size": 129577412,
+        "sha256": "319a76f9f6350ba908fbe894652b3d5a1787325375f8ae344c428a07d74c6240",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 21,
+        "versionCode": 22,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
