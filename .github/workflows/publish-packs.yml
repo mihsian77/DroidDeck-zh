@@ -80,18 +80,19 @@ jobs:
             gh api --method POST \
               "https://uploads.github.com/repos/$REPO/releases/$rel_id/assets?name=$asset" \
               -H "Content-Type: application/octet-stream" --input "$file" >/dev/null
-            info=$(gh api "repos/$REPO/releases/tags/$tag" \
-              --jq ".assets[] | select(.name == \"$asset\") | \"\(.size) \(.digest // "")\"" )
-            got_size=${info%% *}
-            got=${info#* }
+            got_size=$(gh api "repos/$REPO/releases/tags/$tag" \
+              --jq ".assets[] | select(.name == \"$asset\") | .size")
             if [ "$got_size" != "$size" ]; then
-              echo "::error::$asset 传上去是 ${got_size:-0} 字节，不是 $size"
+              echo "::error::$asset 传上去是 ${got_size:-nothing}，不是 $size 字节"
               exit 1
             fi
-            if [ -n "$got" ] && [ "$got" != "sha256:$sha" ]; then
-              echo "::error::$asset 的 digest 是 $got，不是 sha256:$sha"
-              exit 1
-            fi
+            got=$(gh api "repos/$REPO/releases/tags/$tag" \
+              --jq ".assets[] | select(.name == \"$asset\") | .digest")
+            case "$got" in
+              "sha256:$sha") : ;;
+              ""|null) echo "::warning::$asset 的 digest 还没算出来，先按尺寸认了" ;;
+              *) echo "::error::$asset 的 digest 是 $got，不是 sha256:$sha"; exit 1 ;;
+            esac
             echo "- \`$name\`: \`$asset\` \`${sha:0:16}\`" >> "$GITHUB_STEP_SUMMARY"
           done
 
