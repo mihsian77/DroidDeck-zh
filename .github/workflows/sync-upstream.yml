@@ -289,3 +289,15 @@ jobs:
           UPSTREAM_TAG="${{ steps.check_release.outputs.upstream_tag }}"
           # Trigger release-stable with new version label
           gh workflow run release-stable.yml --ref main -f label="${UPSTREAM_TAG}-zh1" || echo "::warning::release trigger failed"
+
+      - name: Build the merged tree
+        if: steps.check.outputs.has_updates == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # 这次 push 用的是 GITHUB_TOKEN，GitHub 不会因此触发 build.yml，
+          # 合并结果就一直没人验证。workflow_dispatch 不受这条限制，显式补一次。
+          gh workflow run build.yml --ref main
+          echo " | 已触发构建，结果见 Actions → Build APK |" >> "$GITHUB_STEP_SUMMARY"
+          echo "Triggered build.yml on main"
