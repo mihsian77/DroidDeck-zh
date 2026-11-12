@@ -196,6 +196,18 @@ jobs:
             echo "| $f | 中文预设调用丢失，需补回 |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Pick up upstream's new string keys
+        if: steps.check.outputs.has_updates == 'true'
+        run: |
+          set -euo pipefail
+          # values/strings.xml 在白名单里，上游新增的 key 会被整块挡掉，代码一引用就
+          # Unresolved reference。这里把缺的 key 按上游原文补进来，先保住构建。
+          python3 tools/i18n/pick-up-new-strings.py --ref upstream/main
+          git add app/src/main/res/values/strings.xml
+          if ! git diff --cached --quiet; then
+            git commit -q -m "sync: pick up new strings from upstream"
+          fi
+
       - name: Merge directly to main (no PR needed)
         if: steps.check.outputs.has_updates == 'true'
         run: |
