@@ -23,6 +23,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # Stable releases are built from the newest green main build: download its signed APK
       # (signed with the public testkey inside build.yml, same key as the original app).
@@ -32,17 +34,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # 只认当前提交自己的构建：否则同步刚 bump 完版本号就发版，会拿到上一个
-          # 提交的 APK，tag 是新的、包是旧的。
+          # 不能直接取「最新的成功构建」：同步刚 bump 完版本号就发版会拿到上一个
+          # 提交的 APK，tag 是新的、包是旧的。这里取最新构建，再要求它的源码树
+          # 和当前提交一致（app/tools/keystore 就是打进 APK 的东西）。catalog.json
+          # 这类自动提交、以及工作流本身的改动不影响已有产物，允许跳过。
           run_id=$(gh run list --workflow build.yml --branch main --status success \
-            --json databaseId,headSha \
-            --jq "[.[] | select(.headSha==\"$GITHUB_SHA\")][0].databaseId" -L 20)
+            --json databaseId --jq '.[0].databaseId' -L 20)
           if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
-            echo "::error::当前提交 $GITHUB_SHA 还没有成功的构建，等它绿了再发"
+            echo "::error::找不到可用的构建"
+            exit 1
+          fi
+          build_sha=$(gh run view "$run_id" --json headSha --jq .headSha)
+          git fetch -q origin "$build_sha" || true
+          if ! git diff --quiet "$build_sha" "$GITHUB_SHA" -- app tools keystore; then
+            echo "::error::构建 $build_sha 之后源码还有改动，这个包不是当前代码，等新构建绿了再发"
+            git diff --stat "$build_sha" "$GITHUB_SHA" -- app tools keystore
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-          echo "Promoting build $run_id"
+          echo "Promoting build $run_id (head $build_sha, source tree matches $GITHUB_SHA)"
 
       - name: Download APK
         env:
