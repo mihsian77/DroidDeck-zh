@@ -25,21 +25,21 @@
     }
   },
   "preview": {
-    "tag": "test-fd34a67",
-    "title": "测试包 fd34a67",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：fix(release): rebuild the catalog instead of pushing a dead branch\n\n版本：0.7.1-zh2（fd34a67）\n文件名带 -test.fd34a67，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "fd34a6784c66dc7a23638844cc0daf58298e2619",
+    "tag": "test-4fa3029",
+    "title": "测试包 4fa3029",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：chore(catalog): read the runtime descriptor from our own release\n\n版本：0.7.1-zh2（4fa3029）\n文件名带 -test.4fa3029，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "4fa30293c7c2765188a95efb056acc08e0808aba",
     "pr": 0,
     "version": "0.7.1-zh2",
     "versionCode": 22,
-    "publishedAt": 1794535347000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-fd34a67",
+    "publishedAt": 1794536906000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-4fa3029",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh2-test.fd34a67.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-fd34a67/DroidDeck-0.7.1-zh2-test.fd34a67.apk",
+        "name": "DroidDeck-0.7.1-zh2-test.4fa3029.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-4fa3029/DroidDeck-0.7.1-zh2-test.4fa3029.apk",
         "size": 131908239,
-        "sha256": "2c023c8335fb90f5d629e809ee21a827aa017f06221ccb16d55d3d5976c4e39f",
+        "sha256": "6ba492dd854a4301808136a93cadd777a1a55fa5c853ef9787ee247f2027c92a",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 22,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
@@ -48,6 +48,28 @@
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-4fa3029",
+      "title": "测试包 4fa3029",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：chore(catalog): read the runtime descriptor from our own release\n\n版本：0.7.1-zh2（4fa3029）\n文件名带 -test.4fa3029，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "4fa30293c7c2765188a95efb056acc08e0808aba",
+      "pr": 0,
+      "version": "0.7.1-zh2",
+      "versionCode": 22,
+      "publishedAt": 1794536906000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-4fa3029",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.7.1-zh2-test.4fa3029.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-4fa3029/DroidDeck-0.7.1-zh2-test.4fa3029.apk",
+          "size": 131908239,
+          "sha256": "6ba492dd854a4301808136a93cadd777a1a55fa5c853ef9787ee247f2027c92a",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 22,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-fd34a67",
       "title": "测试包 fd34a67",
@@ -86,28 +108,6 @@
           "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-bbb97fe/DroidDeck-0.7.1-zh2-test.bbb97fe.apk",
           "size": 129577412,
           "sha256": "a41a271576c4fc14ee5d7937e6b1779b8df5990e1a1f5ab18909e1dbb9521a82",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 22,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-9099d2b",
-      "title": "测试包 9099d2b",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：fix(packs): 上传接口指定资产名，别再指望 gh 的 file#name\n\n版本：0.7.1-zh2（9099d2b）\n文件名带 -test.9099d2b，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "9099d2b232b12c36f9f945d742cfca12899f9550",
-      "pr": 0,
-      "version": "0.7.1-zh2",
-      "versionCode": 22,
-      "publishedAt": 1794481198000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-9099d2b",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.7.1-zh2-test.9099d2b.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-9099d2b/DroidDeck-0.7.1-zh2-test.9099d2b.apk",
-          "size": 129577412,
-          "sha256": "fc30f7cad73f6c2ce42371d2eaaddaf2106b34ffc18b889f2a33a1499ac99b91",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 22,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
