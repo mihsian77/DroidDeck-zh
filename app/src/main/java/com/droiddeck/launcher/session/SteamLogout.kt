@@ -26,8 +26,10 @@ object SteamLogout {
     private fun loginUsers(root: File) = File(root, "root/.local/share/Steam/config/loginusers.vdf")
     private fun configVdf(root: File) = File(root, "root/.local/share/Steam/config/config.vdf")
 
+    private fun flag(context: Context) = File(context.filesDir, FLAG)
+
     /** True when the Steam home asked for a logout. */
-    fun requested(context: Context): Boolean = File(context.filesDir, FLAG).isFile
+    fun requested(context: Context): Boolean = flag(context).isFile
 
     /** Wipes the guest's Steam credentials; returns what was cleared, for the session log. */
     fun apply(context: Context, root: File): String {
@@ -46,6 +48,8 @@ object SteamLogout {
                 if (staged.renameTo(config)) done.add("config.vdf") else staged.delete()
             }
         }
+        // The flag goes only once the credentials are really gone; a no-op run keeps it for the next start.
+        if (done.isNotEmpty()) flag(context).delete()
         return if (done.isEmpty()) "logout: nothing to clear" else "logout: cleared " + done.joinToString(", ")
     }
 

@@ -470,9 +470,13 @@ class SessionService : Service() {
         }
 
         val root = LinuxRuntime.rootDir(this)
-        // Apply Steam logout if user requested it (before Steam starts)
-        runCatching { SteamLogout.apply(this, root) }
-            .onFailure { Log.w(TAG, "SteamLogout failed", it) }
+        // The Steam home writes this flag when the user asks to sign out. Without it the
+        // credentials stay, so a normal start keeps the account signed in.
+        if (SteamLogout.requested(this)) {
+            runCatching { SteamLogout.apply(this, root) }
+                .onSuccess { Log.i(TAG, it) }
+                .onFailure { Log.w(TAG, "SteamLogout failed", it) }
+        }
         val sessionRoot = LinuxRuntime.sessionRoot(this).apply { mkdirs() }
         val runtimeDir = File(filesDir, ".wayland-rt").apply { mkdirs() }
         killStragglers()
