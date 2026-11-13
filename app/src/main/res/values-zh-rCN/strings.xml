@@ -3970,4 +3970,16 @@
     <string name="setup_home_page">Home 键打开的页面</string>
     <string name="setup_home_page_hint">DroidDeck 作为桌面应用时，按 Home 键打开的页面</string>
     <string name="stores_rockstar_launch_unavailable">无法启动</string>
+    <plurals name="agent_files_changed">
+        <item quantity="one">1 个文件</item>
+        <item quantity="other">%1$d 个文件</item>
+    </plurals>
+    <plurals name="games_addons_count">
+        <item quantity="one">1 个附加内容</item>
+        <item quantity="other">%1$d 个附加内容</item>
+    </plurals>
+    <plurals name="main_addons_imported">
+        <item quantity="one">已导入 1 个附加内容到 %2$s</item>
+        <item quantity="other">已导入 %1$d 个附加内容到 %2$s</item>
+    </plurals>
 </resources>

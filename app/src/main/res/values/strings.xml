@@ -4077,4 +4077,16 @@
     <string name="setup_home_page_hint">The page shown when DroidDeck is the Home app and you press Home</string>
     <string name="stores_claiming">Adding to library…</string>
     <string name="stores_rockstar_launch_unavailable">Launch unavailable</string>
+    <plurals name="agent_files_changed">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <plurals name="games_addons_count">
+        <item quantity="one">%1$d addon</item>
+        <item quantity="other">%1$d addons</item>
+    </plurals>
+    <plurals name="main_addons_imported">
+        <item quantity="one">Imported %1$d addon into %2$s</item>
+        <item quantity="other">Imported %1$d addons into %2$s</item>
+    </plurals>
 </resources>
