@@ -88,6 +88,9 @@ object SessionFiles {
             "libssbs.so" to "usr/local/lib/libssbs.so",
             "usr/local/bin/droiddeck-session" to "usr/local/bin/droiddeck-session",
             "usr/local/bin/droiddeck-zh-steam-preset" to "usr/local/bin/droiddeck-zh-steam-preset",
+            // CJK fallback font + fontconfig, so Chinese text never renders as tofu boxes.
+            "usr/share/fonts/truetype/wqy/wqy-microhei.ttc" to "usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "etc/fonts/conf.d/99-zh-fallback.conf" to "etc/fonts/conf.d/99-zh-fallback.conf",
             "usr/local/bin/droiddeck-fonts" to "usr/local/bin/droiddeck-fonts",
             "usr/local/bin/droiddeck-agent" to "usr/local/bin/droiddeck-agent",
             "usr/local/bin/steam-compatibility" to "usr/local/bin/steam-compatibility",
