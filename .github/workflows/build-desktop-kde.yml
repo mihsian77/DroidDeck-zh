@@ -40,23 +40,6 @@ jobs:
         with:
           name: desktop-kde-kwin
           path: out/kwin
-      - uses: actions/create-github-app-token@v2
-        id: components-token
-        if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
-        with:
-          app-id: ${{ vars.DROIDDECK_CI_APP_ID }}
-          private-key: ${{ secrets.DROIDDECK_CI_APP_KEY }}
-          owner: Droid-Deck
-          repositories: DroidDeck-Components
-      - name: Refuse a published tag
-        if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
-        env:
-          GH_TOKEN: ${{ steps.components-token.outputs.token }}
-        run: |
-          if gh release view '${{ inputs.tag }}' -R Droid-Deck/DroidDeck-Components >/dev/null 2>&1; then
-            echo "::error::${{ inputs.tag }} is already published, and published tags are never replaced: use a new tag"
-            exit 1
-          fi
       - name: Build
         run: |
           set -euo pipefail
@@ -80,13 +63,12 @@ jobs:
       - name: Publish
         if: github.event_name == 'workflow_dispatch' && inputs.tag != ''
         env:
-          GH_TOKEN: ${{ steps.components-token.outputs.token }}
-          GH_REPO: Droid-Deck/DroidDeck-Components
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           TAG='${{ inputs.tag }}'
           if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::error::$TAG is already published in DroidDeck-Components, and published tags are never replaced: use a new tag"
+            echo "::error::$TAG is already published, and published tags are never replaced: use a new tag"
             exit 1
           fi
           gh release create "$TAG" --latest=false --prerelease=false --title "$TAG" \

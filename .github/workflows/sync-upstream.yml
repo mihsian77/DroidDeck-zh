@@ -80,7 +80,7 @@ jobs:
             [ -n "$f" ] || continue
             stat=$(git diff --numstat "$BASE" upstream/main -- "$f" || true)
             [ -n "$stat" ] || continue
-            echo "$f|$(echo "$stat" | awk '{a+=$1; d+=$2} END {printf \"+%d -%d\", a, d}')" >> /tmp/whitelist-drift.txt
+            echo "$f|$(echo "$stat" | awk '{a+=$1; d+=$2} END {printf "+%d -%d", a, d}')" >> /tmp/whitelist-drift.txt
           done <<< "$WHITELIST_FILES"
           if [ -s /tmp/whitelist-drift.txt ]; then
             echo "上游这批提交动了白名单里的文件："
