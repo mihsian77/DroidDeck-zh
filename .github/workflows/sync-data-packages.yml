@@ -216,11 +216,26 @@ jobs:
           }
           EOF
 
-          for asset in droiddeck-bundle.zip linuxfs.tar.zst desktop.tar.zst proton.tar.zst data-packages.json; do
+          # Runtime descriptor for the app: same shape as the upstream Components file,
+          # but the url points at this release so the app never has to reach a foreign catalog.
+          cat > /tmp/linuxfs.json <<EOF
+          {
+            "schemaVersion": 1,
+            "category": "linux-runtime",
+            "release": "linuxfs-${{ steps.upstream.outputs.linuxfs_version }}",
+            "name": "Linux runtime (gamescope + native ARM Steam)",
+            "version": "${{ steps.upstream.outputs.linuxfs_version }}",
+            "url": "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/linuxfs.tar.zst",
+            "sha256": "${{ steps.upstream.outputs.linuxfs_sha256 }}",
+            "size": ${{ steps.upstream.outputs.linuxfs_size }}
+          }
+          EOF
+
+          for asset in droiddeck-bundle.zip linuxfs.tar.zst desktop.tar.zst proton.tar.zst data-packages.json linuxfs.json; do
             gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
           done
           gh release upload "$TAG" \
-            /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/desktop.tar.zst /tmp/proton.tar.zst /tmp/data-packages.json \
+            /tmp/droiddeck-bundle.zip /tmp/linuxfs.tar.zst /tmp/desktop.tar.zst /tmp/proton.tar.zst /tmp/data-packages.json /tmp/linuxfs.json \
             --repo "$GITHUB_REPOSITORY" --clobber
 
           # 数据包只保留这一份：把别的 release 上的同名资产删掉，避免每个正式版
@@ -228,7 +243,7 @@ jobs:
           gh release list -R "$GITHUB_REPOSITORY" -L 200 --json tagName --jq '.[].tagName' |
             while IFS= read -r other; do
               [ -n "$other" ] && [ "$other" != "$TAG" ] || continue
-              for asset in droiddeck-bundle.zip linuxfs.tar.zst desktop.tar.zst proton.tar.zst data-packages.json; do
+              for asset in droiddeck-bundle.zip linuxfs.tar.zst desktop.tar.zst proton.tar.zst data-packages.json linuxfs.json; do
                 gh release delete-asset "$other" "$asset" -R "$GITHUB_REPOSITORY" --yes 2>/dev/null || true
               done
             done

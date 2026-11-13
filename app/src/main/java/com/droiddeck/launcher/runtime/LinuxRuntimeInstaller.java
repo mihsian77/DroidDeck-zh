@@ -35,6 +35,10 @@ public final class LinuxRuntimeInstaller {
     private static final String TAG = "LinuxRuntimeInstaller";
 
     public static final String CATALOG_URL =
+            "https://github.com/mihsian77/DroidDeck-zh/releases/latest/download/linuxfs.json";
+
+    // Fallback: until our own release carries linuxfs.json, read the upstream descriptor.
+    private static final String UPSTREAM_CATALOG_URL =
             "https://raw.githubusercontent.com/Droid-Deck/DroidDeck-Components/main/linuxfs.json";
 
     private static final String VERSION_FILE = ".version";
@@ -105,7 +109,12 @@ public final class LinuxRuntimeInstaller {
     }
 
     public static Release fetchRelease() {
-        String body = Downloader.downloadString(catalogUrl());
+        Release own = parseRelease(catalogUrl());
+        return own != null ? own : parseRelease(UPSTREAM_CATALOG_URL);
+    }
+
+    private static Release parseRelease(String source) {
+        String body = Downloader.downloadString(source);
         if (body == null || body.isEmpty()) return null;
         try {
             JSONObject json = new JSONObject(body);
