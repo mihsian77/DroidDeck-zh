@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
   pull-requests: read
 
 concurrency:
@@ -117,35 +118,17 @@ jobs:
           echo "release=$url" >> "$GITHUB_OUTPUT"
           echo "Published $url"
 
-      - name: Update catalog.json
+      - name: Refresh the update catalog
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          # Reuse the shared generator (single source of truth).
-          signer=$(cat keystore/release-signer.sha256 | tr 'A-F' 'a-f')
-          version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
-          tag=${version:-${{ inputs.label }}}
-          AAPT=$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME"/build-tools | sort -V | tail -n1)/aapt
-          # Real values of the promoted APK, taken from the file in hand.
-          versionCode=$("$AAPT" dump badging apk/*.apk | sed -n "s/^package: name=.* versionCode='\([0-9]*\)'.*$/\1/p")
-          sha256=$(awk '{print $1}' apk/SHA256SUMS.txt | tr 'A-F' 'a-f')
-          commit=$(gh run view "${{ steps.find.outputs.run_id }}" --json headSha --jq .headSha)
+          # The app reads catalog.json from main. A release published with GITHUB_TOKEN does
+          # not fire `release: published`, so the catalog job has to be kicked by hand.
+          # make-catalog.py rebuilds the file from the releases API; nothing to promote here.
           sleep 5
-          # promote: write the promoted APK's real values into the stable row;
-          # the preview row is inherited unchanged from the previous catalog.
-          python3 .github/scripts/catalog.py promote \
-            --repo "$GITHUB_REPOSITORY" --tag "$tag" \
-            --version "$version" --version-code "$versionCode" \
-            --signer "$signer" --commit "$commit" --sha256 "$sha256"
-          cd /tmp/catalog
-          git init -q
-          git config user.email "mihsian77@users.noreply.github.com"
-          git config user.name "mihsian77"
-          git add catalog.json
-          git commit -q -m "catalog: promote ${tag} to stable"
-          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:catalog
-          echo "catalog.json pushed to catalog branch"
+          gh workflow run catalog-zh.yml --ref main
+          echo "catalog-zh dispatched"
 
       - name: Attach data packages to this release
         env:
