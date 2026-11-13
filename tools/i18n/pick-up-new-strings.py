@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """把上游新增的条目补进 values/strings.xml。
 
-同步时 values/strings.xml 按白名单保留我们自己的版本，上游新增的 key 会被
-整块挡掉。代码里一旦引用到这些 key，构建就会 Unresolved reference 失败；
+同步时只有 values/strings.xml 走白名单（保留我们自己的版本），上游新增的 key
+会被整块挡掉。代码里一旦引用到这些 key，构建就会 Unresolved reference 失败；
 aapt 还会因为重复定义报 duplicate。这个脚本从上游那份 strings.xml 里把缺的
 条目原样追加进来，string 和 plurals 都算，保证构建不会因为缺 key 挂掉；
 中文翻译随后补。
+
+values/ 下的 gestures、input_strings 这些分文件不在白名单，同步时上游改动直接
+合进来，不需要这里兜底。反过来，判断某个 key 有没有中文要扫 values-zh-rCN 下
+所有分文件，只看 strings.xml 会把已经翻好的 key 误报成待翻译。
 
 用法：
     python3 tools/i18n/pick-up-new-strings.py [--ref upstream/main] [--root .]
@@ -39,10 +43,10 @@ def local_keys(root):
 
 
 def zh_keys(root):
-    path = os.path.join(root, "app/src/main/res/values-zh-rCN/strings.xml")
-    if not os.path.exists(path):
-        return set()
-    return set(re.findall(r'name="([^"]+)"', open(path, encoding="utf-8").read()))
+    keys = set()
+    for path in glob.glob(os.path.join(root, "app/src/main/res/values-zh-rCN/*.xml")):
+        keys |= set(re.findall(r'name="([^"]+)"', open(path, encoding="utf-8").read()))
+    return keys
 
 
 def render_entry(entry):
