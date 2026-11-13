@@ -15,7 +15,8 @@ TOKEN = os.environ.get("GH_TOKEN", "")
 PACKAGE = "com.droiddeck.launcher"
 OUT = sys.argv[1] if len(sys.argv) > 1 else "catalog.json"
 PREVIEW_HISTORY = int(os.environ.get("PREVIEW_HISTORY", "10"))
-STABLE_TAG = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+-zh[0-9]+")
+# 正式版 tag 有两种形态：早期的 <版本>-zhN，和现在纯语义化的 <版本>。
+STABLE_TAG = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-zh[0-9]+)?")
 
 
 def api(path):
