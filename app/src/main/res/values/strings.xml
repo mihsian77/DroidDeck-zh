@@ -3893,6 +3893,10 @@
     <string name="runtime_install_progress">Installing %1$s</string>
     <string name="runtime_install_summary">Install finished: %1$d installed, %2$d skipped</string>
     <string name="runtime_install_failed">Install failed: %1$s</string>
+    <string name="runtime_import_local">Import a data package from storage</string>
+    <string name="runtime_install_folder">Install from a folder</string>
+    <string name="runtime_import_pick_file">Pick a data package</string>
+    <string name="runtime_install_pick_folder">Pick the folder holding the packages</string>
     <string name="runtime_install_busy">Installing, please wait</string>
     <string name="runtime_update_check_failed">Could not check for the latest version. Check your network</string>
     <string name="runtime_download_failed">Download failed: %1$s</string>

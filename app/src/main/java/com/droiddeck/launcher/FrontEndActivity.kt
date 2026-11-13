@@ -336,72 +336,39 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
 
 
     internal val pickInstallDir = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-        if (r.resultCode == RESULT_OK) {
-            InAppFilePicker.pickedPath(r.data)?.let { dirPath ->
-                Thread {
-                    busy = true
-                    try {
-                        val dir = java.io.File(dirPath)
-                        if (!dir.isDirectory) {
-                            runOnUiThread { android.widget.Toast.makeText(this, R.string.runtime_install_not_folder, android.widget.Toast.LENGTH_LONG).show() }
-                            return@Thread
-                        }
-                        var installed = 0
-                        var skipped = 0
-                        val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
-                        dir.listFiles()?.forEach { f ->
-                            val name = f.name.lowercase()
-                            try {
-                                when {
-                                    name.contains("linuxfs") && (name.endsWith(".tar.zst") || name.endsWith(".tar.gz")) -> {
-                                        runOnUiThread { android.widget.Toast.makeText(this, getString(R.string.runtime_install_progress, f.name), android.widget.Toast.LENGTH_SHORT).show() }
-                                        com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, f, root, null)
-                                        installed++
-                                    }
-                                    else -> skipped++
-                                }
-                            } catch (e: Exception) {
-                                Log.e("QuickInstall", "安装失败: ${f.name}", e)
-                                skipped++
-                            }
-                        }
-                        runOnUiThread {
-                            android.widget.Toast.makeText(this, getString(R.string.runtime_install_summary, installed, skipped), android.widget.Toast.LENGTH_LONG).show()
-                        }
-                    } catch (e: Exception) {
-                        runOnUiThread {
-                            android.widget.Toast.makeText(this, getString(R.string.runtime_install_failed, e.message), android.widget.Toast.LENGTH_LONG).show()
-                        }
-                    } finally {
-                        busy = false
-                    }
-                }.start()
-            }
-        }
-    }
-
-
-    fun quickInstallRuntime() {
-        if (busy || LinuxRuntimeInstaller.isBusy()) {
+        if (r.resultCode != RESULT_OK) return@registerForActivityResult
+        val dirPath = InAppFilePicker.pickedPath(r.data) ?: return@registerForActivityResult
+        if (busy || com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.isBusy()) {
             android.widget.Toast.makeText(this, R.string.runtime_install_busy, android.widget.Toast.LENGTH_SHORT).show()
-            return
+            return@registerForActivityResult
         }
-        Thread {
-            try {
-                val release = LinuxRuntimeInstaller.fetchRelease()
-                runOnUiThread {
-                    if (release != null) {
-                        install(release)
-                    } else {
-                        android.widget.Toast.makeText(this, R.string.runtime_update_check_failed, android.widget.Toast.LENGTH_SHORT).show()
-                    }
+        val dir = java.io.File(dirPath)
+        if (!dir.isDirectory) {
+            android.widget.Toast.makeText(this, R.string.runtime_install_not_folder, android.widget.Toast.LENGTH_LONG).show()
+            return@registerForActivityResult
+        }
+        val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
+        followRuntimeOperation(getString(R.string.runtime_install_progress, dir.name)) { listener ->
+            var installed = 0
+            var skipped = 0
+            dir.listFiles()?.forEach { f ->
+                val name = f.name.lowercase()
+                if (!name.contains("linuxfs") || !(name.endsWith(".tar.zst") || name.endsWith(".tar.gz"))) {
+                    return@forEach
                 }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    android.widget.Toast.makeText(this, getString(R.string.runtime_download_failed, e.message), android.widget.Toast.LENGTH_LONG).show()
+                try {
+                    if (com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, f, root, listener)) installed++
+                    else skipped++
+                } catch (e: Exception) {
+                    Log.e(TAG, "quick install failed on ${f.name}", e)
+                    skipped++
                 }
             }
-        }.start()
+            ui.post {
+                android.widget.Toast.makeText(this, getString(R.string.runtime_install_summary, installed, skipped), android.widget.Toast.LENGTH_LONG).show()
+            }
+            installed > 0
+        }
     }
 
 
@@ -1804,12 +1771,22 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
                                 InAppFilePicker.buildIntent(
                                     this,
                                     listOf("tar", "gz", "zst", "zip"),
-                                    "选择数据包文件",
+                                    getString(R.string.runtime_import_pick_file),
                                     initialDir = downloadDir
                                 )
                             )
                         },
-                        onQuickInstall = { showRuntimeActions = null; quickInstallRuntime() },
+                        onQuickInstall = {
+                            showRuntimeActions = null
+                            val downloadDir = android.os.Environment.getExternalStorageDirectory()?.path + "/Download"
+                            pickInstallDir.launch(
+                                InAppFilePicker.buildDirIntent(
+                                    this,
+                                    getString(R.string.runtime_install_pick_folder),
+                                    downloadDir
+                                )
+                            )
+                        },
                         onRemove = { showRuntimeActions = null; showRemove = true },
                         onDismiss = { showRuntimeActions = null },
                     )

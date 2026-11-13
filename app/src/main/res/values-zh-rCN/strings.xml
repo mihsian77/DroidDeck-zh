@@ -3812,6 +3812,10 @@
     <string name="runtime_install_progress">正在安装 %1$s</string>
     <string name="runtime_install_summary">一键安装完成：成功 %1$d 个，跳过 %2$d 个</string>
     <string name="runtime_install_failed">安装失败：%1$s</string>
+    <string name="runtime_import_local">从本地导入数据包</string>
+    <string name="runtime_install_folder">选文件夹一键安装</string>
+    <string name="runtime_import_pick_file">选择数据包文件</string>
+    <string name="runtime_install_pick_folder">选择数据包所在文件夹</string>
     <string name="runtime_install_busy">正在安装中，请稍候</string>
     <string name="runtime_update_check_failed">获取最新版本失败，请检查网络</string>
     <string name="runtime_download_failed">下载失败：%1$s</string>

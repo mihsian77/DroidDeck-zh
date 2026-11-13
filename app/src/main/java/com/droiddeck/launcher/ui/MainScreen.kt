@@ -84,10 +84,10 @@ fun RuntimeActionsDialog(
                     Text(stringResource(R.string.runtime_repair))
                 }
                 TextButton(onClick = onImport, modifier = Modifier.focusGlide().fillMaxWidth()) {
-                    Text("从本地导入数据包")
+                    Text(stringResource(R.string.runtime_import_local))
                 }
                 TextButton(onClick = onQuickInstall, modifier = Modifier.focusGlide().fillMaxWidth()) {
-                    Text("选文件夹一键安装")
+                    Text(stringResource(R.string.runtime_install_folder))
                 }
             }
         },
