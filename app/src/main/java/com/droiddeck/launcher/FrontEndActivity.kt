@@ -307,21 +307,29 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     }
 
     internal val pickRuntimeImport = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { r ->
-        if (r.resultCode == RESULT_OK) {
-            InAppFilePicker.pickedFile(r.data)?.let { file ->
-                Thread {
-                    try {
-                        val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
-                        com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, file, root, null)
-                        runOnUiThread {
-                            android.widget.Toast.makeText(this, R.string.runtime_import_success, android.widget.Toast.LENGTH_LONG).show()
-                        }
-                    } catch (e: Exception) {
-                        runOnUiThread {
-                            android.widget.Toast.makeText(this, getString(R.string.runtime_import_failed, e.message), android.widget.Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }.start()
+        if (r.resultCode != RESULT_OK) return@registerForActivityResult
+        val file = InAppFilePicker.pickedFile(r.data) ?: return@registerForActivityResult
+        if (busy || com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.isBusy()) {
+            android.widget.Toast.makeText(this, R.string.runtime_install_busy, android.widget.Toast.LENGTH_SHORT).show()
+            return@registerForActivityResult
+        }
+        val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
+        // 导入动辄几百 MB，跟其它运行时操作共用一套进度：界面显示阶段文本和不确定进度条，
+        // 期间再点安装或导入会被 busy 挡回去。
+        followRuntimeOperation(initialStage = getString(R.string.runtime_install_progress, file.name)) { listener ->
+            try {
+                val ok = com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, file, root, listener)
+                ui.post {
+                    val msg = if (ok) getString(R.string.runtime_import_success)
+                              else getString(R.string.runtime_import_failed, file.name)
+                    android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_LONG).show()
+                }
+                ok
+            } catch (e: Exception) {
+                ui.post {
+                    android.widget.Toast.makeText(this, getString(R.string.runtime_import_failed, e.message), android.widget.Toast.LENGTH_LONG).show()
+                }
+                false
             }
         }
     }
@@ -3201,10 +3209,10 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         followRuntimeOperation { listener -> LinuxRuntimeInstaller.install(this, release, listener) }
     }
 
-    private fun followRuntimeOperation(run: (LinuxRuntimeInstaller.ProgressListener) -> Boolean?) {
+    private fun followRuntimeOperation(run: (LinuxRuntimeInstaller.ProgressListener) -> Boolean?, initialStage: String? = null) {
         busy = true
         failed = false
-        stage = getString(if (LinuxRuntimeInstaller.isMaintaining()) R.string.desktop_removing else if (LinuxRuntimeInstaller.isRemoving()) R.string.main_removing_runtime else R.string.store_starting)
+        stage = initialStage ?: getString(if (LinuxRuntimeInstaller.isMaintaining()) R.string.desktop_removing else if (LinuxRuntimeInstaller.isRemoving()) R.string.main_removing_runtime else R.string.store_starting)
         percent = -1
         Thread({
             val ok = run(LinuxRuntimeInstaller.ProgressListener { s, p ->
