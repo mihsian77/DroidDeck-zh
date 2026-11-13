@@ -316,7 +316,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         val root = com.droiddeck.launcher.runtime.LinuxRuntime.rootDir(this)
         // 导入动辄几百 MB，跟其它运行时操作共用一套进度：界面显示阶段文本和不确定进度条，
         // 期间再点安装或导入会被 busy 挡回去。
-        followRuntimeOperation(initialStage = getString(R.string.runtime_install_progress, file.name)) { listener ->
+        followRuntimeOperation(getString(R.string.runtime_install_progress, file.name)) { listener ->
             try {
                 val ok = com.droiddeck.launcher.runtime.LinuxRuntimeInstaller.extract(this, file, root, listener)
                 ui.post {
@@ -3209,7 +3209,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         followRuntimeOperation { listener -> LinuxRuntimeInstaller.install(this, release, listener) }
     }
 
-    private fun followRuntimeOperation(run: (LinuxRuntimeInstaller.ProgressListener) -> Boolean?, initialStage: String? = null) {
+    private fun followRuntimeOperation(initialStage: String? = null, run: (LinuxRuntimeInstaller.ProgressListener) -> Boolean?) {
         busy = true
         failed = false
         stage = initialStage ?: getString(if (LinuxRuntimeInstaller.isMaintaining()) R.string.desktop_removing else if (LinuxRuntimeInstaller.isRemoving()) R.string.main_removing_runtime else R.string.store_starting)
