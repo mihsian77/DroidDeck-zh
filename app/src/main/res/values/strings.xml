@@ -3901,6 +3901,10 @@
     <string name="runtime_update_check_failed">Could not check for the latest version. Check your network</string>
     <string name="runtime_download_failed">Download failed: %1$s</string>
     <string name="steam_logout_marked">Marked as signed out. Takes effect the next time Steam starts</string>
+    <string name="steam_logout_title">Sign out of Steam</string>
+    <string name="steam_logout_hint">Clears the saved credentials the next time Steam starts</string>
+    <string name="steam_logout_action">Sign out</string>
+    <string name="download_source_github">GitHub direct</string>
 
     <!-- Agent / Lab builds：上游 2026-11-12 新增，白名单保留 ours 时丢失，按上游原文补回 -->
     <string name="agent_action_install">Install</string>

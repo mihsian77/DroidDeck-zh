@@ -707,9 +707,9 @@ internal fun SetupPanel(
                                 stringResource(R.string.setup_reset_settings_button), a.onResetSettings)
                             if (signedIn) {
                                 ActionRow(
-                                    "退出 Steam 登录",
-                                    "下次启动 Steam 时清除登录凭证",
-                                    "退出",
+                                    stringResource(R.string.steam_logout_title),
+                                    stringResource(R.string.steam_logout_hint),
+                                    stringResource(R.string.steam_logout_action),
                                     onClick = {
                                         java.io.File(ctx.filesDir, ".droiddeck-steam-logout").createNewFile()
                                         android.widget.Toast.makeText(ctx, ctx.getString(R.string.steam_logout_marked), android.widget.Toast.LENGTH_LONG).show()

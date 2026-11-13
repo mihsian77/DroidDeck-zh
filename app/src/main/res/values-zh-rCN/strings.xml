@@ -3820,6 +3820,10 @@
     <string name="runtime_update_check_failed">获取最新版本失败，请检查网络</string>
     <string name="runtime_download_failed">下载失败：%1$s</string>
     <string name="steam_logout_marked">已标记退出，下次启动 Steam 生效</string>
+    <string name="steam_logout_title">退出 Steam 登录</string>
+    <string name="steam_logout_hint">下次启动 Steam 时清除登录凭证</string>
+    <string name="steam_logout_action">退出</string>
+    <string name="download_source_github">GitHub 直连</string>
 
     <!-- Agent / Lab builds：上游 2026-11-12 新增 -->
     <string name="agent_action_install">安装</string>

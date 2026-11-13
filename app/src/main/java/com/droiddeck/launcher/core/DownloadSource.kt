@@ -135,7 +135,7 @@ object DownloadSource {
     }
 
     private fun speedLabel(key: String): String = when {
-        key.isEmpty() -> "GitHub 直连"
+        key.isEmpty() -> app?.getString(com.droiddeck.launcher.R.string.download_source_github) ?: "GitHub"
         key.startsWith("mirrorhub:") -> "MirrorHub · ${key.removePrefix("mirrorhub:")}"
         else -> key
     }
