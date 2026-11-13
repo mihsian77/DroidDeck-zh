@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""把上游新增的 string key 补进 values/strings.xml。
+"""把上游新增的条目补进 values/strings.xml。
 
 同步时 values/strings.xml 按白名单保留我们自己的版本，上游新增的 key 会被
-整块挡掉。代码里一旦引用到这些 key，构建就会 Unresolved reference 失败。
-这个脚本从上游那份 strings.xml 里把缺的条目原样追加进来，保证构建不会因为
-缺 key 挂掉；中文翻译随后补。
+整块挡掉。代码里一旦引用到这些 key，构建就会 Unresolved reference 失败；
+aapt 还会因为重复定义报 duplicate。这个脚本从上游那份 strings.xml 里把缺的
+条目原样追加进来，string 和 plurals 都算，保证构建不会因为缺 key 挂掉；
+中文翻译随后补。
 
 用法：
     python3 tools/i18n/pick-up-new-strings.py [--ref upstream/main] [--root .]
@@ -19,7 +20,10 @@ import re
 import subprocess
 import sys
 
-STRING_RE = re.compile(r'<string name="([^"]+)"[^>]*>.*?</string>', re.S)
+# string 可能是 <string .../> 自闭合，也可能是成对的；plurals 一定成对且含 <item>。
+ENTRY_RE = re.compile(
+    r'<(string|plurals)\s+name="([^"]+)"[^>]*?(?:/>|>.*?</\1\s*>)', re.S
+)
 MARKER = "<!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->"
 
 
@@ -41,6 +45,17 @@ def zh_keys(root):
     return set(re.findall(r'name="([^"]+)"', open(path, encoding="utf-8").read()))
 
 
+def render_entry(entry):
+    """一条 entry 按 4 空格基准重排；plurals 的多行体保持可读。"""
+    lines = [line.strip() for line in entry.strip().splitlines() if line.strip()]
+    if len(lines) == 1:
+        return "    " + lines[0]
+    body = ["    " + lines[0]]
+    body += ["        " + line for line in lines[1:-1]]
+    body.append("    " + lines[-1])
+    return "\n".join(body)
+
+
 def append_entries(path, entries):
     text = open(path, encoding="utf-8").read()
     body = text.rstrip()
@@ -48,7 +63,7 @@ def append_entries(path, entries):
         raise SystemExit(f"{path} 结尾不是 </resources>，不敢动")
     head = body[: -len("</resources>")]
     block = "\n    " + MARKER + "\n"
-    block += "".join("    " + e + "\n" for e in entries)
+    block += "".join(render_entry(e) + "\n" for e in entries)
     open(path, "w", encoding="utf-8").write(head + block + "</resources>\n")
 
 
@@ -62,8 +77,8 @@ def main():
     upstream = git_show(args.ref, "app/src/main/res/values/strings.xml")
 
     entries = {}
-    for m in STRING_RE.finditer(upstream):
-        entries.setdefault(m.group(1), m.group(0))
+    for m in ENTRY_RE.finditer(upstream):
+        entries.setdefault(m.group(2), m.group(0))
 
     have = local_keys(root)
     missing = sorted(k for k in entries if k not in have)
