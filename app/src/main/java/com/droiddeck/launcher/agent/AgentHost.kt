@@ -52,6 +52,7 @@ object AgentHost {
 
     private const val TAG = "AgentHost"
     private const val WORKSPACE = "/root/DroidDeck"
+    internal const val GUEST_PATH = "/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     private const val TICK_MS = 1_000L
     private const val IDLE_TICK_MS = 5_000L
 
@@ -377,11 +378,11 @@ object AgentHost {
      * proot over the installed rootfs, without a session. Loopback adb is connected first so
      * droiddeckctl reaches the app.
      */
-    fun guest(app: Context, command: List<String>, workdir: String = "/root", connectAdb: Boolean = true): ProcessBuilder {
+    fun guest(app: Context, command: List<String>, workdir: String = "/root", connectAdb: Boolean = true, fakeRoot: Boolean = false): ProcessBuilder {
         val adb = AgentAdb.prepare(app)
         val env = listOf(
-            "/usr/bin/env", "HOME=/root", "PATH=/root/.local/bin:/usr/local/bin:/usr/bin:/bin", "LANG=C.UTF-8",
-            "ADB_SERIAL=${adb.serial}", "ADB_VENDOR_KEYS=${adb.vendorKeys}",
+            "/usr/bin/env", "HOME=/root", "PATH=$GUEST_PATH", "LANG=C.UTF-8",
+            "ADB_SERIAL=${adb.serial}", "ADB_VENDOR_KEYS=${adb.vendorKeys}", "DROIDDECK_PACKAGE=${app.packageName}",
             "DD_AGENT=1", "DD_AGENT_INBOX=${File(app.filesDir, "agent").path}", "BROWSER=/root/.local/bin/android-open", "DD_BROWSER_DISPLAY=${AgentAdb.browserDisplay}",
         )
         val shell = listOf(
@@ -390,7 +391,7 @@ object AgentHost {
             (if (connectAdb) "adb start-server >/dev/null 2>&1; adb connect \"\$ADB_SERIAL\" >/dev/null 2>&1; " else "") +
                 "cd \"$1\" 2>/dev/null; shift; exec \"$@\"", "sh", workdir,
         )
-        val proot = LinuxRuntime.command(app, null, null, Environment.getExternalStorageDirectory(), env + shell + command)
+        val proot = LinuxRuntime.command(app, null, null, Environment.getExternalStorageDirectory(), null, env + shell + command, fakeRoot)
         return ProcessBuilder(proot).redirectErrorStream(true).apply {
             environment().apply {
                 remove("LD_PRELOAD"); remove("LD_AUDIT"); remove("LD_LIBRARY_PATH")
@@ -507,6 +508,7 @@ object AgentHost {
         appContext?.let { app ->
             claimLabRequest(app)
             claimOpenUrl(app)
+            claimDeviceCode(app)
             // proot comes from an add-on pack fetched after the app starts, so the runtime can become usable later.
             if (!available && state != State.WORKING) available = LinuxRuntime.hasRootfs(app)
             lab = LabProgress.read(LinuxRuntime.rootDir(app))
@@ -528,15 +530,43 @@ object AgentHost {
         val url = runCatching { claimed.readText().trim() }.getOrNull()
         claimed.delete()
         if (url == null || !(url.startsWith("https://") || url.startsWith("http://"))) return
+        if (!openUrl(app, url)) runCatching { File(app.filesDir, "$OPEN_URL.failed").writeText("") }
+    }
+
+    /** dd-gh-login leaves "<code> <url>" here to float the code over the page, and an empty file when it ends. */
+    private fun claimDeviceCode(app: Context) {
+        val request = File(app.filesDir, DEVICE_CODE)
+        if (!request.isFile) return
+        val claimed = File(app.filesDir, "$DEVICE_CODE.claimed")
+        if (!request.renameTo(claimed)) return
+        val parts = runCatching { claimed.readText().trim() }.getOrDefault("").split(' ', limit = 2)
+        claimed.delete()
+        val code = parts[0]
+        val url = parts.getOrNull(1)?.takeIf { it.startsWith("https://") }
+        if (code.isEmpty() || url == null) {
+            com.droiddeck.launcher.DeviceCodeActivity.close()
+            return
+        }
+        if (!com.droiddeck.launcher.DeviceCodeActivity.show(app, code, url, AgentAdb.browserDisplay)) deviceCodeOpened(app, openUrl(app, url))
+    }
+
+    /** Tells dd-gh-login whether the device page opened, so it can fall back to android-open. */
+    fun deviceCodeOpened(app: Context, opened: Boolean) {
+        runCatching {
+            val part = File(app.filesDir, "$DEVICE_CODE.result.part")
+            part.writeText(if (opened) "ok" else "failed")
+            part.renameTo(File(app.filesDir, "$DEVICE_CODE.result"))
+        }
+    }
+
+    private fun openUrl(app: Context, url: String): Boolean {
         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
             .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
         val options = android.app.ActivityOptions.makeBasic().setLaunchDisplayId(AgentAdb.browserDisplay).toBundle()
-        runCatching { app.startActivity(intent, options) }
+        return runCatching { app.startActivity(intent, options) }
             .recoverCatching { app.startActivity(intent) }
-            .onFailure {
-                Log.w(TAG, "could not open a sign-in link: ${it.javaClass.simpleName}")
-                runCatching { File(app.filesDir, "$OPEN_URL.failed").writeText("") }
-            }
+            .onFailure { Log.w(TAG, "could not open a sign-in link: ${it.javaClass.simpleName}") }
+            .isSuccess
     }
 
     /**
@@ -592,6 +622,7 @@ object AgentHost {
     private const val RESUME = "agent/resume"
     private const val LAB_REQUEST = "agent/lab-request"
     private const val OPEN_URL = "agent/open-url"
+    private const val DEVICE_CODE = "agent/device-code"
     private const val LAB_CHAT_KEY = "lab_chat"
     /** The raw output of the latest turn, for working out what a CLI did when the chat shows nothing. */
     private const val TURN_LOG = "agent/turn.log"

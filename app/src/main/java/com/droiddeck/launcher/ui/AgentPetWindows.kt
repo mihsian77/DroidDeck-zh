@@ -110,7 +110,11 @@ internal class PetMotion(private val context: Context) {
     private val margin = 6 * density
     private val inset = 24 * density
     private var settle: ValueAnimator? = null
-    private val spring = FlingSpring { sx, sy -> x = sx; y = sy }
+    // A fling's overshoot may carry the pet past the edge it settles on, but never so far that it leaves the screen.
+    private val spring = FlingSpring { sx, sy ->
+        x = sx.coerceIn(-size / 2, (width - size / 2).coerceAtLeast(-size / 2))
+        y = sy.coerceIn(0f, (height - size).coerceAtLeast(0f))
+    }
 
     val dockX get() = width - size - margin
 
@@ -333,9 +337,22 @@ internal class PetWindows(private val context: Context) {
             gravity = Gravity.TOP or Gravity.START
             if (full) softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            noMoveAnimation(this)
         }
         if (onSize != null) compose.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ -> onSize(v.width, v.height) }
         return Window(frame, params, touchable)
+    }
+
+    /**
+     * The system otherwise eases a moved overlay from where it last placed it, so the pet trails behind
+     * the finger, lags the chat as it opens, or flashes at an old spot. setCanPlayMoveAnimation sets the
+     * same flag but makes some ROMs refuse the window, so the flag is set directly.
+     */
+    private fun noMoveAnimation(params: WindowManager.LayoutParams) {
+        runCatching {
+            val field = WindowManager.LayoutParams::class.java.getField("privateFlags")
+            field.setInt(params, field.getInt(params) or PRIVATE_FLAG_NO_MOVE_ANIMATION)
+        }
     }
 
     /** A hidden overlay window still owns its frame, which the system can stretch over the screen, so it also stops taking touches. */
@@ -467,6 +484,7 @@ internal class PetWindows(private val context: Context) {
 
     companion object {
         private const val OFFSCREEN = 10_000
+        private const val PRIVATE_FLAG_NO_MOVE_ANIMATION = 0x40
         fun allowed(context: Context) = Settings.canDrawOverlays(context)
     }
 }
@@ -501,6 +519,7 @@ internal fun PetChat(open: Boolean, motion: PetMotion, onClose: () -> Unit, onCl
         } else {
             Rect(margin, motion.dockY + motion.size + gap, w - margin, h - margin)
         }
+        val menuSlot = remember { AgentMenuSlot() }
         val grow = remember { Animatable(0f) }
         val fade = remember { Animatable(0f) }
         LaunchedEffect(open) {
@@ -541,9 +560,10 @@ internal fun PetChat(open: Boolean, motion: PetMotion, onClose: () -> Unit, onCl
                 Text(stringResource(R.string.agent_pet_name), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground,
                     modifier = Modifier.padding(start = 4.dp))
                 Spacer(Modifier.weight(1f))
+                menuSlot.content?.invoke()
                 HeaderAction(Icons.Outlined.Close, stringResource(R.string.agent_close), size = 34.dp, tag = "agent-pet-close", onClick = onClose)
             }
-            AgentPage(Modifier.weight(1f).fillMaxWidth(), visible = open, startTyping = AgentHost.entries.isEmpty(), hidesPet = false)
+            AgentPage(Modifier.weight(1f).fillMaxWidth(), visible = open, startTyping = AgentHost.entries.isEmpty(), hidesPet = false, menuSlot = menuSlot)
         }
     }
 }

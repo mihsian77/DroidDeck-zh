@@ -91,6 +91,7 @@ private const val LAUNCHER_TAB = 2
 
 internal object SetupTabs {
     var openLauncher = false
+    var focusTabs = false
     var openOverview = false
 }
 private const val GLASSES_TAB = 6
@@ -146,6 +147,7 @@ internal fun SetupPanel(
 ) {
     val host = rememberMenuHost()
     val ctx = LocalContext.current
+    var hideHomeFromRecents by remember { mutableStateOf(com.droiddeck.launcher.core.AppUiPrefs.hideHomeFromRecents(ctx)) }
     var processLimitBusy by remember { mutableStateOf(false) }
     var processLimitMessage by remember { mutableStateOf<String?>(null) }
     val setProcessLimit: (Boolean) -> Unit = { enabled ->
@@ -458,8 +460,9 @@ internal fun SetupPanel(
                                 remember { RailLabels.load(railContext) }
                                 ToggleRow(host, "rail-labels", stringResource(R.string.setup_rail_labels), stringResource(R.string.setup_rail_labels_hint), RailLabels.shown) { RailLabels.set(railContext, it) }
                                 LanguageRow(host, s.language, a.onLanguage)
-                                ToggleRow(host, "show-stores", stringResource(R.string.setup_stores), null, s.gameStoresEnabled, onChange = a.onGameStoresEnabled)
+                                if (s.soundtracksEnabled) ToggleRow(host, "soundtracks-ingame", stringResource(R.string.setup_soundtracks_ingame), stringResource(R.string.setup_soundtracks_ingame_hint), s.soundtracksIngame, onChange = a.onSoundtracksIngame)
                             }
+                            TabsSettingsGroup(host, s, a)
                         }
                         val device: @Composable () -> Unit = {
                             SettingsGroup(stringResource(R.string.setup_group_device)) {
@@ -470,6 +473,13 @@ internal fun SetupPanel(
                                 ) { a.onHomeScreen(it) }
                                 if (s.homeScreenEnabled) {
                                     ActionRow(stringResource(R.string.setup_default_home), s.defaultHomeLabel ?: stringResource(R.string.setup_choose_home), stringResource(R.string.setup_choose), a.onHomeApp)
+                                    ToggleRow(
+                                        host, "hide-home-from-recents", stringResource(R.string.setup_hide_home_from_recents),
+                                        stringResource(R.string.setup_hide_home_from_recents_hint), hideHomeFromRecents,
+                                    ) { hidden ->
+                                        hideHomeFromRecents = hidden
+                                        com.droiddeck.launcher.core.AppUiPrefs.setHideHomeFromRecents(ctx, hidden)
+                                    }
                                     ChoiceRow(
                                         host, "home-page", stringResource(R.string.setup_home_page), stringResource(R.string.setup_home_page_hint),
                                         com.droiddeck.launcher.core.AppUiPrefs.homePageOptions.map { (value, label) -> value to stringResource(label) },
@@ -649,9 +659,6 @@ internal fun SetupPanel(
                             ToggleRow(host, "agent-commands", stringResource(R.string.setup_agent_commands), null, s.agentCommands) { a.onAgentCommands() }
                             if (com.droiddeck.launcher.agent.AgentHost.available) {
                                 val agentContext = androidx.compose.ui.platform.LocalContext.current
-                                ToggleRow(host, "agent-tab", stringResource(R.string.setup_agent_tab), null, com.droiddeck.launcher.agent.AgentTab.shown) {
-                                    com.droiddeck.launcher.agent.AgentTab.set(agentContext, it)
-                                }
                                 ToggleRow(host, "agent-pet", stringResource(R.string.setup_agent_pet), stringResource(R.string.setup_agent_pet_hint), AgentPet.enabled) {
                                     AgentPet.set(agentContext, it)
                                 }

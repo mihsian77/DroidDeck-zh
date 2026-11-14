@@ -9,6 +9,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
@@ -129,6 +131,19 @@ private const val COMPOSER_SLIDE_MS = 350L
 @Composable
 internal fun AgentPage(
     modifier: Modifier, inputModifier: Modifier = Modifier, visible: Boolean = true, startTyping: Boolean = true, hidesPet: Boolean = true,
+    menuSlot: AgentMenuSlot? = null,
+) = AgentPageContent(modifier, inputModifier, visible, startTyping, hidesPet, showControlsWithoutKeyboard = false, menuSlot)
+
+@Composable
+internal fun AgentPageWithControls(
+    modifier: Modifier, inputModifier: Modifier = Modifier, visible: Boolean = true, startTyping: Boolean = true,
+    showControlsWithoutKeyboard: Boolean,
+) = AgentPageContent(modifier, inputModifier, visible, startTyping, hidesPet = true, showControlsWithoutKeyboard = showControlsWithoutKeyboard)
+
+@Composable
+private fun AgentPageContent(
+    modifier: Modifier, inputModifier: Modifier, visible: Boolean, startTyping: Boolean, hidesPet: Boolean,
+    showControlsWithoutKeyboard: Boolean, menuSlot: AgentMenuSlot? = null,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
@@ -160,6 +175,16 @@ internal fun AgentPage(
     val composer = remember { ComposerState(startTyping && AgentHost.entries.isEmpty()) }
     val focusManager = LocalFocusManager.current
     val togglePanel: (AgentPanel) -> Unit = { panel = if (panel == it) AgentPanel.NONE else it }
+    var menuOpen by rememberSaveable { mutableStateOf(false) }
+    val menu: @Composable () -> Unit = {
+        AgentMenu(menuOpen, { menuOpen = it }, onPanel = { panel = it }, onSetup = { setup = true })
+    }
+    // A host with a title bar shows the menu there; otherwise it floats over the conversation's top corner.
+    val inSlot = menuSlot != null && panel != AgentPanel.HISTORY && panel != AgentPanel.PROCESSES
+    if (menuSlot != null) DisposableEffect(menuSlot, inSlot) {
+        menuSlot.content = if (inSlot) menu else null
+        onDispose { menuSlot.content = null }
+    }
     // The keyboard leaves too little height for a panel and the editor together, so typing closes the panel.
     val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     LaunchedEffect(keyboardOpen) { if (keyboardOpen && (panel == AgentPanel.MODEL || panel == AgentPanel.USAGE)) panel = AgentPanel.NONE }
@@ -225,9 +250,10 @@ internal fun AgentPage(
                     ) {
                         AgentJumpPill(toLatest)
                     }
+                    if (menuSlot == null) Box(Modifier.align(Alignment.TopEnd).padding(top = 4.dp)) { menu() }
                 }
                 androidx.compose.animation.AnimatedVisibility(!hidden, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-                    AgentComposer(composer, draft, inputModifier, panel, togglePanel) { setup = true }
+                    AgentComposer(composer, draft, inputModifier, panel, togglePanel, showControlsWithoutKeyboard)
                 }
             }
         }
@@ -240,6 +266,7 @@ private class ComposerState(typing: Boolean) {
     var typing by mutableStateOf(typing)
     var focusRequests by mutableIntStateOf(0)
         private set
+    private var consumedFocusRequests by mutableIntStateOf(0)
     /** Opened and waiting for the text field to take focus; focus passes through nothing on the way. */
     var opening = false
 
@@ -247,6 +274,52 @@ private class ComposerState(typing: Boolean) {
         typing = true
         opening = true
         focusRequests++
+    }
+
+    fun hasUnconsumedFocusRequest() = focusRequests > consumedFocusRequests
+
+    fun consumeFocusRequest() {
+        consumedFocusRequests = focusRequests
+    }
+}
+
+/** Where a host with its own title bar shows the conversation's menu. */
+@Stable
+internal class AgentMenuSlot {
+    var content by mutableStateOf<(@Composable () -> Unit)?>(null)
+}
+
+/** History, processes, a new conversation, the pet and setup, folded behind one button. */
+@Composable
+private fun AgentMenu(open: Boolean, onOpen: (Boolean) -> Unit, onPanel: (AgentPanel) -> Unit, onSetup: () -> Unit) {
+    val context = LocalContext.current
+    val colors = MaterialTheme.colorScheme
+    val pal = LocalPalette.current
+    val working = AgentHost.state == AgentHost.State.WORKING
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clip(Shape16).background(colors.surface.copy(alpha = if (open) 0.97f else 0.88f))
+            .border(1.dp, pal.line, Shape16).padding(end = 2.dp),
+    ) {
+        androidx.compose.animation.AnimatedVisibility(open, enter = expandHorizontally(expandFrom = Alignment.End) + fadeIn(),
+            exit = shrinkHorizontally(shrinkTowards = Alignment.End) + fadeOut()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HeaderAction(Icons.Outlined.History, stringResource(R.string.agent_history), size = 36.dp, tag = "agent-history") { onOpen(false); onPanel(AgentPanel.HISTORY) }
+                HeaderAction(Icons.Outlined.Memory, stringResource(R.string.agent_processes), size = 36.dp, tag = "agent-processes") { onOpen(false); onPanel(AgentPanel.PROCESSES) }
+                HeaderAction(Icons.Outlined.Add, stringResource(R.string.agent_new), enabled = !working && AgentHost.entries.isNotEmpty(), size = 36.dp, tag = "agent-new") {
+                    onOpen(false)
+                    AgentHost.forget(context)
+                }
+                HeaderAction(Icons.Outlined.Pets, stringResource(R.string.setup_agent_pet), selected = AgentPet.enabled, size = 36.dp, tag = "agent-pet-toggle") {
+                    AgentPet.set(context, !AgentPet.enabled)
+                }
+                HeaderAction(Icons.Outlined.Settings, stringResource(R.string.agent_setup_title), enabled = !working, size = 36.dp, tag = "agent-settings") {
+                    onOpen(false)
+                    onSetup()
+                }
+            }
+        }
+        HeaderAction(Icons.Outlined.MoreHoriz, stringResource(R.string.agent_more), selected = open, size = 36.dp, tag = "agent-menu") { onOpen(!open) }
     }
 }
 
@@ -492,7 +565,8 @@ internal fun liveUsed(limit: AgentHost.Limit) = if (limit.resetsAt > 0 && limit.
 
 @Composable
 private fun AgentComposer(
-    composer: ComposerState, draftState: MutableState<String>, inputModifier: Modifier, panel: AgentPanel, onPanel: (AgentPanel) -> Unit, onSetup: () -> Unit,
+    composer: ComposerState, draftState: MutableState<String>, inputModifier: Modifier, panel: AgentPanel, onPanel: (AgentPanel) -> Unit,
+    showControlsWithoutKeyboard: Boolean,
 ) {
     val context = LocalContext.current
     var draft by draftState
@@ -538,15 +612,23 @@ private fun AgentComposer(
                 horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 8.dp).fillMaxWidth().horizontalScroll(rememberScrollState()),
             ) { AgentActivity(labOpen) { labOpen = !labOpen } }
-            AgentEditor(composer, draftState, inputModifier, panel, onPanel, onSetup, send)
-        } else AgentReadingBar(composer, draft, inputModifier, labOpen, onLab = { labOpen = !labOpen }) { onPanel(AgentPanel.USAGE) }
+            AgentEditor(composer, draftState, inputModifier, panel, onPanel, highlightControls = showControlsWithoutKeyboard, send = send)
+        } else AgentReadingBar(
+            composer, draft, inputModifier, labOpen, onLab = { labOpen = !labOpen }, onUsage = { onPanel(AgentPanel.USAGE) },
+        ) {
+            // The session drawer is driven by a controller, so its editor opens without raising the keyboard.
+            if (showControlsWithoutKeyboard) {
+                composer.typing = true
+                composer.opening = true
+            } else composer.open()
+        }
     }
 }
 
 /** The composer while reading: one line holding what is going on, opened by a press or by Y. */
 @Composable
 private fun AgentReadingBar(
-    composer: ComposerState, draft: String, inputModifier: Modifier, labOpen: Boolean, onLab: () -> Unit, onUsage: () -> Unit,
+    composer: ComposerState, draft: String, inputModifier: Modifier, labOpen: Boolean, onLab: () -> Unit, onUsage: () -> Unit, onOpen: () -> Unit,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -557,7 +639,7 @@ private fun AgentReadingBar(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp).height(44.dp).clip(Shape16).background(colors.surface)
             .border(if (focused) 2.dp else 1.dp, if (focused) pal.primary else pal.line, Shape16)
-            .then(inputModifier).onFocusChanged { focused = it.isFocused }.clickable { composer.open() }.testTag("agent-composer-bar")
+            .then(inputModifier).onFocusChanged { focused = it.isFocused }.clickable(onClick = onOpen).testTag("agent-composer-bar")
             .padding(start = 14.dp, end = 4.dp),
     ) {
         Text(
@@ -582,7 +664,7 @@ private fun AgentReadingBar(
 @Composable
 private fun AgentEditor(
     composer: ComposerState, draftState: MutableState<String>, inputModifier: Modifier, panel: AgentPanel, onPanel: (AgentPanel) -> Unit,
-    onSetup: () -> Unit, send: () -> Unit,
+    highlightControls: Boolean = false, send: () -> Unit,
 ) {
     val context = LocalContext.current
     val colors = MaterialTheme.colorScheme
@@ -608,12 +690,11 @@ private fun AgentEditor(
         for (path in AgentAttachments.pending.toList()) AttachmentChip(path) { AgentAttachments.pending.remove(path) }
     }
     var focused by remember { mutableStateOf(false) }
-    var menu by rememberSaveable { mutableStateOf(false) }
     val field = remember { FocusRequester() }
-    LaunchedEffect(composer.focusRequests) { if (composer.focusRequests > 0) runCatching { field.requestFocus() } }
+    LaunchedEffect(composer.focusRequests) { if (composer.hasUnconsumedFocusRequest()) runCatching { field.requestFocus() } }
     Column(
         Modifier.fillMaxWidth().padding(top = 8.dp).clip(Shape16).background(colors.surface)
-            .border(1.dp, if (focused) pal.primary else pal.line, Shape16).padding(6.dp),
+            .border(if (focused || highlightControls) 2.dp else 1.dp, if (focused || highlightControls) pal.primary else pal.line, Shape16).padding(6.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().height(36.dp)) {
             val model = AgentHost.models(context).firstOrNull { it.id == AgentHost.model }?.label ?: AgentHost.model ?: stringResource(R.string.agent_model_default)
@@ -630,22 +711,6 @@ private fun AgentEditor(
                 }
                 ContextRing("agent-usage", onClick = { onPanel(AgentPanel.USAGE) })
             }
-            if (menu) {
-                HeaderAction(Icons.Outlined.History, stringResource(R.string.agent_history), size = 32.dp, tag = "agent-history") { menu = false; onPanel(AgentPanel.HISTORY) }
-                HeaderAction(Icons.Outlined.Memory, stringResource(R.string.agent_processes), size = 32.dp, tag = "agent-processes") { menu = false; onPanel(AgentPanel.PROCESSES) }
-                HeaderAction(Icons.Outlined.Add, stringResource(R.string.agent_new), enabled = !working && AgentHost.entries.isNotEmpty(), size = 32.dp, tag = "agent-new") {
-                    menu = false
-                    AgentHost.forget(context)
-                }
-                HeaderAction(Icons.Outlined.Pets, stringResource(R.string.setup_agent_pet), selected = AgentPet.enabled, size = 32.dp, tag = "agent-pet-toggle") {
-                    AgentPet.set(context, !AgentPet.enabled)
-                }
-                HeaderAction(Icons.Outlined.Settings, stringResource(R.string.agent_setup_title), enabled = !working, size = 32.dp, tag = "agent-settings") {
-                    menu = false
-                    onSetup()
-                }
-            }
-            HeaderAction(if (menu) Icons.Outlined.Close else Icons.Outlined.MoreHoriz, stringResource(R.string.agent_more), size = 32.dp, tag = "agent-menu") { menu = !menu }
         }
         Row(verticalAlignment = Alignment.Bottom) {
             if (LocalActivityResultRegistryOwner.current != null) AttachButton()
@@ -658,7 +723,10 @@ private fun AgentEditor(
                     draft, { draft = it },
                     Modifier.fillMaxWidth().focusRequester(field).onFocusChanged {
                         focused = it.isFocused
-                        if (it.isFocused) composer.opening = false
+                        if (it.isFocused) {
+                            composer.consumeFocusRequest()
+                            composer.opening = false
+                        }
                     }.testTag("agent-input").then(inputModifier),
                     textStyle = TextStyle(fontSize = 16.sp, color = colors.onSurface),
                     cursorBrush = SolidColor(pal.primary),
