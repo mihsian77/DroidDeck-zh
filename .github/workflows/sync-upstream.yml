@@ -262,35 +262,15 @@ jobs:
             echo "New upstream release detected, will trigger release."
           fi
 
-      - name: Update versionName to match upstream release
+      - name: Note upstream release
         if: steps.check.outputs.has_updates == 'true' && steps.check_release.outputs.has_new_release == 'true'
         run: |
           set -euo pipefail
           UPSTREAM_TAG="${{ steps.check_release.outputs.upstream_tag }}"
-          NEW_VERSION="${UPSTREAM_TAG}-zh1"
-          # Update versionName
-          sed -i "s/versionName \".*\"/versionName \"$NEW_VERSION\"/" app/build.gradle
-          # Increment versionCode
-          CURRENT_CODE=$(sed -n 's/^ *versionCode \([0-9]*\)$/\1/p' app/build.gradle)
-          NEW_CODE=$((CURRENT_CODE + 1))
-          sed -i "s/versionCode $CURRENT_CODE/versionCode $NEW_CODE/" app/build.gradle
-          git add app/build.gradle
-          git commit -m "sync: bump version to $NEW_VERSION" || echo "::warning::no version bump needed"
-          git push origin main || echo "::warning::version bump push failed"
-          echo "Updated versionName to $NEW_VERSION, versionCode to $NEW_CODE"
-
-      - name: Auto-release after merge (only for new upstream stable)
-        if: steps.check.outputs.has_updates == 'true' && steps.check_release.outputs.has_new_release == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          sleep 10
-          UPSTREAM_TAG="${{ steps.check_release.outputs.upstream_tag }}"
-          # 只写摘要，不在这里发版：release-stable 现在只认当前提交的构建，
-          # 而这次 bump 的构建还没跑完，直接发会拿错包。构建绿了手动 dispatch。
-          echo " | 上游发了 `${UPSTREAM_TAG}`，版本号已改好，构建绿后手动 dispatch release-stable |" >> "$GITHUB_STEP_SUMMARY"
-          echo "Version prepared for ${UPSTREAM_TAG}-zh1; release after the build is green."
+          # 版本号由发版时手改，这里只提示。以前这段会把 versionName 重写成
+          # "<上游 tag>-zh1"，我们用自主语义序列之后，它每天都会把 0.8.0 之类
+          # 覆盖回上游的旧版本号。
+          echo " | 上游发了 \`${UPSTREAM_TAG}\`，版本号不在这里改，发版时手动递增 |" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build the merged tree
         if: steps.check.outputs.has_updates == 'true'
