@@ -25,21 +25,21 @@
     }
   },
   "preview": {
-    "tag": "test-9955f17",
-    "title": "测试包 9955f17",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：ci(sync): 合并后拦一道孤儿文件\n\n版本：0.8.1（9955f17）\n文件名带 -test.9955f17，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "9955f17f24a02f20a6869ba1c7b16caadbb0b96c",
+    "tag": "test-804bf78",
+    "title": "测试包 804bf78",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.8.1（804bf78）\n文件名带 -test.804bf78，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "804bf78100d31678c906b3917fcef6a20a489106",
     "pr": 0,
     "version": "0.8.1",
     "versionCode": 24,
-    "publishedAt": 1794648096000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-9955f17",
+    "publishedAt": 1794655984000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-804bf78",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.8.1-test.9955f17.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-9955f17/DroidDeck-0.8.1-test.9955f17.apk",
-        "size": 132630394,
-        "sha256": "f43572506f34d06b7210ad16ce2e924d6a9b2086cb8cab645c43ac1d6670c598",
+        "name": "DroidDeck-0.8.1-test.804bf78.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-804bf78/DroidDeck-0.8.1-test.804bf78.apk",
+        "size": 135216119,
+        "sha256": "fe8303ab6c74c325d0e3b99228d1f800945fb3ded2a813b8bd85ec664dad6d44",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 24,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
@@ -48,6 +48,28 @@
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-804bf78",
+      "title": "测试包 804bf78",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.8.1（804bf78）\n文件名带 -test.804bf78，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "804bf78100d31678c906b3917fcef6a20a489106",
+      "pr": 0,
+      "version": "0.8.1",
+      "versionCode": 24,
+      "publishedAt": 1794655984000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-804bf78",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.8.1-test.804bf78.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-804bf78/DroidDeck-0.8.1-test.804bf78.apk",
+          "size": 135216119,
+          "sha256": "fe8303ab6c74c325d0e3b99228d1f800945fb3ded2a813b8bd85ec664dad6d44",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 24,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-9955f17",
       "title": "测试包 9955f17",
@@ -86,28 +108,6 @@
           "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-8efffd3/DroidDeck-0.8.1-test.8efffd3.apk",
           "size": 132630394,
           "sha256": "c9d2e78bbe8504715306e39c21031b56c787b193c668b95dbd9c556bd8c7a169",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 24,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-d79a596",
-      "title": "测试包 d79a596",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：fix(build): 补回 media3 依赖，给同步任务补 actions 权限\n\n版本：0.8.1（d79a596）\n文件名带 -test.d79a596，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "d79a596719ec2043056796da598b72121b9cc497",
-      "pr": 0,
-      "version": "0.8.1",
-      "versionCode": 24,
-      "publishedAt": 1794642406000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-d79a596",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.8.1-test.d79a596.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-d79a596/DroidDeck-0.8.1-test.d79a596.apk",
-          "size": 134306807,
-          "sha256": "dd89a6a41cd668828cd146914fc940c7714f857367a52c5374250a53724dbb28",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 24,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
