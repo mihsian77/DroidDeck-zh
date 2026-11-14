@@ -302,6 +302,8 @@ jobs:
           set -euo pipefail
           # 这次 push 用的是 GITHUB_TOKEN，GitHub 不会因此触发 build.yml，
           # 合并结果就一直没人验证。workflow_dispatch 不受这条限制，显式补一次。
-          gh workflow run build.yml --ref main
+          # 必须写明 --repo：工作区里同时有 origin 和 upstream 两个 remote，
+          # gh 不指定就会挑到上游那个，触发上游的 workflow 直接 403。
+          gh workflow run build.yml --repo "${{ github.repository }}" --ref main
           echo " | 已触发构建，结果见 Actions → Build APK |" >> "$GITHUB_STEP_SUMMARY"
           echo "Triggered build.yml on main"
