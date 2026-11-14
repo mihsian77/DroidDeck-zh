@@ -47,7 +47,6 @@ internal fun sourceColours(source: String): SourceColours = when (source) {
 @Composable
 internal fun sourceLabel(source: String): String = when (source) {
     Library.SOURCE_STEAM -> stringResource(R.string.source_steam)
-    Library.SOURCE_COLLECTION -> stringResource(R.string.soundtracks_collections)
     Store.GOG.id -> Store.GOG.label
     Store.EPIC.id -> Store.EPIC.label
     Store.AMAZON.id -> Store.AMAZON.label

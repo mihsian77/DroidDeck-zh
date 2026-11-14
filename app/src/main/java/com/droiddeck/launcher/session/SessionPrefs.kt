@@ -201,18 +201,6 @@ object SessionPrefs {
         prefs(context).edit().putBoolean("gameStoresEnabled", on).apply()
     }
 
-    fun soundtracksEnabled(context: Context): Boolean = prefs(context).getBoolean("soundtracksEnabled", true)
-
-    fun setSoundtracksEnabled(context: Context, on: Boolean) {
-        prefs(context).edit().putBoolean("soundtracksEnabled", on).apply()
-    }
-
-    fun soundtracksIngame(context: Context): Boolean = prefs(context).getBoolean("soundtracksIngame", false)
-
-    fun setSoundtracksIngame(context: Context, on: Boolean) {
-        prefs(context).edit().putBoolean("soundtracksIngame", on).apply()
-    }
-
     fun gameStoresSpeedTier(context: Context): String = prefs(context).getString("gameStoresSpeedTier", "fast") ?: "fast"
 
     fun setGameStoresSpeedTier(context: Context, tier: String) {
@@ -295,7 +283,7 @@ object SessionPrefs {
         prefs(context).edit().putString("navTabOrder", order.joinToString(",")).apply()
     }
 
-    fun navTabShelved(context: Context): Set<String> = idList(prefs(context).getString("navTabShelved", "soundtracks,agent")).toSet()
+    fun navTabShelved(context: Context): Set<String> = idList(prefs(context).getString("navTabShelved", "agent")).toSet()
 
     fun setNavTabShelved(context: Context, keys: Set<String>) {
         prefs(context).edit().putString("navTabShelved", keys.joinToString(",")).apply()

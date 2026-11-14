@@ -148,7 +148,7 @@ internal fun GameDetail(
     val narrow = LocalNarrowPane.current
     val stacked = narrow || LocalConfiguration.current.screenWidthDp < 700
     val ref = remember(key) { GameRef.parse(key) }
-    val games = s.steamGames + rememberXboxCloudRows(s) + if (s.soundtracksEnabled) emptyList() else s.soundtracks
+    val games = s.steamGames + rememberXboxCloudRows(s)
     val found = ref.game(games)
     val known = remember(key) { arrayOfNulls<Pair<Store, String>>(1) }
     val store = ref.store ?: Store.byId(found?.source) ?: known[0]?.first

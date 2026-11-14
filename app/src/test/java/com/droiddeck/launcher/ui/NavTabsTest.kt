@@ -36,24 +36,11 @@ class NavTabsTest {
         com.droiddeck.launcher.agent.AgentTab.load(ctx)
     }
 
-    @Test fun musicStartsInMore() {
-        assertEquals(listOf("steam", "games", "stores", "desktop", "components", "setup", "updates", NavTabs.MORE), navigationKeys(state()))
-        assertEquals(listOf("soundtracks"), NavTabs.more(state()))
-        assertEquals(setOf("soundtracks", "agent"), NavTabs.shelved)
-        assertTrue(com.droiddeck.launcher.agent.AgentTab.shown)
-    }
-
-    @Test fun showingMusicOnceKeepsItShownAfterReload() {
-        NavTabs.setPlace(ctx, "soundtracks", TabPlace.BAR)
-        NavTabs.load(ctx)
-        assertEquals(listOf("steam", "games", "soundtracks", "stores", "desktop", "components", "setup", "updates"), navigationKeys(state()))
-    }
-
     @Test fun shelvedTabsLeaveTheBarAndAddMoreAtTheEnd() {
         NavTabs.setPlace(ctx, "stores", TabPlace.MORE)
         NavTabs.setPlace(ctx, "components", TabPlace.MORE)
         val s = state()
-        assertEquals(listOf("soundtracks", "stores", "components"), NavTabs.more(s))
+        assertEquals(listOf("stores", "components"), NavTabs.more(s))
         assertEquals(NavTabs.MORE, navigationKeys(s).last())
         assertFalse("stores" in navigationKeys(s))
     }
@@ -72,17 +59,16 @@ class NavTabsTest {
     }
 
     @Test fun movingSwapsWithTheNextVisibleTabAndPersists() {
-        NavTabs.setPlace(ctx, "soundtracks", TabPlace.BAR)
         NavTabs.move(ctx, state(), "stores", -1)
-        assertEquals(listOf("steam", "games", "stores", "soundtracks"), navigationKeys(state()).take(4))
+        assertEquals(listOf("steam", "stores", "games", "desktop"), navigationKeys(state()).take(4))
         NavTabs.load(ctx)
-        assertEquals(listOf("steam", "games", "stores", "soundtracks"), navigationKeys(state()).take(4))
+        assertEquals(listOf("steam", "stores", "games", "desktop"), navigationKeys(state()).take(4))
     }
 
     @Test fun tabsMissingFromASavedOrderSlotInAfterTheirDefaultNeighbour() {
-        assertEquals(listOf("updates", "steam", "games", "soundtracks", "stores", "desktop", "agent", "components", "android-apps", "setup"),
+        assertEquals(listOf("updates", "steam", "games", "stores", "desktop", "agent", "components", "android-apps", "setup"),
             NavTabs.arrange(listOf("updates", "steam")))
-        assertEquals(listOf("games", "soundtracks", "steam", "setup", "stores", "desktop", "agent", "components", "android-apps", "updates"),
+        assertEquals(listOf("games", "steam", "setup", "stores", "desktop", "agent", "components", "android-apps", "updates"),
             NavTabs.arrange(listOf("games", "steam", "setup", "stores", "desktop", "components", "android-apps", "updates", "bogus")))
     }
 

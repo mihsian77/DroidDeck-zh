@@ -181,10 +181,6 @@ class FrontEndState(
     val lowStorageWarning: Boolean = true,
     val launcherIcon: String = com.droiddeck.launcher.LauncherIcon.DARK,
     val gameStoresEnabled: Boolean = true,
-    val soundtracksEnabled: Boolean = true,
-    val soundtracksIngame: Boolean = false,
-    val soundtracks: List<Library.SteamGame> = emptyList(),
-    val soundtracksLoaded: Boolean = true,
     val gameStoresSpeedTier: String = "fast",
     val navigate: String? = null,
     val addedGamesArt: Boolean = true,
@@ -289,11 +285,6 @@ class FrontEndActions(
     val onDownloadPrefix: (String) -> Unit = {},
     val onDownloadProxy: (String) -> Unit = {},
     val onGameStoresEnabled: (Boolean) -> Unit = {},
-    val onSoundtracksEnabled: (Boolean) -> Unit = {},
-    val onSoundtracksIngame: (Boolean) -> Unit = {},
-    val onSoundtrackAdded: (java.io.File) -> Unit = {},
-    val onSoundtracksChanged: () -> Unit = {},
-    val onSoundtrackRemoved: (Library.SteamGame) -> Unit = {},
     val onGameStoresSpeedTier: (String) -> Unit = {},
     val onNavigated: () -> Unit = {},
     val onStoresShowMature: (Boolean) -> Unit = {},
@@ -582,15 +573,6 @@ private fun FrontEndScreenBody(s: FrontEndState, a: FrontEndActions, page: (@Com
         selected = NavTabs.MORE
     }
     LaunchedEffect(s.isHomeApp) { if (!s.isHomeApp && selected == "android-apps") selected = "steam" }
-    LaunchedEffect(s.soundtracksEnabled) {
-        if (!s.soundtracksEnabled && (selected == "soundtracks" || selected.startsWith("sound:"))) selected = "games"
-    }
-    LaunchedEffect(s.steamGames.isEmpty(), s.soundtracks, s.soundtracksLoaded) {
-        if (s.steamGames.isEmpty() && selected.startsWith("app:")) {
-            val id = GameRef.parse(selected).appId
-            if (id != null && s.soundtracks.none { it.appId == id } && s.soundtracksLoaded) selected = "games"
-        }
-    }
     remember { Motion.refresh(ctx); true }
 
     val openTab = when {
@@ -598,7 +580,6 @@ private fun FrontEndScreenBody(s: FrontEndState, a: FrontEndActions, page: (@Com
         s.pageKey == "performance" -> "steam"
         s.pageKey == "controller-mapping" -> "setup"
         selected.startsWith("app:") -> "games"
-        selected.startsWith("sound:") -> "soundtracks"
         selected.startsWith("emu:") || selected.startsWith("rom:") || selected.startsWith("user:") || selected == "store" -> "desktop"
         else -> s.pageKey ?: selected
     }
@@ -711,7 +692,7 @@ private fun FrontEndScreenBody(s: FrontEndState, a: FrontEndActions, page: (@Com
             val r = Hops.restore ?: return@LaunchedEffect
             if (r.surface == HOP_SURFACE_SHEET) return@LaunchedEffect
             Hops.restore = null
-            if (r.rail != selected && !(r.rail == "games" && selected.startsWith("app:")) && !(r.rail == "soundtracks" && selected.startsWith("sound:"))) selected = r.rail
+            if (r.rail != selected && !(r.rail == "games" && selected.startsWith("app:"))) selected = r.rail
             kotlinx.coroutines.delay(Motion.ms(PAGE_EXIT_MS).toLong())
             if (inputModeManager.inputMode != InputMode.Keyboard) return@LaunchedEffect
             frontFocus.last = r.control
