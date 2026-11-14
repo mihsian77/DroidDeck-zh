@@ -460,6 +460,7 @@ internal fun SetupPanel(
                                 remember { RailLabels.load(railContext) }
                                 ToggleRow(host, "rail-labels", stringResource(R.string.setup_rail_labels), stringResource(R.string.setup_rail_labels_hint), RailLabels.shown) { RailLabels.set(railContext, it) }
                                 LanguageRow(host, s.language, a.onLanguage)
+                                if (s.soundtracksEnabled) ToggleRow(host, "soundtracks-ingame", stringResource(R.string.setup_soundtracks_ingame), stringResource(R.string.setup_soundtracks_ingame_hint), s.soundtracksIngame, onChange = a.onSoundtracksIngame)
                             }
                             TabsSettingsGroup(host, s, a)
                         }

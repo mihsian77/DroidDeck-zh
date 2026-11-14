@@ -64,6 +64,7 @@ internal fun TabsSettingsGroup(host: MenuHost, s: FrontEndState, a: FrontEndActi
     fun pick(key: String, place: TabPlace) {
         when (key) {
             "stores" -> if ((place != TabPlace.HIDDEN) != s.gameStoresEnabled) a.onGameStoresEnabled(place != TabPlace.HIDDEN)
+            "soundtracks" -> if ((place != TabPlace.HIDDEN) != s.soundtracksEnabled) a.onSoundtracksEnabled(place != TabPlace.HIDDEN)
             "agent" -> if ((place != TabPlace.HIDDEN) != AgentTab.shown) AgentTab.set(ctx, place != TabPlace.HIDDEN)
         }
         NavTabs.setPlace(ctx, key, place)

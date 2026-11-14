@@ -389,6 +389,10 @@ dependencies {
     implementation 'io.noties.markwon:ext-tasklist:4.6.2'
     implementation 'com.atlassian.commonmark:commonmark-ext-autolink:0.13.0'
     implementation 'androidx.palette:palette:1.0.0'
+    // Soundtracks 那套 media3 依赖在 11-14 的同步里跟着文件一起进了树，
+    // 但依赖行被白名单的 build.gradle 挡住，编译直接报 Unresolved reference 'media3'。
+    implementation 'androidx.media3:media3-exoplayer:1.3.1'
+    implementation 'androidx.media3:media3-session:1.3.1'
     implementation 'com.caverock:androidsvg-aar:1.4'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'com.flyfishxu:kadb-android:1.2.1'
