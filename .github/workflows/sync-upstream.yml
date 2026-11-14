@@ -217,6 +217,7 @@ jobs:
           # Already on the sync branch with conflicts resolved.
           # Switch to main and merge the sync branch.
           git checkout main
+          PRE_MERGE=$(git rev-parse HEAD)
           git merge "$BRANCH" --no-edit
           # 同上面一样：base 里存在的 workflow 全部恢复成我们的版本
           for f in $(git ls-tree --name-only "$MERGE_BASE" .github/workflows/ | sed 's|^\.github/workflows/||'); do
@@ -233,6 +234,26 @@ jobs:
           done
           git add -A .github/workflows
           git commit --no-edit -m "sync: keep fork-owned workflows" || true
+
+          # 合并后校验：这次合并新带进来的 app 代码文件，必须在上游树里存在。
+          # 11-14 那次合并把上游已经撤掉的 Soundtracks 整套（22 个文件）带了进来，
+          # 因为 merge 的时间和上游撤回的时间刚好错开；这批文件没有依赖、没有翻译，
+          # 一直在树里躺着直到编译报 media3 缺失才被发现。这里挡一道，别再进去。
+          # 只查本次新增的文件（PRE_MERGE..HEAD 的 A），我们自己的长期自有文件
+          # 在合并前就存在，不会被误报。
+          BAD=0
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            if ! git cat-file -e "upstream/main:$f" 2>/dev/null; then
+              echo "::error::merge brought in a file upstream does not have: $f"
+              BAD=1
+            fi
+          done < <(git diff --diff-filter=A --name-only "$PRE_MERGE"..HEAD -- 'app/src/main/java' 'app/src/test')
+          if [ "$BAD" = "1" ]; then
+            echo "停止同步：上面这些文件在上游不存在，先确认是不是合错了上游线。" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
           # Push directly to main
           git push origin main
           # Delete the sync branch
