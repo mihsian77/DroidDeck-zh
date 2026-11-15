@@ -1,0 +1,68 @@
+name: PR Release Cleanup
+run-name: remove PR
+
+
+
+
+on:
+  pull_request_target:
+    types: [ closed ]
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-release-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+  queue: max
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the current PR state
+        id: state
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          state=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .state)
+          echo "closed=$([ "$state" = closed ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - uses: actions/create-github-app-token@v2
+        if: ${{ steps.state.outputs.closed == 'true' }}
+        id: ci-token
+        with:
+          app-id: ${{ vars.DROIDDECK_CI_APP_ID }}
+          private-key: ${{ secrets.DROIDDECK_CI_APP_KEY }}
+          owner: Droid-Deck
+          repositories: DroidDeck-CI
+      - uses: actions/checkout@v4
+        if: ${{ steps.state.outputs.closed == 'true' }}
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Delete the test build unless main still needs it
+        if: ${{ steps.state.outputs.closed == 'true' }}
+        env:
+          SOURCE_GITHUB_TOKEN: ${{ github.token }}
+          CI_GITHUB_TOKEN: ${{ steps.ci-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        # A merged PR's build stays until a Preview build carries the merge; build.yml and the sweep remove it then.
+        run: python3 tools/release/retire_test_builds.py --pr "$PR_NUMBER"
+      - name: Retire the Discord PR announcement
+        if: ${{ steps.state.outputs.closed == 'true' }}
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_PR_BUILDS_WEBHOOK }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python3 tools/release/pr_discord.py retire
+
+  catalog:
+    needs: cleanup
+    if: ${{ always() }}
+    uses: ./.github/workflows/update-catalog.yml
+    secrets: inherit
