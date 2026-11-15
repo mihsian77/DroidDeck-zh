@@ -4138,4 +4138,12 @@
         <item quantity="one">%d 步</item>
         <item quantity="other">%d 步</item>
     </plurals>
+    <string name="epic_third_party_managed">通过 %1$s 安装</string>
+    <string name="mode_pen">手写笔</string>
+    <string name="mode_pen_button">侧键</string>
+    <string name="mode_pen_mouse">鼠标</string>
+    <string name="mode_pen_touch">触摸</string>
+    <string name="perf_zram_idle">压缩游戏闲置内存</string>
+    <string name="perf_zram_idle_hint">RAM 较低时压缩游戏闲置内存。如果游戏大约每半分钟卡顿几秒，请关闭此项。下次启动会话时生效。</string>
+    <string name="second_key_clear">清屏</string>
 </resources>
