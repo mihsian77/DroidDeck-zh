@@ -4249,4 +4249,25 @@
     <string name="upd_watch_channel">Test build updates</string>
     <string name="upd_watch_text">%1$s. Open Updates to install it.</string>
     <string name="upd_watch_title">New PR #%1$d test build</string>
+    <string name="epic_third_party_managed">Installs through %1$s</string>
+    <string name="integration_shortcuts_install_failed">System keys didn\'t install</string>
+    <string name="integration_shortcuts_install_failed_with">System keys didn\'t install: %1$s</string>
+    <string name="mode_pen">Pen</string>
+    <string name="mode_pen_button">Side button</string>
+    <string name="mode_pen_mouse">Mouse</string>
+    <string name="mode_pen_touch">Touch</string>
+    <string name="perf_zram_idle">Compress idle game memory</string>
+    <string name="perf_zram_idle_hint">Pages out idle game memory when RAM is low. Turn this off if games freeze for a few seconds about every half minute. Applies the next time the session starts.</string>
+    <string name="screen_effects_delete">Delete saved override</string>
+    <string name="screen_effects_delete_hint">Remove saved effects for this game so it inherits the Default profile.</string>
+    <string name="screen_effects_reset">Reset effects</string>
+    <string name="screen_effects_reset_hint">Restore the default-off effect values for this profile.</string>
+    <string name="screen_effects_target">Edit profile</string>
+    <string name="screen_effects_target_auto">Current session (automatic)</string>
+    <string name="screen_effects_target_hint">Choose which profile to change screen effects for.</string>
+    <string name="second_key_clear">Clear</string>
+    <string name="theme_true_black">True black</string>
+    <string name="theme_true_black_detail">Pure black page and panels, so an OLED screen switches those pixels off. You pick the highlight color.</string>
+    <string name="theme_true_black_highlight">Highlight</string>
+    <string name="theme_true_black_highlight_hint">The color of everything selected.</string>
 </resources>

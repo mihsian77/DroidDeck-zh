@@ -4146,4 +4146,17 @@
     <string name="perf_zram_idle">压缩游戏闲置内存</string>
     <string name="perf_zram_idle_hint">RAM 较低时压缩游戏闲置内存。如果游戏大约每半分钟卡顿几秒，请关闭此项。下次启动会话时生效。</string>
     <string name="second_key_clear">清屏</string>
+    <string name="integration_shortcuts_install_failed">系统快捷键没装上</string>
+    <string name="integration_shortcuts_install_failed_with">系统快捷键没装上：%1$s</string>
+    <string name="screen_effects_delete">删除已保存的方案</string>
+    <string name="screen_effects_delete_hint">删掉这个游戏保存的效果，回归默认配置。</string>
+    <string name="screen_effects_reset">重置效果</string>
+    <string name="screen_effects_reset_hint">把这个配置的效果值恢复成默认的关闭状态。</string>
+    <string name="screen_effects_target">编辑配置</string>
+    <string name="screen_effects_target_auto">当前会话（自动）</string>
+    <string name="screen_effects_target_hint">选择要修改画面效果的配置。</string>
+    <string name="theme_true_black">纯黑</string>
+    <string name="theme_true_black_detail">页面和面板用纯黑底，OLED 屏会让这些像素彻底不发光。高亮色由你来选。</string>
+    <string name="theme_true_black_highlight">高亮色</string>
+    <string name="theme_true_black_highlight_hint">所有选中状态用的颜色。</string>
 </resources>
