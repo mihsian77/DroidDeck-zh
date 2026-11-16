@@ -4270,4 +4270,22 @@
     <string name="theme_true_black_detail">Pure black page and panels, so an OLED screen switches those pixels off. You pick the highlight color.</string>
     <string name="theme_true_black_highlight">Highlight</string>
     <string name="theme_true_black_highlight_hint">The color of everything selected.</string>
+
+    <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
+    <string name="agent_tools_missing">Agent tools not installed: %1$s</string>
+    <string name="agent_waiting_background">Waiting for background work</string>
+    <string name="boot_movie_shuffle">Shuffle</string>
+    <string name="display_integer_scaling">Integer scaling</string>
+    <string name="display_integer_scaling_hint">Uses the largest whole-number scale that fits. If the source is too large, fits the full image to avoid cropping. Resolution is configured separately.</string>
+    <string name="display_scaling_auto">Auto</string>
+    <string name="display_scaling_fit">Fit</string>
+    <string name="edit_steam_input_default">Use Steam\'s default</string>
+    <string name="edit_steam_input_disable">Disable Steam Input</string>
+    <string name="edit_steam_input_enable">Enable Steam Input</string>
+    <string name="edit_steam_input_hint">Same as the game\'s Controller setting in Steam Properties.</string>
+    <string name="edit_steam_input_not_saved">Could not save the Steam Input setting. Close Steam and try again.</string>
+    <string name="edit_steam_input_override">Steam Input</string>
+    <string name="edit_steam_input_running">Close the Steam or desktop session before changing this setting.</string>
+    <string name="edit_steam_input_unavailable">Could not read this game\'s Steam Input setting.</string>
+    <string name="exit_hint_back">Press back once more to exit</string>
 </resources>

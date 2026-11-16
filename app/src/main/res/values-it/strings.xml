@@ -1178,6 +1178,7 @@
     <string name="agent_hint_working">Digita per mettere in coda il messaggio successivo</string>
     <string name="agent_queue">Metti in coda</string>
     <string name="agent_queued">Prossimo: %1$s</string>
+    <string name="agent_tools_missing">Strumenti dell’agente non installati: %1$s</string>
     <string name="agent_unqueue">Non inviare</string>
     <string name="agent_attach">Allega</string>
     <string name="agent_remove_attachment">Rimuovi</string>
@@ -3445,6 +3446,7 @@
     <string name="boot_movie_sound">Audio</string>
     <string name="boot_movie_skip">Salta il video di avvio</string>
     <string name="boot_movie_skip_hint">Usa una clip nera di 0,1 secondi come video di avvio di Steam. Dalla sessione successiva.</string>
+    <string name="boot_movie_shuffle">Casuale</string>
     <string name="boot_movie_custom">Il tuo video</string>
     <string name="boot_movie_custom_hint">MP4, MOV, MKV o WebM. Altri formati e file oltre %1$d MB vengono convertiti in WebM 720p sul dispositivo, fino a %2$d secondi.</string>
     <string name="boot_movie_import">Importa</string>
@@ -4143,4 +4145,8 @@
     <string name="hud_metric_hdr">Stato HDR</string>
     <string name="hud_readings_shown">Mostrati</string>
     <string name="hud_readings_count">%1$d di %2$d</string>
+    <string name="exit_hint_back">Premi di nuovo indietro per uscire</string>
+
+    <string name="display_integer_scaling">Ridimensionamento intero</string>
+    <string name="display_integer_scaling_hint">Usa il più grande fattore di scala intero che entra nello schermo. Se la sorgente è troppo grande, adatta l’intera immagine per evitare ritagli. La risoluzione si configura separatamente.</string>
 </resources>

@@ -1180,6 +1180,7 @@
     <string name="agent_hint_working">พิมพ์เพื่อเข้าคิวข้อความถัดไป</string>
     <string name="agent_queue">เข้าคิว</string>
     <string name="agent_queued">ถัดไป: %1$s</string>
+    <string name="agent_tools_missing">ยังไม่ได้ติดตั้งเครื่องมือของเอเจนต์: %1$s</string>
     <string name="agent_unqueue">ไม่ต้องส่ง</string>
     <string name="agent_attach">แนบ</string>
     <string name="agent_remove_attachment">นำออก</string>
@@ -3378,6 +3379,7 @@
     <string name="boot_movie_sound">เสียง</string>
     <string name="boot_movie_skip">ข้ามวิดีโอเริ่มต้น</string>
     <string name="boot_movie_skip_hint">ใช้คลิปสีดำความยาว 0.1 วินาทีเป็นวิดีโอเริ่มต้นของ Steam มีผลในเซสชันถัดไป</string>
+    <string name="boot_movie_shuffle">สุ่ม</string>
     <string name="boot_movie_custom">วิดีโอของคุณเอง</string>
     <string name="boot_movie_custom_hint">MP4, MOV, MKV หรือ WebM รูปแบบอื่นและไฟล์ที่ใหญ่กว่า %1$d MB จะถูกแปลงเป็น WebM 720p บนอุปกรณ์ ความยาวไม่เกิน %2$d วินาที</string>
     <string name="boot_movie_import">นำเข้า</string>
@@ -4074,4 +4076,8 @@
     <string name="hud_metric_hdr">สถานะ HDR</string>
     <string name="hud_readings_shown">ที่แสดง</string>
     <string name="hud_readings_count">%1$d จาก %2$d</string>
+    <string name="exit_hint_back">กดกลับอีกครั้งเพื่อออก</string>
+
+    <string name="display_integer_scaling">การปรับขนาดจำนวนเต็ม</string>
+    <string name="display_integer_scaling_hint">ใช้ตัวคูณการปรับขนาดจำนวนเต็มที่ใหญ่ที่สุดที่พอดี หากภาพต้นฉบับใหญ่เกินไป จะปรับภาพทั้งหมดให้พอดีเพื่อหลีกเลี่ยงการตัดภาพ โดยตั้งค่าความละเอียดแยกต่างหาก</string>
 </resources>

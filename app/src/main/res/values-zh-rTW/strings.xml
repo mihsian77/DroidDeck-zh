@@ -1179,6 +1179,7 @@
     <string name="agent_hint_working">輸入以排入下一則訊息</string>
     <string name="agent_queue">排入佇列</string>
     <string name="agent_queued">下一則：%1$s</string>
+    <string name="agent_tools_missing">智慧代理工具未安裝：%1$s</string>
     <string name="agent_unqueue">不要傳送</string>
     <string name="agent_attach">附加</string>
     <string name="agent_remove_attachment">移除</string>
@@ -3375,6 +3376,7 @@
     <string name="boot_movie_sound">聲音</string>
     <string name="boot_movie_skip">跳過啟動影片</string>
     <string name="boot_movie_skip_hint">使用 0.1 秒的黑色影片片段作為 Steam 的啟動影片。將於下次工作階段生效。</string>
+    <string name="boot_movie_shuffle">隨機播放</string>
     <string name="boot_movie_custom">自訂影片</string>
     <string name="boot_movie_custom_hint">MP4、MOV、MKV 或 WebM。其他格式及超過 %1$d MB 的檔案會在裝置上轉換為 720p WebM，最長 %2$d 秒。</string>
     <string name="boot_movie_import">匯入</string>
@@ -4074,4 +4076,8 @@
     <string name="hud_metric_hdr">HDR 狀態</string>
     <string name="hud_readings_shown">已顯示</string>
     <string name="hud_readings_count">%1$d / %2$d</string>
+    <string name="exit_hint_back">再按一次返回鍵退出</string>
+
+    <string name="display_integer_scaling">整數縮放</string>
+    <string name="display_integer_scaling_hint">使用可容納的最大整數縮放倍數。如果來源影像太大，會縮放整張影像以避免裁切。解析度會另外設定。</string>
 </resources>
