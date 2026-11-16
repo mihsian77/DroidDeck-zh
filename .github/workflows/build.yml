@@ -511,6 +511,8 @@ jobs:
       # assets API 端点（Accept: application/octet-stream）还通着。先把三个包塞进
       # fetch.sh 用的校验缓存，它命中缓存就不再碰直链。
       - name: Seed the DirectAudio release assets through the asset API
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           . tools/directaudio/release.env
@@ -523,9 +525,9 @@ jobs:
               echo "cached: $name"
               return 0
             fi
-            id=$(curl -fsSL "$api/releases/tags/${DIRECTAUDIO_TAG}" \
+            id=$(curl -fsSL -H "Authorization: token $GH_TOKEN" "$api/releases/tags/${DIRECTAUDIO_TAG}" \
               | python3 -c "import json,sys; n=sys.argv[1]; print([a['id'] for a in json.load(sys.stdin)['assets'] if a['name']==n][0])" "$name")
-            curl -fsSL --retry 5 --retry-all-errors -H "Accept: application/octet-stream" \
+            curl -fsSL --retry 5 --retry-all-errors -H "Authorization: token $GH_TOKEN" -H "Accept: application/octet-stream" \
               "$api/releases/assets/$id" -o "$kept.part"
             echo "$sha  $kept.part" | sha256sum -c - > /dev/null
             mv "$kept.part" "$kept"
