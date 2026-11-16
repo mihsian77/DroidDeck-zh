@@ -1180,6 +1180,7 @@
     <string name="agent_hint_working">入力すると次のメッセージをキューに追加できます</string>
     <string name="agent_queue">キューに追加</string>
     <string name="agent_queued">次: %1$s</string>
+    <string name="agent_tools_missing">エージェントのツールが未インストール: %1$s</string>
     <string name="agent_unqueue">送信しない</string>
     <string name="agent_attach">添付</string>
     <string name="agent_remove_attachment">削除</string>
@@ -3378,6 +3379,7 @@
     <string name="boot_movie_sound">サウンド</string>
     <string name="boot_movie_skip">起動ムービーをスキップ</string>
     <string name="boot_movie_skip_hint">0.1 秒の黒いクリップを Steam の起動ムービーとして使用します。次回セッションから適用されます。</string>
+    <string name="boot_movie_shuffle">シャッフル</string>
     <string name="boot_movie_custom">自分のムービー</string>
     <string name="boot_movie_custom_hint">MP4、MOV、MKV、WebM。その他の形式や %1$d MB を超えるファイルは、端末上で 720p の WebM に変換されます（%2$d 秒まで）。</string>
     <string name="boot_movie_import">インポート</string>
@@ -4074,4 +4076,8 @@
     <string name="hud_metric_hdr">HDR 状態</string>
     <string name="hud_readings_shown">表示中</string>
     <string name="hud_readings_count">%2$d 中 %1$d</string>
+    <string name="exit_hint_back">もう一度戻るを押すと終了します</string>
+
+    <string name="display_integer_scaling">整数スケーリング</string>
+    <string name="display_integer_scaling_hint">収まる最大の整数倍率を使用します。元の画像が大きすぎる場合は、切り抜きを避けるため画像全体を収めます。解像度は別途設定します。</string>
 </resources>

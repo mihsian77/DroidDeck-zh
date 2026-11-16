@@ -1183,6 +1183,7 @@
     <string name="agent_hint_working">Skriv for å legge neste melding i kø</string>
     <string name="agent_queue">Legg i kø</string>
     <string name="agent_queued">Neste: %1$s</string>
+    <string name="agent_tools_missing">Agentverktøy er ikke installert: %1$s</string>
     <string name="agent_unqueue">Ikke send</string>
     <string name="agent_attach">Legg ved</string>
     <string name="agent_remove_attachment">Fjern</string>
@@ -3407,6 +3408,7 @@
     <string name="boot_movie_sound">Lyd</string>
     <string name="boot_movie_skip">Hopp over oppstartsfilmen</string>
     <string name="boot_movie_skip_hint">Bruk et svart klipp på 0,1 sekunder som oppstartsfilmen til Steam. Trer i kraft neste økt.</string>
+    <string name="boot_movie_shuffle">Tilfeldig rekkefølge</string>
     <string name="boot_movie_custom">Din egen video</string>
     <string name="boot_movie_custom_hint">MP4, MOV, MKV eller WebM. Andre formater og filer over %1$d MB konverteres til 720p-WebM på enheten, opptil %2$d sekunder.</string>
     <string name="boot_movie_import">Importer</string>
@@ -4104,4 +4106,8 @@
     <string name="hud_metric_hdr">HDR-status</string>
     <string name="hud_readings_shown">Vist</string>
     <string name="hud_readings_count">%1$d av %2$d</string>
+    <string name="exit_hint_back">Trykk tilbake én gang til for å avslutte</string>
+
+    <string name="display_integer_scaling">Heltallsskalering</string>
+    <string name="display_integer_scaling_hint">Bruker den største hele skaleringsfaktoren som får plass. Hvis kilden er for stor, tilpasses hele bildet for å unngå beskjæring. Oppløsningen stilles inn separat.</string>
 </resources>

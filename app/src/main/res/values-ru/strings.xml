@@ -1189,6 +1189,7 @@
     <string name="agent_hint_working">Введите текст, чтобы поставить следующее сообщение в очередь</string>
     <string name="agent_queue">В очередь</string>
     <string name="agent_queued">Далее: %1$s</string>
+    <string name="agent_tools_missing">Инструменты агента не установлены: %1$s</string>
     <string name="agent_unqueue">Не отправлять</string>
     <string name="agent_attach">Прикрепить</string>
     <string name="agent_remove_attachment">Удалить</string>
@@ -3485,6 +3486,7 @@
     <string name="boot_movie_sound">Звук</string>
     <string name="boot_movie_skip">Пропускать стартовое видео</string>
     <string name="boot_movie_skip_hint">Использовать 0,1-секундный чёрный клип в качестве стартового видео Steam. Применится в следующем сеансе.</string>
+    <string name="boot_movie_shuffle">Случайный порядок</string>
     <string name="boot_movie_custom">Своё видео</string>
     <string name="boot_movie_custom_hint">MP4, MOV, MKV или WebM. Другие форматы и файлы больше %1$d МБ преобразуются на устройстве в WebM 720p, до %2$d секунд.</string>
     <string name="boot_movie_import">Импорт</string>
@@ -4184,4 +4186,8 @@
     <string name="hud_metric_hdr">Состояние HDR</string>
     <string name="hud_readings_shown">Показано</string>
     <string name="hud_readings_count">%1$d из %2$d</string>
+    <string name="exit_hint_back">Нажмите «Назад» ещё раз, чтобы выйти</string>
+
+    <string name="display_integer_scaling">Целочисленное масштабирование</string>
+    <string name="display_integer_scaling_hint">Использует наибольший целочисленный коэффициент масштабирования, который помещается. Если исходное изображение слишком велико, оно уменьшается целиком, чтобы избежать обрезки. Разрешение настраивается отдельно.</string>
 </resources>

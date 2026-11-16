@@ -1195,6 +1195,7 @@
     <string name="agent_hint_working">اكتب لإضافة الرسالة التالية إلى الانتظار</string>
     <string name="agent_queue">إضافة إلى الانتظار</string>
     <string name="agent_queued">التالي: %1$s</string>
+    <string name="agent_tools_missing">أدوات الوكيل غير مثبتة: %1$s</string>
     <string name="agent_unqueue">لا تُرسل</string>
     <string name="agent_attach">إرفاق</string>
     <string name="agent_remove_attachment">إزالة</string>
@@ -3563,6 +3564,7 @@
     <string name="boot_movie_sound">الصوت</string>
     <string name="boot_movie_skip">تخطي مقطع بدء التشغيل</string>
     <string name="boot_movie_skip_hint">استخدم مقطعًا أسود مدته 0.1 ثانية كمقطع بدء تشغيل Steam. يسري في الجلسة التالية.</string>
+    <string name="boot_movie_shuffle">عشوائي</string>
     <string name="boot_movie_custom">فيديو خاص بك</string>
     <string name="boot_movie_custom_hint">MP4 أو MOV أو MKV أو WebM. تُحوَّل الصيغ الأخرى والملفات الأكبر من %1$d ميغابايت إلى WebM بدقة 720p على الجهاز، حتى %2$d ثانية.</string>
     <string name="boot_movie_import">استيراد</string>
@@ -4264,4 +4266,8 @@
     <string name="hud_metric_hdr">حالة HDR</string>
     <string name="hud_readings_shown">المعروض</string>
     <string name="hud_readings_count">%1$d من %2$d</string>
+    <string name="exit_hint_back">اضغط زر الرجوع مرة أخرى للخروج</string>
+
+    <string name="display_integer_scaling">تحجيم صحيح بالأعداد الصحيحة</string>
+    <string name="display_integer_scaling_hint">يستخدم أكبر معامل تحجيم صحيح يناسب الشاشة. إذا كان المصدر كبيرًا جدًا، يتم تصغير الصورة كاملة لتجنب الاقتصاص. يتم ضبط الدقة بشكل منفصل.</string>
 </resources>
