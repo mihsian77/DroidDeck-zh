@@ -94,14 +94,20 @@ def trackingPack = rootProject.file('tools/packs/tracking/release.env').readLine
 def prootPackPin = rootProject.file('tools/packs/proot/release.env').readLines()
     .findAll { it.contains('=') && !it.startsWith('#') }
     .collectEntries { def kv = it.split('=', 2); [(kv[0].trim()): kv[1].trim()] }
+// 上游把 Windows 可执行文件挪出 APK 改成 add-on pack（#2676），我们这份 runtime
+// 里没有这两个目录，打不出来。直接 pin 上游发布出来的包，应用照样能下。
+def pinnedPacks = [
+    rockstar: [sha256: '47454e32deca3439c729bec7d264396936eba672a683b3ad0a57908d50133410', size: 406885L],
+    dirt: [sha256: '9e75ac1fcd1ce0ee0df950414034e46f59acfea7a0e650ea59b84ad20f682af2', size: 4169L],
+]
 def addonPacks = ['proot', 'directaudio', 'tracking', 'xbox', 'comet', 'butler', 'powervr', 'ubisoft', 'rockstar', 'dirt'].collectEntries { name ->
     def pack = file("build/packs/${name}.tar.zst")
     if (!pack.isFile()) {
-        // rockstar 和 dirt 的源目录在上游自己的 linuxfs 里，我们这份 runtime 没有，
-        // 打不出来。空 sha 在应用侧就是 available=false，不发起下载，界面自然不显示，
-        // 等这两份源材料进了我们的 runtime 再交给 build.sh 正常打包。
-        if (name in ['rockstar', 'dirt']) {
-            return [(name): [sha256: '', size: 0L]]
+        // 本地打不出来就用上面 pin 住的上游包：sha 和 tag 后缀对得上，应用会去
+        // DroidDeck-Components 拉。等这两份源材料进了我们的 runtime，build.sh 会
+        // 自己打包，sha 由内容算出来，这里的 pin 自然就让位了。
+        if (pinnedPacks.containsKey(name)) {
+            return [(name): pinnedPacks[name]]
         }
         // A source build that did not compile proot still pins a published pack, so the app
         // downloads the patched binary instead of falling back to the rootfs copy.
