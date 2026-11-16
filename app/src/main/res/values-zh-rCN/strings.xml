@@ -1278,14 +1278,14 @@
     <string name="gpu_auto_hint">为此 GPU 挑选的最佳组合，并保持更新</string>
     <string name="gpu_manual_hint">自行挑选驱动组合</string>
     <string name="gpu_checking">正在检查驱动…</string>
-    <string name="gpu_none_listed">尚未列出任何驱动。刷新以查找。</string>
+    <string name="gpu_none_listed">还没检测到驱动。刷新一下再看看。</string>
     <string name="gpu_hide_other">隐藏其他 GPU 的驱动</string>
     <string name="gpu_show_other">显示其他 GPU 的驱动</string>
     <string name="gpu_advanced">高级</string>
     <string name="gpu_ubwc_title">UBWC 兼容性</string>
     <string name="gpu_ubwc_hint">如果 Steam 或 Android 出现条纹或闪烁，请尝试开启或关闭。重启 DroidDeck 后对两种驱动均生效。</string>
     <string name="gpu_ubwc_restart">重启 DroidDeck 以应用。</string>
-    <string name="gpu_set_with_display">与显示驱动一起设置：%1$s 同时携带两者。</string>
+    <string name="gpu_set_with_display">跟显示驱动一起设置：%1$s 里两者都有。</string>
     <string name="gpu_set_with_runtime">与运行时驱动一起设置：%1$s 同时携带两者。</string>
     <string name="gpu_runtime_hint">由游戏和桌面使用。</string>
     <string name="gpu_runtime_default">运行时默认</string>
@@ -2764,7 +2764,7 @@
     <string name="glasses_calibration_saved_hint">这副眼镜已应用保存的校准。</string>
     <string name="glasses_calibration_open">校准</string>
     <string name="glasses_calibration_instructions">将已连接的眼镜倒置放在水平面上，让镜框平稳贴合。点按“开始”，然后约 8 秒内不要触碰。一旦移动，测量会重新开始。此操作校正漂移和倾斜，不校正朝向。</string>
-    <string name="glasses_calibration_settling">保持眼镜倒置，不要触碰。正在等待其静止…</string>
+    <string name="glasses_calibration_settling">眼镜保持倒置别动。等它稳定下来…</string>
     <string name="glasses_calibration_collecting">正在测量传感器。请保持眼镜静止。</string>
     <string name="glasses_calibration_moving">检测到移动。请勿触碰眼镜；测量将自动重新开始。</string>
     <string name="glasses_calibration_turn_over">请将眼镜倒置放在水平面上。放置正确后将开始测量。</string>
@@ -3169,7 +3169,7 @@
     <string name="tracking_recovery_hold">重置追踪中心正在进行中。\n请在追踪稳定期间保持智能眼镜静止。</string>
     <string name="tracking_recovery_automatic">当头部跟踪准备就绪时，该屏幕自动关闭。</string>
     <string name="glasses_steady_hand_aim">稳定双手瞄准</string>
-    <string name="glasses_steady_hand_aim_hint">从肩膀到手掌瞄准。关闭以进行手腕控制旋转。</string>
+    <string name="glasses_steady_hand_aim_hint">从肩膀经手掌方向瞄准。关掉后由手腕控制转动。</string>
     <string name="spatial_title">空间设置</string>
     <string name="spatial_wait_tracking">等待追踪……</string>
     <string name="spatial_cameras_description">左、右跟踪摄像机</string>
@@ -3212,9 +3212,9 @@
     <string name="spatial_adaptive">自动输入频率以跟踪手部</string>
     <string name="spatial_adaptive_hint">调整输入处理速度。跟踪重新启动时重置。</string>
     <string name="spatial_half_rate">限制手部追踪的输入频率</string>
-    <string name="spatial_half_rate_hint">使用一半的相机图像。关闭以比较最大频率。跟踪重新启动时重置。</string>
+    <string name="spatial_half_rate_hint">只使用一半的相机帧。关掉就能对比全帧率。跟踪重启时会恢复默认。</string>
     <string name="spatial_diagnostic_capture">诊断捕获</string>
-    <string name="spatial_diagnostic_capture_hint">在本地保存一对立体图像。仅在请求时才保存图像。</string>
+    <string name="spatial_diagnostic_capture_hint">在本地保存一帧立体画面。只有请求时才会保存图像。</string>
     <string name="spatial_save_frame">保存相机图像</string>
     <string name="spatial_restart_tracking">重新开始追踪</string>
     <string name="spatial_restart_hint">如果跟踪在光线充足的区域中无法恢复，请使用。重新启动需要新的跟踪源。</string>
@@ -3251,7 +3251,7 @@
     <string name="spatial_wait_hands">等待手部追踪</string>
     <string name="spatial_collect_instructions">保持 5 × 7 校准目标静止。移动和旋转智能眼镜时捕获 24 个以上视图。</string>
     <string name="spatial_capture_pending">等待下一个摄像机图像。保持智能眼镜不动。</string>
-    <string name="spatial_validation_pending">检查下一个摄像机图像。保持完整校准目标可见并保持静止。</string>
+    <string name="spatial_validation_pending">正在检查下一张相机画面。让整块校准板都在视野内，保持别动。</string>
     <string name="spatial_start_first">首先开始校准</string>
     <string name="spatial_no_camera_frame">没有新的相机图像到达。检查智能眼镜连接和相机预览，然后重试。</string>
     <string name="spatial_clock_reset">相机时钟重置</string>
@@ -3293,7 +3293,7 @@
     <string name="spatial_alignment_error">头部跟踪和校准目标不一致 %1$s（限制 5 厘米/2 英寸）。保持校准目标固定并等待稳定跟踪，然后再开始新的一组。轻轻转动、倾斜智能眼镜；每次捕获之前暂停。</string>
     <string name="spatial_need_views">捕获固定校准目标的至少24个不同视图。</string>
     <string name="spatial_need_rotation">左右转动智能眼镜，上下倾斜；不旋转的移动无法校准相机对准。</string>
-    <string name="spatial_bad_baseline">难以置信的相机基线</string>
+    <string name="spatial_bad_baseline">相机基线不合理</string>
     <string name="spatial_need_orientations">通过更多不同的方向移动您的头部。</string>
     <string name="spatial_bad_rotation">相机到头部旋转无效</string>
     <string name="spatial_bad_alignment">相机与头部的对齐不一致。</string>
@@ -4159,4 +4159,20 @@
     <string name="theme_true_black_detail">页面和面板用纯黑底，OLED 屏会让这些像素彻底不发光。高亮色由你来选。</string>
     <string name="theme_true_black_highlight">高亮色</string>
     <string name="theme_true_black_highlight_hint">所有选中状态用的颜色。</string>
+    <string name="agent_tools_missing">Agent 工具没装上：%1$s</string>
+    <string name="agent_waiting_background">等待后台任务完成</string>
+    <string name="boot_movie_shuffle">随机</string>
+    <string name="display_integer_scaling">整数缩放</string>
+    <string name="display_integer_scaling_hint">取放得下的最大整数倍。源分辨率比屏幕大时会缩到整幅显示，避免裁掉边缘。分辨率在别处单独设置。</string>
+    <string name="display_scaling_auto">自动</string>
+    <string name="display_scaling_fit">适应</string>
+    <string name="edit_steam_input_default">用 Steam 默认</string>
+    <string name="edit_steam_input_disable">关闭 Steam 输入</string>
+    <string name="edit_steam_input_enable">开启 Steam 输入</string>
+    <string name="edit_steam_input_hint">跟 Steam 属性里这款游戏的控制器设置保持一致。</string>
+    <string name="edit_steam_input_not_saved">Steam 输入设置没保存上。关掉 Steam 再试一次。</string>
+    <string name="edit_steam_input_override">Steam 输入</string>
+    <string name="edit_steam_input_running">改这个设置前要先关掉 Steam 或桌面会话。</string>
+    <string name="edit_steam_input_unavailable">读不到这款游戏的 Steam 输入设置。</string>
+    <string name="exit_hint_back">再按一次返回键退出</string>
 </resources>
