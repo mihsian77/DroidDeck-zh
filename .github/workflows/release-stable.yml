@@ -72,6 +72,16 @@ jobs:
           echo "APK found:"
           ls apk/*.apk
 
+      # 中文覆盖、占位符、字体、清单标记、签名 lineage——这些编译阶段都不会报，
+      # 只有装到设备上才暴露。发之前把能静态查的都查一遍。
+      - name: Verify the apk before publishing
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+        run: |
+          set -euo pipefail
+          apk=$(ls apk/*.apk | head -1)
+          python3 tools/release/verify-apk.py "$apk"
+
       - name: Publish stable release
         id: publish
         env:
