@@ -273,7 +273,7 @@ object SessionPrefs {
         prefs(context).edit().putBoolean("railLabels", show).apply()
     }
 
-    fun agentTab(context: Context): Boolean = prefs(context).getBoolean("agentTab", true)
+    fun agentTab(context: Context): Boolean = prefs(context).getBoolean("agentTab", false)
 
     fun setAgentTab(context: Context, show: Boolean) {
         prefs(context).edit().putBoolean("agentTab", show).apply()
@@ -706,6 +706,18 @@ object SessionPrefs {
     fun micEnabled(context: Context): Boolean = prefs(context).getBoolean("mic", false)
 
     fun micAsked(context: Context): Boolean = prefs(context).getBoolean("micAsked", false)
+
+    fun allFilesAsked(context: Context): Boolean = prefs(context).getBoolean("allFilesAsked", false)
+
+    fun setAllFilesAsked(context: Context) {
+        prefs(context).edit().putBoolean("allFilesAsked", true).apply()
+    }
+
+    fun bluetoothAsked(context: Context): Boolean = prefs(context).getBoolean("bluetoothAsked", false)
+
+    fun setBluetoothAsked(context: Context) {
+        prefs(context).edit().putBoolean("bluetoothAsked", true).apply()
+    }
 
     fun setMicAsked(context: Context) {
         prefs(context).edit().putBoolean("micAsked", true).apply()
