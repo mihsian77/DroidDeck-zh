@@ -4290,4 +4290,19 @@
     <string name="edit_steam_input_running">Close the Steam or desktop session before changing this setting.</string>
     <string name="edit_steam_input_unavailable">Could not read this game\'s Steam Input setting.</string>
     <string name="exit_hint_back">Press back once more to exit</string>
+
+    <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
+    <string name="agent_action_add_key">Add key</string>
+    <string name="agent_action_free">Free models</string>
+    <string name="agent_key_hint">Paste your API key from opencode.ai/auth</string>
+    <string name="agent_key_save">Save</string>
+    <string name="agent_step_free_models">Free models · add a Zen key for the rest</string>
+    <string name="agent_step_sign_in_key_hint">Free models, or a Zen key from opencode.ai/auth</string>
+    <string name="agent_storage_opencode">OpenCode</string>
+    <string name="display_scaling_integer">Integer</string>
+    <string name="drawer_antialiasing">Anti-aliasing</string>
+    <string name="drawer_smaa">SMAA</string>
+    <string name="hud_hold">Long press</string>
+    <string name="hud_hold_collapse">Collapse or expand</string>
+    <string name="hud_hold_lock">Lock or unlock</string>
 </resources>
