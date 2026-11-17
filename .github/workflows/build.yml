@@ -222,6 +222,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
         with:
+          cache-read-only: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
           cache-cleanup: on-success
 
       - name: Resolve the runner's NDK
@@ -769,6 +770,9 @@ jobs:
       - name: Unit tests
         id: unit-tests
         continue-on-error: true
+        env:
+          DROIDDECK_BUILD_LABEL: ${{ steps.build-label.outputs.label }}
+          SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
         run: |
           set -o pipefail
           mkdir -p app/build

@@ -199,7 +199,6 @@ public final class Downloader {
     private static final class Identity {
         private String source;
         private String etag;
-        private long total;
     }
 
     private static File resumeFile(File dest) {
@@ -223,16 +222,13 @@ public final class Downloader {
             String source = p.getProperty("source");
             String etag = p.getProperty("etag");
             String expected = p.getProperty("sha256", "");
-            long total = Long.parseLong(p.getProperty("total", "0"));
-            if (source != null && source.startsWith("http")
-                    && (strongETag(etag) || total > 0)
+            if (source != null && source.startsWith("http") && strongETag(etag)
                     && expected.equals(expectedSha256 == null ? "" : expectedSha256.toLowerCase(java.util.Locale.ROOT))) {
                 identity.source = source;
-                identity.etag = strongETag(etag) ? etag : null;
-                identity.total = total;
+                identity.etag = etag;
                 return identity;
             }
-        } catch (IOException | NumberFormatException e) {
+        } catch (IOException e) {
         }
         if (!discardPartial(dest, identity)) Log.w(TAG, "could not discard unidentified partial " + dest);
         return identity;
@@ -241,21 +237,19 @@ public final class Downloader {
     private static boolean discardPartial(File dest, Identity identity) {
         identity.source = null;
         identity.etag = null;
-        identity.total = 0;
         File marker = resumeFile(dest);
         return (!dest.exists() || dest.delete()) && (!marker.exists() || marker.delete());
     }
 
     private static void saveIdentity(File dest, Identity identity, String expectedSha256) {
         File marker = resumeFile(dest);
-        if (!strongETag(identity.etag) && identity.total <= 0) {
+        if (!strongETag(identity.etag)) {
             marker.delete();
             return;
         }
         Properties p = new Properties();
         p.setProperty("source", identity.source);
-        p.setProperty("etag", identity.etag == null ? "" : identity.etag);
-        p.setProperty("total", Long.toString(identity.total));
+        p.setProperty("etag", identity.etag);
         p.setProperty("sha256", expectedSha256 == null ? "" : expectedSha256.toLowerCase(java.util.Locale.ROOT));
         try (FileOutputStream out = new FileOutputStream(marker)) {
             p.store(out, "DroidDeck partial download validator");
@@ -271,16 +265,16 @@ public final class Downloader {
         if (isCancelled(cancelled)) return Outcome.CANCELLED;
         HttpURLConnection connection = null;
         long have = resume && destination.isFile() ? destination.length() : 0;
-        boolean sameSource = url.equals(identity.source);
         try {
+            if (have > 0 && (!url.equals(identity.source) || !strongETag(identity.etag))) {
+                if (!discardPartial(destination, identity)) return Outcome.RETRY;
+                have = 0;
+            }
             connection = open(url, STALL_TIMEOUT_MS);
             if (cancelled instanceof Cancellation) ((Cancellation) cancelled).attach(connection);
             if (have > 0) {
                 connection.setRequestProperty("Range", "bytes=" + have + "-");
-                // 换源时不能带 If-Range：ETag 可能只是格式不同，服务端会直接回整包
-                if (sameSource && strongETag(identity.etag)) {
-                    connection.setRequestProperty("If-Range", identity.etag);
-                }
+                connection.setRequestProperty("If-Range", identity.etag);
             }
             int code = connection.getResponseCode();
             if (have > 0 && code == HTTP_RANGE_NOT_SATISFIABLE) {
@@ -300,18 +294,8 @@ public final class Downloader {
                 if (!discardPartial(destination, identity)) return Outcome.RETRY;
                 return attempt(url, destination, false, identity, expectedSha256, cancelled, progress);
             }
-            if (appending && identity.total > 0) {
-                long rangeTotal = rangeTotal(connection.getHeaderField("Content-Range"));
-                // 换源续传靠总长兜底：总长对不上说明不是同一份文件，重下
-                if (rangeTotal > 0 && rangeTotal != identity.total) {
-                    connection.disconnect();
-                    if (!discardPartial(destination, identity)) return Outcome.RETRY;
-                    return attempt(url, destination, false, identity, expectedSha256, cancelled, progress);
-                }
-            }
             String etag = connection.getHeaderField("ETag");
-            if (have > 0 && appending && sameSource && strongETag(identity.etag)
-                    && (!strongETag(etag) || !etag.equals(identity.etag))) {
+            if (have > 0 && appending && (!strongETag(etag) || !etag.equals(identity.etag))) {
                 connection.disconnect();
                 if (!discardPartial(destination, identity)) return Outcome.RETRY;
                 return attempt(url, destination, false, identity, expectedSha256, cancelled, progress);
@@ -328,7 +312,6 @@ public final class Downloader {
             if (parent != null && !parent.isDirectory()) parent.mkdirs();
             identity.source = url;
             identity.etag = strongETag(etag) ? etag : null;
-            if (total > 0) identity.total = total;
             saveIdentity(destination, identity, expectedSha256);
             long written = have;
             InputStream input = connection.getInputStream();
