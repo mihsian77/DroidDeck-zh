@@ -90,7 +90,9 @@ jobs:
     name: Compile and test APK
     if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # 合进来的测试越滚越多，缓存一旦失效就要从 CMake 重新编，45 分钟的东西
+    # 现在能跑过一小时。上限放宽一倍，正常情况还是二十分钟出头。
+    timeout-minutes: 90
     outputs:
       variants: ${{ steps.variants.outputs.list }}
     steps:
