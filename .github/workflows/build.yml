@@ -777,6 +777,12 @@ jobs:
         continue-on-error: true
         run: bash tools/ci/pytest-known-differences.sh
 
+      - name: Cache the Android images Robolectric loads
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-android-all-${{ hashFiles('app/src/test/**/*.kt') }}
+
       - name: Unit tests
         id: unit-tests
         continue-on-error: true
