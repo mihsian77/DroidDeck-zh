@@ -25,21 +25,21 @@
     }
   },
   "preview": {
-    "tag": "test-958cb70",
-    "title": "测试包 958cb70",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：ci: 测试包只保留最近两个\n\n版本：0.8.2（958cb70）\n文件名带 -test.958cb70，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "958cb7019a942cffb37a10af2e754f6856f8f656",
+    "tag": "test-bacca8b",
+    "title": "测试包 bacca8b",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：ci: 测试超时补 SIGKILL，Robolectric 缓存加回退前缀\n\n版本：0.8.2（bacca8b）\n文件名带 -test.bacca8b，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "bacca8b51aea7a75bcf4cf0d4fe6ea3bb34ae24f",
     "pr": 0,
     "version": "0.8.2",
     "versionCode": 25,
-    "publishedAt": 1794979183000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-958cb70",
+    "publishedAt": 1794993591000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-bacca8b",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.8.2-test.958cb70.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-958cb70/DroidDeck-0.8.2-test.958cb70.apk",
-        "size": 137682189,
-        "sha256": "a4ff794ed384dfbad95a95175252ccb8f359d318bee3e96ef94a7787179a1c9a",
+        "name": "DroidDeck-0.8.2-test.bacca8b.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-bacca8b/DroidDeck-0.8.2-test.bacca8b.apk",
+        "size": 137825549,
+        "sha256": "7d0eee870b797ec0fe5e2cab0216a6b7d522e06af367834f514c1c225dbb43c9",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 25,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
@@ -48,6 +48,28 @@
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-bacca8b",
+      "title": "测试包 bacca8b",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：ci: 测试超时补 SIGKILL，Robolectric 缓存加回退前缀\n\n版本：0.8.2（bacca8b）\n文件名带 -test.bacca8b，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "bacca8b51aea7a75bcf4cf0d4fe6ea3bb34ae24f",
+      "pr": 0,
+      "version": "0.8.2",
+      "versionCode": 25,
+      "publishedAt": 1794993591000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-bacca8b",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.8.2-test.bacca8b.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-bacca8b/DroidDeck-0.8.2-test.bacca8b.apk",
+          "size": 137825549,
+          "sha256": "7d0eee870b797ec0fe5e2cab0216a6b7d522e06af367834f514c1c225dbb43c9",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 25,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-958cb70",
       "title": "测试包 958cb70",
