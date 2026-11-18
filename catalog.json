@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.8.1",
-    "title": "0.8.1 (stable)",
-    "summary": "## 0.8.1 (stable)\n\n同步上游到 #2595，中文覆盖补齐到零缺口\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n- GPU 兼容层与 add-on pack 未逐机型真机验证，详…",
-    "commit": "cbb1c2c1fbaf7800384075790365a0ad826a6faa",
+    "tag": "0.8.2",
+    "title": "0.8.2 (stable)",
+    "summary": "## 0.8.2 (stable)\n\nchore: 更新应用内更新用的 catalog\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象\n- GPU 兼容层与 add-on pack 未逐机型真机验证…",
+    "commit": "b11e882ab2fd58504a7a76a3d023dff53f06e2f2",
     "pr": 0,
-    "version": "0.8.1",
-    "versionCode": 24,
-    "publishedAt": 1794760854000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.8.1",
+    "version": "0.8.2",
+    "versionCode": 25,
+    "publishedAt": 1794974235000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.8.2",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.8.1.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.8.1/DroidDeck-0.8.1.apk",
-        "size": 135621752,
-        "sha256": "2924a4260dbce15ed3c89d284543e1dc8e824c1cfdb2dbe33616e8c83a53e2f3",
+        "name": "DroidDeck-0.8.2.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.8.2/DroidDeck-0.8.2.apk",
+        "size": 137682189,
+        "sha256": "e2b83196d29f92ea69547f908d4e5554cc7f1c1fdc15a9d3c3ebabdffcc967eb",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 24,
+        "versionCode": 25,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
