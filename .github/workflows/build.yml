@@ -782,6 +782,8 @@ jobs:
         with:
           path: ~/.m2/repository/org/robolectric
           key: robolectric-android-all-${{ hashFiles('app/src/test/**/*.kt') }}
+          restore-keys: |
+            robolectric-android-all-
 
       - name: Unit tests
         id: unit-tests
@@ -793,7 +795,9 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p app/build
-          timeout 25m ./gradlew testReleaseUnitTest --console=plain --info --stacktrace -Drobolectric.logging=stderr -PndkVersion="$NDK_VERSION" 2>&1 | tee app/build/unit-tests.log
+          # timeout 只发 TERM，Gradle 守护进程不一定理它，之前就这么挂到
+          # job 上限。加 -k，TERM 之后再补一刀 KILL。
+          timeout -k 1m 25m ./gradlew testReleaseUnitTest --console=plain --info --stacktrace -Drobolectric.logging=stderr -PndkVersion="$NDK_VERSION" 2>&1 | tee app/build/unit-tests.log
 
       - name: Gate the test results
         if: always()
