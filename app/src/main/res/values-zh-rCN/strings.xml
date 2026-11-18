@@ -4177,4 +4177,17 @@
     <string name="edit_steam_input_running">改这个设置前要先关掉 Steam 或桌面会话。</string>
     <string name="edit_steam_input_unavailable">读不到这款游戏的 Steam 输入设置。</string>
     <string name="exit_hint_back">再按一次返回键退出</string>
+    <string name="agent_action_add_key">添加密钥</string>
+    <string name="agent_action_free">免费模型</string>
+    <string name="agent_key_hint">粘贴你在 opencode.ai/auth 获取的 API 密钥</string>
+    <string name="agent_key_save">保存</string>
+    <string name="agent_step_free_models">免费模型 · 添加 Zen 密钥后可用其余模型</string>
+    <string name="agent_step_sign_in_key_hint">免费模型，或使用 opencode.ai/auth 的 Zen 密钥</string>
+    <string name="agent_storage_opencode">OpenCode</string>
+    <string name="display_scaling_integer">整数倍</string>
+    <string name="drawer_antialiasing">抗锯齿</string>
+    <string name="drawer_smaa">SMAA</string>
+    <string name="hud_hold">长按</string>
+    <string name="hud_hold_collapse">收起或展开</string>
+    <string name="hud_hold_lock">锁定或解锁</string>
 </resources>
