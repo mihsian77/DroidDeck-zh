@@ -999,7 +999,7 @@ jobs:
     permissions:
       contents: write
     env:
-      KEEP: 3
+      KEEP: 2
     steps:
       - uses: actions/checkout@v4
         with:
