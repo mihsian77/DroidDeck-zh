@@ -1,6 +1,7 @@
 package com.droiddeck.launcher.agent
 
 import android.content.Context
+import com.droiddeck.launcher.R
 
 object AgentAccess {
     const val MAX_REQUEST_CHARS = 256 * 1024
@@ -23,7 +24,11 @@ object AgentAccess {
     fun requireCommands(context: Context) {
         if (!commandsAllowed(context)) throw AgentException(
             "AGENT_COMMANDS_DISABLED",
-            "Debugging tools are off: turn on Setup > Developer > Debugging tools on the device",
+            context.getString(
+                R.string.agent_commands_disabled,
+                context.getString(R.string.setup_tab_diagnostics),
+                context.getString(R.string.setup_agent_commands),
+            ),
         )
     }
 

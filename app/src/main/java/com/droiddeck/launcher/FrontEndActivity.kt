@@ -3322,7 +3322,9 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
             return false
         }
         refreshPhantomStatus()
-        if (steamSession && PhantomProcessLimit.blocksSteam(phantomProcessStatus)) {
+        val manyProcesses = steamSession || intent.getStringExtra(SessionService.EXTRA_MODE) in
+            setOf(SessionService.MODE_DESKTOP, SessionService.MODE_RUN)
+        if (manyProcesses && PhantomProcessLimit.blocksSteam(phantomProcessStatus)) {
             showPhantomGate = true
             return false
         }

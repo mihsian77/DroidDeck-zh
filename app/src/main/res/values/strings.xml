@@ -4305,4 +4305,5 @@
     <string name="hud_hold">Long press</string>
     <string name="hud_hold_collapse">Collapse or expand</string>
     <string name="hud_hold_lock">Lock or unlock</string>
+    <string name="agent_commands_disabled">Debugging tools are off: turn on Setup &gt; %1$s &gt; %2$s on the device</string>
 </resources>
