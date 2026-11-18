@@ -773,12 +773,12 @@ jobs:
           curl -sSfL -o build/layer-deps/bcdec/bcdec.h "$bcdec"
 
       - name: Steam import and game environment tests
-        continue-on-error: true
-        run: python3 -m unittest discover -s tools/tests -p 'test_*.py'
+        run: bash tools/ci/pytest-known-differences.sh
 
       - name: Unit tests
         id: unit-tests
         continue-on-error: true
+        timeout-minutes: 40
         env:
           DROIDDECK_BUILD_LABEL: ${{ steps.build-label.outputs.label }}
           SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
