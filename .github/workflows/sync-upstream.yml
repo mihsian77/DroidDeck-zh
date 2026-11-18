@@ -305,3 +305,23 @@ jobs:
           gh workflow run build.yml --repo "${{ github.repository }}" --ref main
           echo " | 已触发构建，结果见 Actions → Build APK |" >> "$GITHUB_STEP_SUMMARY"
           echo "Triggered build.yml on main"
+
+      - name: Leave a note when the sync broke
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          body="定时同步上游失败了。跑的是 ${{ github.run_id }}，日志见 ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}。
+
+          常见原因：上游改了白名单文件的结构让合并断了；同步脚本恢复 workflow 时没找到对应文件；或者上游本身那次提交有问题。
+
+          处理完之后把这条 issue 关掉。"
+          existing=$(gh issue list --repo "${{ github.repository }}" --state open \
+            --search "in:title 上游同步失败" --json number --jq '.[0].number // empty' || true)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "${{ github.repository }}" --body "$body"
+          else
+            gh issue create --repo "${{ github.repository }}" \
+              --title "上游同步失败" --body "$body"
+          fi
