@@ -25,21 +25,21 @@
     }
   },
   "preview": {
-    "tag": "test-713e10b",
-    "title": "测试包 713e10b",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：ci: 缓存 Robolectric 的 Android 镜像包\n\n版本：0.8.2（713e10b）\n文件名带 -test.713e10b，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "713e10b46a59d31fb88eb0332d61c13e99e4f6d4",
+    "tag": "test-6edb029",
+    "title": "测试包 6edb029",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.8.2（6edb029）\n文件名带 -test.6edb029，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "6edb029cc6a9c9c21005a40ed40f3cd19bcef004",
     "pr": 0,
     "version": "0.8.2",
     "versionCode": 25,
-    "publishedAt": 1794971378000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-713e10b",
+    "publishedAt": 1794974127000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-6edb029",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.8.2-test.713e10b.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-713e10b/DroidDeck-0.8.2-test.713e10b.apk",
+        "name": "DroidDeck-0.8.2-test.6edb029.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-6edb029/DroidDeck-0.8.2-test.6edb029.apk",
         "size": 137682189,
-        "sha256": "dc710c0b09ee6c9c037f5cc91085112530741c95d987f97c74582c68459c18d2",
+        "sha256": "e2b83196d29f92ea69547f908d4e5554cc7f1c1fdc15a9d3c3ebabdffcc967eb",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 25,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
@@ -48,6 +48,28 @@
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-6edb029",
+      "title": "测试包 6edb029",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.8.2（6edb029）\n文件名带 -test.6edb029，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "6edb029cc6a9c9c21005a40ed40f3cd19bcef004",
+      "pr": 0,
+      "version": "0.8.2",
+      "versionCode": 25,
+      "publishedAt": 1794974127000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-6edb029",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.8.2-test.6edb029.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-6edb029/DroidDeck-0.8.2-test.6edb029.apk",
+          "size": 137682189,
+          "sha256": "e2b83196d29f92ea69547f908d4e5554cc7f1c1fdc15a9d3c3ebabdffcc967eb",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 25,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-713e10b",
       "title": "测试包 713e10b",
@@ -88,28 +110,6 @@
           "sha256": "26a46e0a817e61685a37844f2b9edb6fad5bf0c6fd7fc901b2cb0e559e3771b6",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 25,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-a99bc1c",
-      "title": "测试包 a99bc1c",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'upstream/main'\n\n版本：0.8.1（a99bc1c）\n文件名带 -test.a99bc1c，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "a99bc1cbeb0e5136599b3f7fb5367692120b187d",
-      "pr": 0,
-      "version": "0.8.1",
-      "versionCode": 24,
-      "publishedAt": 1794834734000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-a99bc1c",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.8.1-test.a99bc1c.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-a99bc1c/DroidDeck-0.8.1-test.a99bc1c.apk",
-          "size": 135683269,
-          "sha256": "fcd5354022f1262ebc1337fb763ad0df75c8071dcc8fecb6940d0ae3daf675be",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 24,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
         }
       }
