@@ -994,6 +994,9 @@ jobs:
   publish-test:
     needs: [build, sign]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: publish-test
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
