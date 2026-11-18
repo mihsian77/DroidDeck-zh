@@ -96,7 +96,15 @@ jobs:
           # "ci(release): ..." 这种和版本无关的首行，所以允许显式传 summary。
           subject="${{ inputs.summary }}"
           if [ -z "$subject" ]; then
-            subject=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA" --jq '.commit.message | split("\n")[0]')
+            # 上次发版之后改动过什么，直接列出来。以前取的是当前提交标题，
+            # 而从 CI 提交 dispatch 时那是 catalog bot 的信息，和版本无关。
+            prev=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=1" --jq '.[0].tag_name // empty' 2>/dev/null || true)
+            if [ -n "$prev" ]; then
+              subject=$(gh api "repos/$GITHUB_REPOSITORY/compare/${prev}...${GITHUB_SHA}" \
+                --jq '[.commits[] | .commit.message | split("\n")[0]
+                       | select(test("^(chore|ci|build|deps)\\(") | not)] | .[0:10] | "- " + .' 2>/dev/null || true)
+            fi
+            [ -n "$subject" ] || subject="本次没有用户可见的功能改动。"
           fi
           # sha256 只给 catalog 用，不再往 release 上挂文件：GitHub 每个资产自带
           # digest，catalog.json 里也有一份，再传两个 txt 是第三份重复数据。

@@ -1110,7 +1110,7 @@
         <item quantity="other">近期更改 · %1$d 个构建</item>
     </plurals>
     <string name="gate_title">需要更改一项 Android 设置</string>
-    <string name="gate_eyebrow">Steam</string>
+    <string name="gate_eyebrow">Steam · Wine</string>
     <string name="gate_lede">Android 会终止启动了大量后台进程的应用。Steam 和 Wine 程序都会启动几十个进程。在更改此设置之前，游戏会在没有报错的情况下关闭。</string>
     <string name="gate_fix_for_me">帮我修复</string>
     <string name="gate_toggle_steps">打开“停止限制子进程”，然后返回。保持开发者选项开启，否则开关会再次关闭。</string>

@@ -1116,7 +1116,7 @@
         <item quantity="other">Recent changes · %1$d builds</item>
     </plurals>
     <string name="gate_title">One Android setting to change</string>
-    <string name="gate_eyebrow">Steam</string>
+    <string name="gate_eyebrow">Steam · Wine</string>
     <string name="gate_lede">Android stops apps that start many background processes, and Steam starts dozens. Until this changes, games close without an error.</string>
     <string name="gate_fix_for_me">Fix it for me</string>
     <string name="gate_toggle_steps">Turn on “Disable child process restrictions”, then come back. Leave Developer options on, or the switch turns off again.</string>
