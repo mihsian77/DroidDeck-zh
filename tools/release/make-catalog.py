@@ -16,7 +16,9 @@ PACKAGE = "com.droiddeck.launcher"
 OUT = sys.argv[1] if len(sys.argv) > 1 else "catalog.json"
 PREVIEW_HISTORY = int(os.environ.get("PREVIEW_HISTORY", "10"))
 # 正式版 tag 有两种形态：早期的 <版本>-zhN，和现在纯语义化的 <版本>。
-STABLE_TAG = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-zh[0-9]+)?")
+# 后缀有两种写法：老的是 -zh3，现在的版本号回到跟上游走，写成了 -zh.3。
+# 只认前者的话，新发的 0.7.1-zh.3 认不出来，catalog 的 stable 会一直停在旧版。
+STABLE_TAG = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:-zh\.?[0-9]+)?")
 
 
 def api(path):
