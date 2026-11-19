@@ -779,11 +779,22 @@ jobs:
         continue-on-error: true
         run: bash tools/ci/pytest-known-differences.sh
 
+      # 缓存的是 Robolectric 的 Android 镜像，只跟它的版本有关，跟测试代码无关。
+      # 之前 key 用的是测试源码的 hash，sync 一带进测试改动就多一条 790 MB 的缓存，
+      # 三条就吃掉 2.4 GB，撞上仓库 10 GB 的上限后会淘汰别的缓存。
+      - name: Read the Robolectric version
+        id: robolectric_version
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/.*org\.robolectric:robolectric:\([0-9.]*\).*/\1/p' app/build.gradle | head -1)
+          [ -n "$version" ] || { echo "::error::读不到 Robolectric 版本"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Cache the Android images Robolectric loads
         uses: actions/cache@v4
         with:
           path: ~/.m2/repository/org/robolectric
-          key: robolectric-android-all-${{ hashFiles('app/src/test/**/*.kt') }}
+          key: robolectric-android-all-${{ steps.robolectric_version.outputs.version }}
           restore-keys: |
             robolectric-android-all-
 
