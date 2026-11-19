@@ -126,7 +126,7 @@ jobs:
           - 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）
 
           ### 注意
-          - 签名使用 DroidDeck-zh 自有 release key（非上游 testkey），覆盖安装时可能提示未知来源，属正常现象
+          - 签名用的是 AOSP 公共 testkey，和上游原版同一个，可以直接覆盖安装
           - GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节
           - 此为稳定版，安装前建议先备份旧版本"
           # Remove an older stable with the same tag if any, then publish as non-prerelease.
