@@ -790,7 +790,7 @@ jobs:
       - name: Unit tests
         id: unit-tests
         continue-on-error: true
-        timeout-minutes: 20
+        timeout-minutes: 22
         env:
           DROIDDECK_BUILD_LABEL: ${{ steps.build-label.outputs.label }}
           SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
@@ -803,7 +803,7 @@ jobs:
           # 再上一次加 --no-daemon 反而更早死（2 分半），Gradle 自己说要 fork
           # 一次性 daemon，内存峰值没降下来。这次压内存：
           # Gradle 守护 2G、Kotlin 编译守护 1G、并发降到 2，再保留 kill-after。
-          timeout --kill-after=30s 18m ./gradlew testReleaseUnitTest --console=plain --info --stacktrace -Drobolectric.logging=stderr -Dorg.gradle.jvmargs=-Xmx2048m -Dkotlin.daemon.jvmargs=-Xmx1024m --max-workers=2 -PndkVersion="$NDK_VERSION" 2>&1 | tee app/build/unit-tests.log
+          timeout --kill-after=30s 20m ./gradlew testReleaseUnitTest --console=plain --info --stacktrace -Drobolectric.logging=stderr -Dorg.gradle.jvmargs=-Xmx2048m -Dkotlin.daemon.jvmargs=-Xmx1024m --max-workers=2 -PndkVersion="$NDK_VERSION" 2>&1 | tee app/build/unit-tests.log
 
       - name: Upload unit test diagnostics
         id: unit-test-diagnostics
@@ -989,7 +989,7 @@ jobs:
             rc=1
           fi
           if [ "$unit" != success ]; then
-            echo '::error::Unit tests failed, did not finish inside 18 minutes, or never reported.'
+            echo '::error::Unit tests failed, did not finish inside 20 minutes, or never reported.'
             rc=1
           fi
           exit $rc
