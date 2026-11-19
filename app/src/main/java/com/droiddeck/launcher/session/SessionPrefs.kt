@@ -255,6 +255,18 @@ object SessionPrefs {
         prefs(context).edit().putBoolean("libraryShowSize", show).apply()
     }
 
+    fun libraryShowHidden(context: Context): Boolean = prefs(context).getBoolean("libraryShowHidden", false)
+
+    fun setLibraryShowHidden(context: Context, show: Boolean) {
+        prefs(context).edit().putBoolean("libraryShowHidden", show).apply()
+    }
+
+    fun libraryHidden(context: Context): Set<String> = prefs(context).getStringSet("libraryHidden", null)?.toSet().orEmpty()
+
+    fun setLibraryHidden(context: Context, keys: Set<String>) {
+        prefs(context).edit().putStringSet("libraryHidden", keys.toSet()).apply()
+    }
+
     fun railLabels(context: Context): Boolean = prefs(context).getBoolean("railLabels", false)
 
     fun setRailLabels(context: Context, show: Boolean) {
@@ -314,6 +326,13 @@ object SessionPrefs {
     }
 
     fun storesTabOrder(context: Context): List<String> = idList(prefs(context).getString("storesTabOrder", null))
+
+    /** An order nobody arranged stays unsaved, so it keeps following the default. */
+    fun saveStoresTabs(context: Context, order: List<String>, hidden: Set<String>, arranged: Boolean) {
+        if (arranged) setStoresTabOrderCustomized(context, true)
+        if (storesTabOrderCustomized(context)) setStoresTabOrder(context, order)
+        setStoresTabHidden(context, hidden)
+    }
 
     private val LEGACY_STORES_TAB_ORDER = listOf("gog", "epic", "amazon", "xbox", "itch", "gamejolt", "battlenet", "ubisoft", "ea", "rockstar")
 
@@ -678,14 +697,42 @@ object SessionPrefs {
     }
 
     @JvmStatic
-    fun ensurePowerVrAutoDrivers(context: Context) {
-        if (com.droiddeck.launcher.core.DeviceSupport.openDriverActive(context)) return
-        ensurePowerVrAutoDrivers(context, SystemVulkanDriver.isPowerVr())
+    fun ensurePowerVrAutoDrivers(context: Context) = reconcilePowerVrAutoDrivers(
+        context, SystemVulkanDriver.isPowerVr(), SystemVulkanDriver.isXclipse(),
+        com.droiddeck.launcher.gpu.VulkanInfo::cachedOrNull,
+    )
+
+    fun ensurePowerVrAutoDriversAfterGpuQuery(context: Context) = reconcilePowerVrAutoDrivers(
+        context, SystemVulkanDriver.isPowerVr(), SystemVulkanDriver.isXclipse(),
+        com.droiddeck.launcher.gpu.VulkanInfo::query,
+    )
+
+    internal fun reconcilePowerVrAutoDrivers(
+        context: Context, powerVr: Boolean, xclipse: Boolean, vulkan: () -> Map<String, String>?,
+    ) {
+        val device = if (xclipse) vulkan() ?: return else null
+        val unsupported = unsupportedXclipse(xclipse) {
+            com.droiddeck.launcher.gpu.GpuInfo.systemDriverName(SystemVulkanDriver.gpuName(), device)
+        }
+        val activeKey = com.droiddeck.launcher.gpu.DriverBundle.active(context)
+            ?.id
+            ?.let(com.droiddeck.launcher.gpu.DriverPairs::nonAdreno)
+        val upstreamBundle = activeKey == com.droiddeck.launcher.gpu.DriverPairs.NAD_RADV_XCLIPSE_UPSTREAM ||
+            (activeKey != null && activeKey.startsWith("${com.droiddeck.launcher.gpu.DriverPairs.NAD_RADV_XCLIPSE_UPSTREAM}-"))
+        if (com.droiddeck.launcher.core.DeviceSupport.openDriverActive(context) && (!unsupported || upstreamBundle)) return
+        ensurePowerVrAutoDrivers(context, powerVr, unsupported)
     }
 
-    internal fun ensurePowerVrAutoDrivers(context: Context, powerVr: Boolean) {
+    internal fun unsupportedXclipse(xclipse: Boolean, gpuName: () -> String): Boolean =
+        xclipse && com.droiddeck.launcher.gpu.DriverPairs.xclipseNeedsUpstream(gpuName())
+
+    internal fun ensurePowerVrAutoDrivers(context: Context, powerVr: Boolean, autoOwnedOnly: Boolean = false) {
         if (!powerVr || gpuDriverMode(context) != GPU_DRIVERS_AUTO) return
-        prefs(context).edit().putString("linuxDriver", "").putString("androidDriver", TurnipDriver.AUTO).apply()
+        val owned = gpuAutoInstalled(context)
+        val edit = prefs(context).edit()
+        if (!autoOwnedOnly || linuxDriver(context) in owned) edit.putString("linuxDriver", "")
+        if (!autoOwnedOnly || androidDriver(context) in owned) edit.putString("androidDriver", TurnipDriver.AUTO)
+        edit.apply()
     }
 
     fun gpuAutoInstalled(context: Context): Set<String> =
@@ -885,29 +932,6 @@ object SessionPrefs {
         prefs(context).edit().putBoolean("gamescopeRealtime", on).apply()
     }
 
-    fun ramCapMb(context: Context): Int = prefs(context).getInt("ramCapMb", 0).coerceAtLeast(0)
-
-    fun setRamCapMb(context: Context, mb: Int) {
-        prefs(context).edit().putInt("ramCapMb", mb.coerceAtLeast(0)).apply()
-    }
-
-    fun zramClient(context: Context): Boolean = prefs(context).getBoolean("zramClient", true)
-
-    fun setZramClient(context: Context, on: Boolean) {
-        prefs(context).edit().putBoolean("zramClient", on).apply()
-    }
-
-    fun zramIdle(context: Context): Boolean = prefs(context).getBoolean("zramIdle", true)
-
-    fun setZramIdle(context: Context, on: Boolean) {
-        prefs(context).edit().putBoolean("zramIdle", on).apply()
-    }
-
-    fun vramCapMb(context: Context): Int = prefs(context).getInt("vramCapMb", 0).coerceAtLeast(0)
-
-    fun setVramCapMb(context: Context, mb: Int) {
-        prefs(context).edit().putInt("vramCapMb", mb.coerceAtLeast(0)).apply()
-    }
 
     fun gpuClockPin(context: Context): Boolean = prefs(context).getBoolean("gpuClockPin", false)
 
@@ -1436,6 +1460,8 @@ object SessionPrefs {
         val id = (value as? Long)?.takeIf { key.startsWith("addedAppId:") && it != 0L } ?: return@mapNotNull null
         (id and 0xFFFFFFFFL) to key.removePrefix("addedAppId:")
     }.toMap()
+
+    fun storeGameFolder(context: Context, key: String): String? = prefs(context).getString("storeFolder:$key", null)
 
     fun followStoreGame(context: Context, key: String, folderPath: String, gone: (String) -> Boolean) = synchronized(addedGameLock) {
         val p = prefs(context)
