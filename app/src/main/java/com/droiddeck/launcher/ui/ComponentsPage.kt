@@ -84,6 +84,7 @@ import com.droiddeck.launcher.R
 import com.droiddeck.launcher.session.ComponentUpdater
 import com.droiddeck.launcher.session.ComponentUpdates
 import com.droiddeck.launcher.session.ComponentsManager
+import com.droiddeck.launcher.session.ExperimentalProtons
 import com.droiddeck.launcher.session.ComponentsManager.CatalogItem
 import com.droiddeck.launcher.session.ComponentsManager.Snapshot
 import kotlinx.coroutines.delay
@@ -539,7 +540,8 @@ fun ComponentsPage(
                     val key = "proton:${v.proton.id}"
                     val swaps = v.components.values.count { it.activeFile != null }
                     val extra = protons.rows.firstOrNull { v.proton.dir.name in it.installedAll }
-                    val removable = extra != null && protons.busyId == null && protons.runtimeReady && !protons.sessionRunning
+                    val experimental = v.proton.dir.name in protons.experimental
+                    val removable = (extra != null || experimental) && protons.busyId == null && protons.runtimeReady && !protons.sessionRunning
                     ChoiceLine(
                         v.proton.name,
                         (if (swaps > 0) stringResource(R.string.comp_swapped, v.proton.version, swaps) else stringResource(R.string.comp_all_original, v.proton.version))
@@ -548,7 +550,10 @@ fun ComponentsPage(
                         modifier = (if (i == 0 && !moded(l)) Modifier.focusRequester(firstRow) else Modifier).trackRow(key, rowsAt),
                         onSelect = { if (v.proton.id != view?.proton?.id) { onProton(v.proton.id); flyHome(key, PROTON_TAB) } },
                         onDelete = {
-                            if (extra != null) ask(key, right, ctx.getString(R.string.proton_remove_title, v.proton.name), ctx.getString(R.string.proton_remove_body), ctx.getString(R.string.store_remove), true, v.proton.name) {
+                            if (experimental) ask(key, right, ctx.getString(R.string.proton_remove_title, v.proton.name), ctx.getString(R.string.proton_remove_body), ctx.getString(R.string.store_remove), true, v.proton.name) {
+                                protonActions.onRemoveExperimental(v.proton.dir.name)
+                            }
+                            else if (extra != null) ask(key, right, ctx.getString(R.string.proton_remove_title, v.proton.name), ctx.getString(R.string.proton_remove_body), ctx.getString(R.string.store_remove), true, v.proton.name) {
                                 protonActions.onRemove(extra.id, v.proton.dir.name)
                             }
                         },
@@ -593,11 +598,9 @@ fun ComponentsPage(
                 if (rows.isEmpty()) EmptyLine(stringResource(R.string.comp_nothing_new))
                 for (row in rows) {
                     val idle = protons.busyId == null && protons.runtimeReady && !protons.sessionRunning
-                    val test = row.test != null && (nightlyPicked[row.id] == true || row.installed != null && row.update == null)
                     GetLine(
                         row.name,
                         when {
-                            test -> row.test!!
                             row.update != null -> stringResource(R.string.proton_update_available, row.update)
                             row.queued -> stringResource(R.string.proton_queued)
                             else -> stringResource(R.string.proton_not_installed)
@@ -606,11 +609,8 @@ fun ComponentsPage(
                         stage = if (protons.busyId == row.id) protons.stage else null,
                         enabled = idle,
                         onCancel = if (row.queued && protons.busyId == null && !protons.sessionRunning) ({ protonActions.onCancel(row.id) }) else null,
-                        action = if (!test && row.update != null) stringResource(R.string.common_update) else null,
-                        channel = if (row.test != null) ({
-                            ChannelToggle(test, enabled = idle && (row.installed == null || row.update != null), other = R.string.comp_channel_test) { nightlyPicked[row.id] = !test }
-                        }) else null,
-                    ) { if (test) protonActions.onInstallTest(row.id) else protonActions.onInstall(row.id) }
+                        action = if (row.update != null) stringResource(R.string.common_update) else null,
+                    ) { protonActions.onInstall(row.id) }
                 }
             }
             else -> {
@@ -739,6 +739,8 @@ fun ComponentsPage(
                     }
                 }
                 if (l == PROTON_TAB) {
+                    Spacer(Modifier.height(12.dp))
+                    ExperimentalProtonGroup(protons, protonActions)
                     Spacer(Modifier.height(12.dp))
                     Note(stringResource(R.string.comp_about_text))
                 }
@@ -1631,6 +1633,25 @@ private fun DeviceChip(s: GpuDriversState) {
     ) { face() }
 }
 
+@Composable
+private fun ExperimentalProtonGroup(protons: ProtonsState, actions: ProtonsActions) {
+    val busy = protons.busyId == com.droiddeck.launcher.ProtonMenu.EXPERIMENTAL
+    val idle = protons.busyId == null && protons.runtimeReady && !protons.sessionRunning
+    RowGroup(stringResource(R.string.xproton_title)) {
+        if (busy) GetLine(stringResource(R.string.xproton_title), "", progress = protons.percent, enabled = false, stage = protons.stage) {}
+        else {
+            protons.experimentalReleases.forEach { release ->
+                GetLine(release.name, release.tag, progress = null, enabled = idle, action = stringResource(R.string.proton_install_now)) {
+                    actions.onExperimentalRelease(release)
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(start = 14.dp, top = 4.dp, bottom = 8.dp)) {
+                SmallButton(stringResource(R.string.xproton_install_file), enabled = idle, onClick = actions.onExperimentalFile)
+            }
+        }
+    }
+}
+
 class ProtonsState(
     val rows: List<ProtonRow> = emptyList(),
     val busyId: String? = null,
@@ -1638,21 +1659,25 @@ class ProtonsState(
     val percent: Int = -1,
     val runtimeReady: Boolean = true,
     val sessionRunning: Boolean = false,
+    val experimental: List<String> = emptyList(),
+    val experimentalReleases: List<ExperimentalProtons.Release> = emptyList(),
 )
 
 class ProtonsActions(
     val onInstall: (String) -> Unit = {},
-    val onInstallTest: (String) -> Unit = {},
     val onCancel: (String) -> Unit = {},
     val onRemove: (String, String) -> Unit = { _, _ -> },
     val onRemoveOlder: (String) -> Unit = {},
+    val onExperimentalFile: () -> Unit = {},
+    val onExperimentalRelease: (ExperimentalProtons.Release) -> Unit = {},
+    val onRemoveExperimental: (String) -> Unit = {},
 )
 
 class ProtonRow(
     val id: String, val name: String, val installed: String?, val queued: Boolean,
-    val installedAll: List<String> = listOfNotNull(installed), val update: String? = null, val test: String? = null,
+    val installedAll: List<String> = listOfNotNull(installed), val update: String? = null,
 ) {
-    val available: Boolean get() = installed == null || update != null || test != null
+    val available: Boolean get() = installed == null || update != null
 }
 
 @Composable

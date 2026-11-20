@@ -4274,4 +4274,71 @@
     <string name="tabs_reset_body">标签顺序、哪些在“更多”下、哪些被隐藏，都会回到默认。</string>
     <string name="tabs_reset_hint">导航栏放 Steam、桌面、库、下载、设置和更新，其余放在“更多”下。</string>
     <string name="tabs_reset_title">重置标签页</string>
+
+    <!-- 以下为上游 2026-11-20 新增界面文案 -->
+    <!-- 开发者预览 / UI 图集 -->
+    <string name="dev_preview_banner">预览：%1$s</string>
+    <string name="dev_preview_drawer">游戏内菜单</string>
+    <string name="dev_preview_drawer_backdrop">游戏内菜单预览 · 返回关闭</string>
+    <string name="dev_preview_end">结束预览</string>
+    <string name="dev_preview_library">游戏库</string>
+    <string name="dev_preview_library_nothing_installed">未安装任何游戏</string>
+    <string name="dev_preview_library_sample">各商店的示例游戏</string>
+    <string name="dev_preview_library_signed_out">所有商店均已退出登录</string>
+    <string name="dev_preview_read_only">预览为只读。结束预览后才能打开游戏。</string>
+    <string name="dev_preview_real">真实游戏库</string>
+    <string name="dev_preview_shortcut">预览某个状态</string>
+    <string name="dev_preview_shortcuts">预览快捷入口</string>
+    <string name="dev_preview_shortcuts_hint">在状态对应的位置（例如游戏库工具栏）加一个预览按钮，就地切换状态</string>
+    <string name="dev_ui_zoo">UI 图集</string>
+    <string name="dev_ui_zoo_hint">平时难以进入的界面，选中后才显示</string>
+    <string name="dev_ui_zoo_note">预览不改变任何真实数据：不会安装、移除或退出登录，菜单里的开关也不会保存。游戏库预览会一直保留，直到你从它的悬浮条结束或重启应用。</string>
+    <string name="dev_ui_zoo_open">打开</string>
+    <string name="dev_ui_zoo_show">显示</string>
+    <!-- 游戏库标签与商店管理 -->
+    <string name="library_all_games">全部游戏</string>
+    <string name="library_custom_games">自定义游戏</string>
+    <string name="library_manage_stores">管理商店</string>
+    <!-- 存储清理 -->
+    <string name="storage_cache_detail">需要时会重新生成</string>
+    <string name="storage_cache_packages">已下载的数据包</string>
+    <string name="storage_cache_steam_corrupt">损坏的 Steam 下载</string>
+    <string name="storage_cache_steam_web">Steam 网页缓存</string>
+    <string name="storage_cache_temp">旧的临时文件</string>
+    <string name="storage_clear">清除</string>
+    <string name="storage_item_system_caches">Linux 与 Steam 缓存</string>
+    <string name="storage_item_system_caches_detail">旧的临时文件、已下载的数据包和 Steam 网页缓存</string>
+    <string name="storage_remove_launcher_confirm">将删除该商店应用的 Wine 前缀和着色器缓存（%1$s），其中的登录信息和仅存于此的存档也会一并删除。在此运行的游戏会使用全新前缀，可能需要重新配置该应用。云存档仍保留在你的账号中。</string>
+    <string name="storage_system_clearable">可清除 %1$s</string>
+    <!-- 商店账号 -->
+    <string name="store_account_api_key">使用 API 密钥</string>
+    <string name="store_account_expired">登录已过期</string>
+    <string name="store_account_signed_out">未登录</string>
+    <!-- 自定义主题 -->
+    <string name="theme_custom">自定义</string>
+    <string name="theme_custom_background">背景</string>
+    <string name="theme_custom_detail">可分别选择界面的每种配色。</string>
+    <string name="theme_custom_error">错误</string>
+    <string name="theme_custom_good">成功</string>
+    <string name="theme_custom_line">分隔线</string>
+    <string name="theme_custom_line2">边框</string>
+    <string name="theme_custom_on_background">主要文字</string>
+    <string name="theme_custom_on_primary">按钮文字</string>
+    <string name="theme_custom_on_surface_variant">次要文字</string>
+    <string name="theme_custom_primary">按钮与主色调</string>
+    <string name="theme_custom_signal">高亮</string>
+    <string name="theme_custom_surface">面板</string>
+    <string name="theme_custom_surface_variant">浮起面板</string>
+    <!-- 实验性 Proton -->
+    <string name="xproton_archive_invalid">压缩包不受支持或已损坏</string>
+    <string name="xproton_archive_unsafe">压缩包内含有不安全的链接或路径</string>
+    <string name="xproton_install_file">从文件安装</string>
+    <string name="xproton_installed">实验性 Proton 已安装。请在 Steam → 属性 → 兼容性中选择它。</string>
+    <string name="xproton_no_space">剩余空间不足以安装此 Proton 版本</string>
+    <string name="xproton_no_tree">压缩包中没有 Proton 版本</string>
+    <string name="xproton_place_failed">无法放置 Proton 版本</string>
+    <string name="xproton_remove_failed">未能完全移除 %1$s</string>
+    <string name="xproton_title">实验性版本</string>
+    <string name="xproton_unpacking">正在解包 Proton（需要几分钟）</string>
+    <string name="xproton_untar_failed">解包失败（tar %1$d）</string>
 </resources>
