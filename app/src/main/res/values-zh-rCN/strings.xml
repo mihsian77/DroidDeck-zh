@@ -4340,4 +4340,9 @@
     <string name="xproton_title">实验性版本</string>
     <string name="xproton_unpacking">正在解包 Proton（需要几分钟）</string>
     <string name="xproton_untar_failed">解包失败（tar %1$d）</string>
+
+    <!-- 上游 #2872 / #2912 新增 -->
+    <string name="game_link_program_unknown">请先把该游戏加入 DroidDeck，再从你的前端启动。</string>
+    <string name="screen_picker_description">第二屏幕：%1$s</string>
+    <string name="screen_picker_last_used">上次使用</string>
 </resources>
