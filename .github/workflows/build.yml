@@ -654,6 +654,14 @@ jobs:
           command -v x86_64-w64-mingw32-gcc >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq gcc-mingw-w64-x86-64; }
           bash tools/ubisoft-launcher/build.sh
 
+      # Epic 的父进程校验要在 EpicGamesLauncher.exe 这个替身下跑，没有它 Epic 游戏起不来。
+      # 上游在 build.sh 里打了 epic pack，我们之前没编这步，packs 里一直缺 epic。
+      - name: Epic Games Launcher stand-in (x86_64-pc-windows-gnu)
+        run: |
+          set -euo pipefail
+          command -v x86_64-w64-mingw32-gcc >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq gcc-mingw-w64-x86-64; }
+          bash tools/epic-launcher/build.sh
+
       - name: Build GOG Galaxy companion
         if: steps.preloads.outputs.cache-hit != 'true'
         run: |

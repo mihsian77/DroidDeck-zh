@@ -99,10 +99,11 @@ def prootPackPin = rootProject.file('tools/packs/proot/release.env').readLines()
 def pinnedPacks = [
     rockstar: [sha256: '47454e32deca3439c729bec7d264396936eba672a683b3ad0a57908d50133410', size: 406885L],
     dirt: [sha256: '9e75ac1fcd1ce0ee0df950414034e46f59acfea7a0e650ea59b84ad20f682af2', size: 4169L],
-    // epic 是上游 #2932 新加的包，由 tools/epic-launcher 交叉编译出
-    // EpicGamesLauncher.exe 再打包。本 fork 不跑这条自编链，linuxfs 里也没有源材料，
-    // 打不出来。给空 sha 兜住：AddonPack.available 是 sha256.isNotEmpty()，空值意味着
-    // 这个包不下载、不暴露入口，但 BuildConfig 字段照常生成，Kotlin 编译不会断。
+    // epic 由 tools/epic-launcher 交叉编译出 EpicGamesLauncher.exe，build.yml 里
+    // 编完 tools/packs/build.sh 就能打出 epic.tar.zst，正常情况下走的是本地包、
+    // 这里的空值不生效。留着是为了兜底：万一那步编译挂了，AddonPack.available
+    // 判 sha256.isNotEmpty() 会得到 false，这个包不下载也不暴露入口，但
+    // BuildConfig 字段照常生成，Kotlin 编译不会断。
     epic: [sha256: '', size: 0L],
 ]
 def addonPacks = [
