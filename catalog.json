@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.7.1-zh.3",
-    "title": "0.7.1-zh.3 (stable)",
-    "summary": "## 0.7.1-zh.3 (stable)\n\n本次没有用户可见的功能改动。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名用的是 AOSP 公共 testkey，和上游原版同一个，可以直接覆盖安装\n- GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节\n- 此为稳定版，安装前…",
-    "commit": "4298fa26eeab7661b5ca20bffc590608bc069234",
+    "tag": "0.7.1-zh.4",
+    "title": "0.7.1-zh.4 (stable)",
+    "summary": "## 0.7.1-zh.4 (stable)\n\n本次没有用户可见的功能改动。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名用的是 AOSP 公共 testkey，和上游原版同一个，可以直接覆盖安装\n- GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节\n- 此为稳定版，安装前…",
+    "commit": "28e8f5a98ffe8bf60072cc3bf15dce2eb38b0a81",
     "pr": 0,
-    "version": "0.7.1-zh.3",
-    "versionCode": 26,
-    "publishedAt": 1795083341000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.3",
+    "version": "0.7.1-zh.4",
+    "versionCode": 27,
+    "publishedAt": 1795247148000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.4",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.3.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.3/DroidDeck-0.7.1-zh.3.apk",
-        "size": 137891085,
-        "sha256": "1ebed0efdee6ce6b869a06839028efb1f3ccb5e47d46e9cd305b715326d1de37",
+        "name": "DroidDeck-0.7.1-zh.4.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.4/DroidDeck-0.7.1-zh.4.apk",
+        "size": 138124557,
+        "sha256": "8d6a6911a0fc3f52af07c5bfbe5fdfad242b673c107fc746e4c3e17997c3f628",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 26,
+        "versionCode": 27,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
