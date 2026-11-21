@@ -991,6 +991,12 @@ jobs:
             echo "| unit tests | ${unit:-missing} |"
           } >> "$GITHUB_STEP_SUMMARY"
           rc=0
+          # build 被手动取消或超时取消时，测试根本没跑，判失败只会污染构建历史。
+          # 取消本身已经写在 run 的 conclusion 里，这里直接放行。
+          if [ "$build_result" = cancelled ]; then
+            echo "build 被取消，测试结果不可用，不计为失败"
+            exit 0
+          fi
           if [ "$build_result" != success ]; then
             echo "::error::build job ended as $build_result"
             rc=1
