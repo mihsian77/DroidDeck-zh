@@ -99,14 +99,15 @@ def prootPackPin = rootProject.file('tools/packs/proot/release.env').readLines()
 def pinnedPacks = [
     rockstar: [sha256: '47454e32deca3439c729bec7d264396936eba672a683b3ad0a57908d50133410', size: 406885L],
     dirt: [sha256: '9e75ac1fcd1ce0ee0df950414034e46f59acfea7a0e650ea59b84ad20f682af2', size: 4169L],
+    // epic 是上游 #2932 新加的包，由 tools/epic-launcher 交叉编译出
+    // EpicGamesLauncher.exe 再打包。本 fork 不跑这条自编链，linuxfs 里也没有源材料，
+    // 打不出来。给空 sha 兜住：AddonPack.available 是 sha256.isNotEmpty()，空值意味着
+    // 这个包不下载、不暴露入口，但 BuildConfig 字段照常生成，Kotlin 编译不会断。
+    epic: [sha256: '', size: 0L],
 ]
-// epic 不在这里：本 fork 砍掉了组件自编链，build.yml 不跑 tools/epic-launcher，
-// linuxfs 里没有 EpicGamesLauncher.exe，打不出 epic 包；pinnedPacks 也没兜底，
-// ciBuild 下缺包会直接抛 GradleException。上游把 epic 加进来后这次 sync 会冲突，
-// 白名单取 ours，保住这份列表。
 def addonPacks = [
     'proot', 'directaudio', 'tracking', 'xbox', 'comet',
-    'butler', 'powervr', 'ubisoft', 'rockstar', 'dirt'
+    'butler', 'powervr', 'ubisoft', 'rockstar', 'dirt', 'epic'
 ].collectEntries { name ->
     def pack = file("build/packs/${name}.tar.zst")
     if (!pack.isFile()) {
