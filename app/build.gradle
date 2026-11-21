@@ -100,7 +100,14 @@ def pinnedPacks = [
     rockstar: [sha256: '47454e32deca3439c729bec7d264396936eba672a683b3ad0a57908d50133410', size: 406885L],
     dirt: [sha256: '9e75ac1fcd1ce0ee0df950414034e46f59acfea7a0e650ea59b84ad20f682af2', size: 4169L],
 ]
-def addonPacks = ['proot', 'directaudio', 'tracking', 'xbox', 'comet', 'butler', 'powervr', 'ubisoft', 'rockstar', 'dirt'].collectEntries { name ->
+// epic 不在这里：本 fork 砍掉了组件自编链，build.yml 不跑 tools/epic-launcher，
+// linuxfs 里没有 EpicGamesLauncher.exe，打不出 epic 包；pinnedPacks 也没兜底，
+// ciBuild 下缺包会直接抛 GradleException。上游把 epic 加进来后这次 sync 会冲突，
+// 白名单取 ours，保住这份列表。
+def addonPacks = [
+    'proot', 'directaudio', 'tracking', 'xbox', 'comet',
+    'butler', 'powervr', 'ubisoft', 'rockstar', 'dirt'
+].collectEntries { name ->
     def pack = file("build/packs/${name}.tar.zst")
     if (!pack.isFile()) {
         // 本地打不出来就用上面 pin 住的上游包：sha 和 tag 后缀对得上，应用会去
