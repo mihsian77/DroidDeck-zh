@@ -98,11 +98,15 @@ jobs:
           if [ -z "$subject" ]; then
             # 上次发版之后改动过什么，直接列出来。以前取的是当前提交标题，
             # 而从 CI 提交 dispatch 时那是 catalog bot 的信息，和版本无关。
-            prev=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=1" --jq '.[0].tag_name // empty' 2>/dev/null || true)
+            # prev 只取非 prerelease 的正式版：测试包（test-xxxx）也是 release，
+            # 按创建时间取最新会把基线落在一个只含 CI 提交的测试包上，
+            # compare 出来全是 chore/ci，过滤后只剩一句「没有功能改动」。
+            prev=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=20" \
+              --jq '[.[] | select(.prerelease == false and .draft == false)][0].tag_name // empty' 2>/dev/null || true)
             if [ -n "$prev" ]; then
               subject=$(gh api "repos/$GITHUB_REPOSITORY/compare/${prev}...${GITHUB_SHA}" \
                 --jq '[.commits[] | .commit.message | split("\n")[0]
-                       | select(test("^(chore|ci|build|deps)\\(") | not)] | .[0:10] | "- " + .' 2>/dev/null || true)
+                       | select(test("^(chore|ci|build|deps)[:(]|^sync:") | not)] | .[0:10] | "- " + .' 2>/dev/null || true)
             fi
             [ -n "$subject" ] || subject="本次没有用户可见的功能改动。"
           fi
