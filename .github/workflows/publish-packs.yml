@@ -62,7 +62,7 @@ jobs:
               --notes "$notes" --latest=false
           fi
           rel_id=$(gh api "repos/$REPO/releases/tags/$tag" --jq .id)
-          for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
+          for name in proot directaudio tracking xbox comet butler powervr ubisoft epic; do
             file="packs/$name.tar.zst"
             [ -f "$file" ] || { echo "::error::$name.tar.zst is missing from Build APK run $BUILD_RUN"; exit 1; }
             sha=$(sha256sum "$file" | cut -d' ' -f1)
@@ -104,7 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           tag=packs
-          for name in proot directaudio tracking xbox comet butler powervr ubisoft; do
+          for name in proot directaudio tracking xbox comet butler powervr ubisoft epic; do
             newest=$(sha256sum "packs/$name.tar.zst" | cut -d' ' -f1 | cut -c1-16)
             mapfile -t stale < <(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
               --jq ".assets[] | select(.name | startswith(\"$name-\")) | .name" |
