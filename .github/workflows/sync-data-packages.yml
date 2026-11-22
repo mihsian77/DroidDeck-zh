@@ -261,7 +261,7 @@ jobs:
 
           # 旧 release 的 body 里「数据包去哪下」那段是写死版本号的，发一版就成
           # 死链（点进去只剩 APK）。每次同步后统一刷成当前最新。
-          python3 tools/release/repoint-packages.py --latest "$TAG"
+          # （这一步的刷新放在下面的独立 step，数据包没更新的日子也要校正。）
 
           # 正式版标成 Latest，这样 release 页上它排在最前面，预发布包自然排在后面
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --latest
@@ -294,3 +294,10 @@ jobs:
           fi
 
           echo "数据包已上传到 $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$TAG"
+
+      # 数据包没更新的日子也会跑，避免发新版之后旧 release 的指引又指回旧版。
+      - name: Repoint old releases to the current packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
+        run: python3 tools/release/repoint-packages.py ${TAG:+--latest "$TAG"}
