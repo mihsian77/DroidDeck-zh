@@ -26,6 +26,8 @@ jobs:
         app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt
         app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt
         app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java
+        app/src/main/java/com/droiddeck/launcher/session/SessionFiles.kt
+        app/src/main/java/com/droiddeck/launcher/session/SessionService.kt
         app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt
         app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt
         tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf
@@ -85,6 +87,17 @@ jobs:
           if [ -s /tmp/whitelist-drift.txt ]; then
             echo "上游这批提交动了白名单里的文件："
             cat /tmp/whitelist-drift.txt
+            # 这些文件冲突时保留我们的版本，上游的改动会被丢掉。日志翻起来不直观，
+            # 同时也写进 run 的摘要页，发完 sync 扫一眼就知道要不要人工跟。
+            {
+              echo '### 上游动了这些白名单文件（冲突时保留我们的版本）'
+              echo
+              echo '上游的改动会被丢掉，需要人工看要不要移植：'
+              echo
+              echo '```'
+              cat /tmp/whitelist-drift.txt
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             echo "上游这批提交没碰白名单文件"
           fi
@@ -114,6 +127,8 @@ jobs:
                 app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt|\
                 app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt|\
                 app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java|\
+                app/src/main/java/com/droiddeck/launcher/session/SessionFiles.kt|\
+                app/src/main/java/com/droiddeck/launcher/session/SessionService.kt|\
                 app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt|\
                 app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt|\
                 tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf|\
