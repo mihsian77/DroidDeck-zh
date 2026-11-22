@@ -30,6 +30,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: tools/release
+          sparse-checkout-cone-mode: false
+
       - name: Fetch upstream catalogs
         id: upstream
         run: |
