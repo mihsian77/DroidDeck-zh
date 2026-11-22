@@ -85,6 +85,12 @@ object SessionPrefs {
         prefs(context).edit().putBoolean("launcherFullscreen", on).apply()
     }
 
+    fun controllerHaptics(context: Context): Boolean = prefs(context).getBoolean("controllerHaptics", true)
+
+    fun setControllerHaptics(context: Context, on: Boolean) {
+        prefs(context).edit().putBoolean("controllerHaptics", on).apply()
+    }
+
     fun blackFrameInsertion(context: Context): Boolean = prefs(context).getBoolean("blackFrameInsertion", false)
 
     fun setBlackFrameInsertion(context: Context, on: Boolean) {
@@ -419,6 +425,18 @@ object SessionPrefs {
         e.remove("gameStoresEnabled").remove("soundtracksEnabled").remove("agentTab").putInt("navTabLayout", version).apply()
     }
 
+    fun drawerPageOrder(context: Context): List<String> = idList(prefs(context).getString("drawerPageOrder", null))
+
+    fun setDrawerPageOrder(context: Context, order: List<String>) {
+        prefs(context).edit().putString("drawerPageOrder", order.joinToString(",")).apply()
+    }
+
+    fun drawerPageHidden(context: Context): Set<String> = idList(prefs(context).getString("drawerPageHidden", null)).toSet()
+
+    fun setDrawerPageHidden(context: Context, keys: Set<String>) {
+        prefs(context).edit().putString("drawerPageHidden", keys.joinToString(",")).apply()
+    }
+
     fun setNavTabHidden(context: Context, keys: Set<String>) {
         prefs(context).edit().putString("navTabHidden", keys.joinToString(",")).apply()
     }
@@ -673,6 +691,12 @@ object SessionPrefs {
         prefs(context).edit().putString("osc", mode).apply()
     }
 
+    fun oscRearButtons(context: Context): Boolean = prefs(context).getBoolean("oscRearButtons", false)
+    fun setOscRearButtons(context: Context, shown: Boolean) { prefs(context).edit().putBoolean("oscRearButtons", shown).apply() }
+
+    fun oscTrackpads(context: Context): Boolean = prefs(context).getBoolean("oscTrackpads", false)
+    fun setOscTrackpads(context: Context, shown: Boolean) { prefs(context).edit().putBoolean("oscTrackpads", shown).apply() }
+
     fun linuxDriver(context: Context): String =
         prefs(context).getString("linuxDriver", null)
             ?: prefs(context).getString("linuxDriver.steam", null)
@@ -827,6 +851,12 @@ object SessionPrefs {
 
     fun setStretch16x9(context: Context, on: Boolean) {
         prefs(context).edit().putBoolean("stretch16x9", on).apply()
+    }
+
+    fun avoidNotch(context: Context): Boolean = prefs(context).getBoolean("avoidNotch", false)
+
+    fun setAvoidNotch(context: Context, on: Boolean) {
+        prefs(context).edit().putBoolean("avoidNotch", on).apply()
     }
 
 

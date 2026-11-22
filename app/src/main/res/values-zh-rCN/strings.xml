@@ -272,6 +272,8 @@
     <string name="osc_steam_touch">Steam 触控（测试版）</string>
     <string name="osc_style_next_session">Steam 的触控按键将从下次 Steam 会话开始生效</string>
     <string name="osc_steam_layout">Steam 触控布局</string>
+    <string name="osc_trackpads">触控板</string>
+    <string name="osc_rear_buttons">背键</string>
     <string name="screen_keys">屏幕按键</string>
     <string name="screen_keys_add">添加按键</string>
     <string name="screen_key_text">文本</string>
@@ -637,6 +639,9 @@
     <string name="drawer_open_qam">打开快捷访问菜单</string>
     <string name="drawer_prev_page">上一页</string>
     <string name="drawer_next_page">下一页</string>
+    <string name="drawer_manage_pages">排列页面</string>
+    <string name="drawer_pages_done">完成</string>
+    <string name="drawer_pages_reset">重置</string>
     <string name="drawer_hud">性能 HUD</string>
     <string name="drawer_hud_fps">帧率</string>
     <string name="drawer_hud_battery">电池温度</string>
@@ -835,6 +840,8 @@
     <string name="setup_tools">工具</string>
     <string name="setup_controller">手柄</string>
     <string name="setup_controller_unavailable">手柄设置不可用。</string>
+    <string name="setup_controller_haptics">手柄振动</string>
+    <string name="setup_controller_haptics_hint">启动器中十字键、A 键或肩键移动、选择时轻微振动。触屏不振动</string>
     <string name="setup_session">会话</string>
     <string name="setup_logs">会话日志</string>
     <string name="setup_logs_hint">每次会话后保存</string>
@@ -2238,6 +2245,8 @@
     <string name="display_game_fit">16:9 游戏适配</string>
     <string name="display_game_fit_hint">16:9 游戏如何适配此屏幕。下次会话生效。</string>
     <string name="display_game_fit_unavailable">请选择“匹配屏幕”或比 16:9 更窄的自定义尺寸。</string>
+    <string name="display_avoid_notch">避开刘海</string>
+    <string name="display_avoid_notch_hint">让画面避开摄像头挖孔区域。返回会话时生效。</string>
     <string name="display_preserve">保持比例</string>
     <string name="display_stretch">拉伸至屏幕</string>
     <string name="display_image_scaling">画面缩放</string>

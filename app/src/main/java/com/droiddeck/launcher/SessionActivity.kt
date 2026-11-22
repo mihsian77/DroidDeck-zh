@@ -77,6 +77,7 @@ import com.droiddeck.launcher.input.KeyboardHost
 import com.droiddeck.launcher.input.ControllerPrefs
 import com.droiddeck.launcher.input.SessionClipboard
 import com.droiddeck.launcher.input.OnScreenControls
+import com.droiddeck.launcher.input.OnScreenLayout
 import com.droiddeck.launcher.input.InputRouter
 import com.droiddeck.launcher.input.InputOutput
 import com.droiddeck.launcher.input.InputCommand
@@ -176,6 +177,38 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
     private var quickButtons by mutableStateOf<Map<InputCommand, Boolean>>(emptyMap())
     private var picturePosition by mutableStateOf("center")
     private var integerScaling by mutableStateOf(false)
+    private var avoidNotch = false
+
+    private fun applyNotchInset(insets: android.view.WindowInsets? = window.decorView.rootWindowInsets) {
+        if (!::sessionRoot.isInitialized) return
+        val cutout = if (avoidNotch && Build.VERSION.SDK_INT >= 28 && SessionState.mode == SessionService.MODE_STEAM &&
+            !pipUi && !isInPictureInPictureMode && glassesScreen == null && bottomGame == null && !activeCardboard.enabled)
+            insets?.displayCutout else null
+        val left = cutout?.safeInsetLeft ?: 0
+        val top = cutout?.safeInsetTop ?: 0
+        val right = cutout?.safeInsetRight ?: 0
+        val bottom = cutout?.safeInsetBottom ?: 0
+        if (sessionRoot.paddingLeft == left && sessionRoot.paddingTop == top &&
+            sessionRoot.paddingRight == right && sessionRoot.paddingBottom == bottom) return
+        sessionRoot.setPadding(left, top, right, bottom)
+        uiHandler.post { applyUnfoldedControls() }
+    }
+
+    private fun rootContentWidth() = sessionRoot.width - sessionRoot.paddingLeft - sessionRoot.paddingRight
+
+    private fun rootContentHeight() = sessionRoot.height - sessionRoot.paddingTop - sessionRoot.paddingBottom
+
+    private inline fun <T> inSurfaceSpace(event: MotionEvent, block: () -> T): T {
+        val dx = if (outputView() === surfaceView) -surfaceView.left.toFloat() else 0f
+        val dy = if (outputView() === surfaceView) -surfaceView.top.toFloat() else 0f
+        if (dx == 0f && dy == 0f) return block()
+        event.offsetLocation(dx, dy)
+        try {
+            return block()
+        } finally {
+            event.offsetLocation(-dx, -dy)
+        }
+    }
 
     private fun applyGameAlignment() {
         if (!CompositorHost.isStarted) return
@@ -246,7 +279,16 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
     private var handCamera: com.droiddeck.launcher.handtracking.HandCamera? = null
     private var padMotion: com.droiddeck.launcher.input.PadMotion? = null
     private var resumed by mutableStateOf(false)
-    private val deckPadListener: () -> Unit = { uiHandler.post { updatePadMotion(); openDeckRing("deck pad changed"); applyUnfoldedControls(); leaveDeckPanel() } }
+    private val deckPadListener: () -> Unit = {
+        uiHandler.post {
+            updatePadMotion()
+            openDeckRing("deck pad changed")
+            onScreenControls?.reload()
+            bottomInputControls?.reload()
+            applyUnfoldedControls()
+            leaveDeckPanel()
+        }
+    }
 
     private fun openDeckRing(why: String) {
         val deck = SessionState.deckPad
@@ -659,6 +701,8 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
     private var suspendPolicy by mutableStateOf(SessionPrefs.SUSPEND_MANUAL)
     private var steamDownloadsInBackground by mutableStateOf(false)
     private var oscMode by mutableStateOf(SessionPrefs.OSC_AUTO)
+    private var oscRearButtons by mutableStateOf(false)
+    private var oscTrackpads by mutableStateOf(false)
     private var onScreenButtonsVisible by mutableStateOf(false)
     private var secondScreenMode by mutableStateOf(SessionState.secondScreenMode)
     private var secondScreenDisplays by mutableStateOf<List<SecondScreenDisplay>>(emptyList())
@@ -851,6 +895,10 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
                 else super.onResolvePointerIcon(event, pointerIndex)
         }
         sessionRoot = root
+        window.decorView.setOnApplyWindowInsetsListener { view, insets ->
+            applyNotchInset(insets)
+            view.onApplyWindowInsets(insets)
+        }
         surfaceView = SurfaceView(this)
         surfaceView.holder.addCallback(this)
         root.addView(surfaceView)
@@ -895,7 +943,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
             controls.onTouchMiss = miss@{ event ->
                 if (!gestureTouchStreamGate.accepts(GestureTouchStreamGate.Source.ON_SCREEN_CONTROLS, event)) return@miss
                 event.offsetLocation(controls.left - surfaceView.left.toFloat(), controls.top - surfaceView.top.toFloat())
-                onTouchEvent(event)
+                handleTouch(event)
             }
             root.addView(controls)
         }
@@ -940,7 +988,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
                 false
             } else if (!gestureTouchStreamGate.accepts(GestureTouchStreamGate.Source.SURFACE, event)) {
                 false
-            } else onTouchEvent(event)
+            } else handleTouch(event)
         }
         padMouse = PadMouse(padMouseListener)
         bridge.setTouchRoute(object : PadBridge.TouchRoute {
@@ -1703,6 +1751,10 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
                 com.droiddeck.launcher.input.FakeInputWriter.setPadType(SessionPrefs.padType(id))
                 com.droiddeck.launcher.session.InputSysfsComponent.padTypeChanged(SessionPrefs.padType(id))
                 padType = id
+                onScreenControls?.reload()
+                applyUnfoldedControls()
+                unfoldedPanel?.reload()
+                bottomInputControls?.reload()
             },
             backHold = backHold,
             onBackHold = { on ->
@@ -1813,6 +1865,23 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
             onAdaptiveSticks = { on ->
                 primaryInputLayout?.let { com.droiddeck.launcher.input.InputLibraries.setAdaptiveSticks(this@SessionActivity, it.id, on) }
                 refreshInputProfile()
+            },
+            showFloatingSteamControls = SessionState.mode == SessionService.MODE_STEAM && SessionState.deckPad && unfoldedPanel == null &&
+                oscMode != SessionPrefs.OSC_NEVER && oscMode != SessionPrefs.OSC_STEAM_QAM &&
+                !steamTouchInUse && OnScreenLayout.supportsFloatingSteamControls(padType, primaryInputLayout),
+            oscRearButtons = oscRearButtons,
+            oscTrackpads = oscTrackpads,
+            onOscRearButtons = { shown ->
+                SessionPrefs.setOscRearButtons(this@SessionActivity, shown)
+                oscRearButtons = shown
+                onScreenControls?.reload()
+                bottomInputControls?.reload()
+            },
+            onOscTrackpads = { shown ->
+                SessionPrefs.setOscTrackpads(this@SessionActivity, shown)
+                oscTrackpads = shown
+                onScreenControls?.reload()
+                bottomInputControls?.reload()
             },
             quickButtons = quickButtons.takeIf {
                 unfoldedPanel != null || oscMode != SessionPrefs.OSC_NEVER && !steamTouchInUse
@@ -2507,6 +2576,8 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         unfoldedControlsWithController = SessionPrefs.unfoldedControlsWithController(this)
         picturePosition = SessionPrefs.picturePosition(this)
         integerScaling = SessionPrefs.integerScaling(this)
+        avoidNotch = SessionPrefs.avoidNotch(this)
+        applyNotchInset()
         hudOn = SessionPrefs.hudEnabled(this)
         gpuClockPin = gpuClockHeld()
         blackFrameInsertion = SessionPrefs.blackFrameInsertion(this)
@@ -2555,6 +2626,8 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         suspendPolicy = SessionPrefs.suspendPolicy(this, SessionState.mode)
         steamDownloadsInBackground = SessionPrefs.steamDownloadsInBackground(this)
         oscMode = SessionPrefs.oscMode(this, SessionState.mode == SessionService.MODE_STEAM)
+        oscRearButtons = SessionPrefs.oscRearButtons(this)
+        oscTrackpads = SessionPrefs.oscTrackpads(this)
         backHold = SessionPrefs.backHold(this)
         backActionsInverted = SessionPrefs.backActionsInverted(this)
         physicalShortcuts.bindings = PhysicalShortcuts.read(this)
@@ -2909,6 +2982,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         }
         cancelTouchGestures()
         applyFollowOrientation(newConfig)
+        applyNotchInset()
         applyUnfoldedControls()
         resizeOutputForWindow(surfaceW, surfaceH)
     }
@@ -3646,12 +3720,12 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         if (pen >= 0) when (routePen(event, pen)) {
             PenRouter.Route.TOUCH -> {}
             PenRouter.Route.PEN -> {
-                if (!appUiOwnsPointer()) return penSample(event, pen) || super.dispatchGenericMotionEvent(event)
+                if (!appUiOwnsPointer()) return inSurfaceSpace(event) { penSample(event, pen) } || super.dispatchGenericMotionEvent(event)
                 if (super.dispatchGenericMotionEvent(event)) {
                     penStream.cancel()
                     return true
                 }
-                return !touchEditorOpen && penSample(event, pen)
+                return !touchEditorOpen && inSurfaceSpace(event) { penSample(event, pen) }
             }
             else -> return super.dispatchGenericMotionEvent(event)
         }
@@ -3659,10 +3733,10 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
             if (appUiOwnsPointer()) {
                 if (super.dispatchGenericMotionEvent(event)) return true
                 if (touchEditorOpen) return false
-                if (onMouse(event)) return true
+                if (inSurfaceSpace(event) { onMouse(event) }) return true
                 return false
             }
-            if (onMouse(event)) return true
+            if (inSurfaceSpace(event) { onMouse(event) }) return true
         }
         return super.dispatchGenericMotionEvent(event)
     }
@@ -4536,14 +4610,14 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
 
     private fun controlsBelowWanted(): Boolean {
         if (!::sessionRoot.isInitialized || glassesScreen != null || bottomGame != null || cardboard.enabled) return false
-        return SessionPrefs.controlsBelowWanted(this, SessionState.mode, sessionRoot.width, sessionRoot.height,
+        return SessionPrefs.controlsBelowWanted(this, SessionState.mode, rootContentWidth(), rootContentHeight(),
             pipUi || isInPictureInPictureMode)
     }
 
     private fun applyUnfoldedControls() {
         if (!::sessionRoot.isInitialized) return
-        val width = sessionRoot.width
-        val height = sessionRoot.height
+        val width = rootContentWidth()
+        val height = rootContentHeight()
         val wanted = controlsBelowWanted()
         val tabRow = unfoldedColumn?.getChildAt(0)?.height?.let {
             it - (com.droiddeck.launcher.ui.BAR_HEIGHT.value * resources.displayMetrics.density + 0.5f).toInt()
@@ -4557,7 +4631,9 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
                 else "unfolded controls: game full screen")
         }
         val portrait = !com.droiddeck.launcher.session.SessionDisplay.foldable(this)
-        val dock = if (SessionState.deckPad) com.droiddeck.launcher.input.OnScreenLayout.Dock.deck(portrait, deckPanelLayouts[com.droiddeck.launcher.input.DeckPanel.GAMEPAD])
+        val kit = com.droiddeck.launcher.input.PadKit.forOverlay(this, primaryInputLayout)
+        val dock = if (SessionState.deckPad && kit?.steam != false)
+            com.droiddeck.launcher.input.OnScreenLayout.Dock.deck(portrait, deckPanelLayouts[com.droiddeck.launcher.input.DeckPanel.GAMEPAD])
             else com.droiddeck.launcher.input.OnScreenLayout.Dock(portrait, false)
         var panel = unfoldedPanel
         if (panel != null && (!wanted || panel.dock != dock)) {
@@ -4972,7 +5048,9 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         secondScreenPresentation?.controlsView, swappedInputSurface,
     ).any { it.isShown && inputProfile.showsMouseButton(it.inputRole, it.shownElements, stockInputProfile) }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
+    override fun onTouchEvent(event: MotionEvent): Boolean = inSurfaceSpace(event) { handleTouch(event) }
+
+    private fun handleTouch(event: MotionEvent): Boolean {
         val pen = PenStream.penIndex(event)
         val penRouted = if (pen >= 0) routePen(event, pen).takeIf { it != PenRouter.Route.TOUCH } else null
         if (penRouted == null && event.isFromSource(android.view.InputDevice.SOURCE_MOUSE)) return onMouse(event)
@@ -5099,7 +5177,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         if (event.pointerCount > 1) {
             var fingers = 0
             for (index in 0 until event.pointerCount) if (!PenStream.isPen(event, index)) fingers = fingers or (1 shl event.getPointerId(index))
-            event.pointerSubset(fingers)?.let { split -> try { onTouchEvent(split) } finally { split.recycle() } }
+            event.pointerSubset(fingers)?.let { split -> try { handleTouch(split) } finally { split.recycle() } }
         }
         when (route) {
             PenRouter.Route.PEN -> penSample(event, pen)
@@ -5410,7 +5488,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         view.onTouchMiss = miss@{ event ->
             if (!gestureTouchStreamGate.accepts(GestureTouchStreamGate.Source.ON_SCREEN_CONTROLS, event)) return@miss
             event.offsetLocation(view.left - surfaceView.left.toFloat(), view.top - surfaceView.top.toFloat())
-            onTouchEvent(event)
+            handleTouch(event)
         }
         root.addView(view, root.indexOfChild(onScreenControls) + 1)
         steamTouchControls = view
@@ -5436,6 +5514,10 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
             .takeIf { it.isFile }
             ?.let { FileUtils.readString(it)?.trim()?.lowercase() }
             ?: SessionPrefs.oscMode(this, SessionState.mode == SessionService.MODE_STEAM)
+        unfoldedColumn?.let { column ->
+            val shown = if (inputSettingsOpen) View.INVISIBLE else View.VISIBLE
+            if (column.visibility != shown) { unfoldedPanel?.releaseAll(); unfoldedDeckSurface?.releaseInputs(); column.visibility = shown }
+        }
         val controls = onScreenControls ?: return
         fun showPinned() {
             controls.setPinnedOnly(true)
@@ -6076,6 +6158,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         val e = effectiveCardboard(c)
         activeCardboard = e
         applyGameAlignment()
+        applyNotchInset()
         if (CompositorHost.isStarted) pushCardboard(e)
         if (e.enabled && !was.enabled) headTracker?.recenter()
         updateHeadTracker()
@@ -6159,6 +6242,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         glassesOutputActive = false
         surfaceW = 0
         surfaceH = 0
+        applyNotchInset()
         CompositorHost.detach(screen.holder.surface)
         surfaceView.visibility = View.VISIBLE
         applyOutputPacing()
@@ -6208,6 +6292,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
             bottomGame = screen
             surfaceW = 0
             surfaceH = 0
+            applyNotchInset()
             screen.setOnDismissListener {
                 if (bottomGame === screen) {
                     restoreTopOutput(screen)
@@ -6249,6 +6334,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
         updateOnScreenPad()
         surfaceW = 0
         surfaceH = 0
+        applyNotchInset()
         CompositorHost.detach(screen.holder.surface)
         if (glassesScreen != null) return
         surfaceView.visibility = View.VISIBLE
@@ -6279,7 +6365,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
             gestureTouchStreamGate.reset()
         }
         if (!gestureTouchStreamGate.accepts(GestureTouchStreamGate.Source.SURFACE, event)) return false
-        return onTouchEvent(event)
+        return handleTouch(event)
     }
 
     @androidx.compose.runtime.Composable
@@ -6413,6 +6499,7 @@ class SessionActivity : ComponentActivity(), SurfaceHolder.Callback, com.droidde
             bottomGame?.let { restoreTopOutput(it); runCatching { it.dismiss() } }
             val screen = GlassesScreen(this, target, Glasses.outputHz(), this, Glasses.outputResolution())
             glassesScreen = screen
+            applyNotchInset()
             applyOutputPacing()
             surfaceW = 0
             surfaceH = 0
