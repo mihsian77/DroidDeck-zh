@@ -178,12 +178,23 @@ jobs:
             }
           }
           EOF
+          # z.write() 会把源文件的 mtime 写进条目头。两个 tar.zst 是每次现下的，
+          # mtime 就是下载时刻，bundle 的 sha 因此每次都变。时间戳和权限固定成
+          # 常量，内容一样 sha 就一样。
           python3 - <<'PYEOF'
           import zipfile, os
+          FIXED_TIME = (1980, 1, 1, 0, 0, 0)
+          FILES = [
+              ('manifest.json', '/tmp/manifest.json'),
+              ('linuxfs.tar.zst', '/tmp/linuxfs.tar.zst'),
+              ('desktop.tar.zst', '/tmp/desktop.tar.zst'),
+          ]
           with zipfile.ZipFile('/tmp/droiddeck-bundle.zip', 'w', zipfile.ZIP_DEFLATED) as z:
-              z.write('/tmp/manifest.json', 'manifest.json')
-              z.write('/tmp/linuxfs.tar.zst', 'linuxfs.tar.zst')
-              z.write('/tmp/desktop.tar.zst', 'desktop.tar.zst')
+              for arc, src in FILES:
+                  zi = zipfile.ZipInfo(arc, date_time=FIXED_TIME)
+                  zi.external_attr = 0o644 << 16
+                  zi.compress_type = zipfile.ZIP_DEFLATED
+                  z.writestr(zi, open(src, 'rb').read())
           PYEOF
           ls -lh /tmp/droiddeck-bundle.zip
 
@@ -248,9 +259,12 @@ jobs:
               done
             done
 
+          # 旧 release 的 body 里「数据包去哪下」那段是写死版本号的，发一版就成
+          # 死链（点进去只剩 APK）。每次同步后统一刷成当前最新。
+          python3 tools/release/repoint-packages.py --latest "$TAG"
+
           # 正式版标成 Latest，这样 release 页上它排在最前面，预发布包自然排在后面
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --latest
-
           # 说明段落只加一次，避免每次同步都改正式版的发布说明
           body=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq '.body // ""')
           if ! grep -q 'data-packages-section' <<<"$body"; then
