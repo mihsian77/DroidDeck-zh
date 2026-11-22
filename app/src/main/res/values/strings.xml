@@ -4465,4 +4465,11 @@
     <string name="xproton_title">Experimental builds</string>
     <string name="xproton_unpacking">Unpacking Proton (a few minutes)</string>
     <string name="xproton_untar_failed">Unpacking failed (tar %1$d)</string>
+
+    <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
+    <string name="display_follow_landscape">Follow landscape (%1$d×%2$d)</string>
+    <string name="display_follow_portrait">Follow portrait (%1$d×%2$d)</string>
+    <string name="display_resolution_landscape">Landscape resolution</string>
+    <string name="display_resolution_portrait">Portrait resolution</string>
+    <string name="drawer_docked_menu_controller">Physical controls can use bottom screen</string>
 </resources>
