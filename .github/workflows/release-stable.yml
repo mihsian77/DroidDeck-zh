@@ -57,6 +57,7 @@ jobs:
             exit 1
           fi
           echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+          echo "build_sha=$build_sha" >> "$GITHUB_OUTPUT"
           echo "Promoting build $run_id (head $build_sha, source tree matches $GITHUB_SHA)"
 
       - name: Download APK
@@ -86,12 +87,13 @@ jobs:
         id: publish
         env:
           GH_TOKEN: ${{ github.token }}
+          BUILD_SHA: ${{ steps.find.outputs.build_sha }}
         run: |
           set -euo pipefail
           version=$(sed -n 's/^ *versionName "\(.*\)"$/\1/p' app/build.gradle)
           tag=${version:-${{ inputs.label }}}
           [ -n "$tag" ] || { echo "::error::no versionName and no label given"; exit 1; }
-          sha7=${GITHUB_SHA::7}
+          [ -n "$BUILD_SHA" ] || { echo "::error::no build sha from the find step"; exit 1; }
           # 发版常常是从一个 CI 提交 dispatch 的，直接拿提交标题会出现
           # "ci(release): ..." 这种和版本无关的首行，所以允许显式传 summary。
           subject="${{ inputs.summary }}"
@@ -134,8 +136,10 @@ jobs:
           - GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节
           - 此为稳定版，安装前建议先备份旧版本"
           # Remove an older stable with the same tag if any, then publish as non-prerelease.
+          # tag 指向构建 SHA，不是 main 的最新提交：发版前常有 catalog bot 提交进来，
+          # 指向 main 会让 tag 落在一个跟 APK 无关的提交上，catalog 里的 commit 也就不准了。
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" --target main --title "$tag (stable)" --notes "$notes" apk/*.apk
+          gh release create "$tag" --target "$BUILD_SHA" --title "$tag (stable)" --notes "$notes" apk/*.apk
           url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$tag"
           echo "release=$url" >> "$GITHUB_OUTPUT"
           echo "Published $url"
