@@ -25,21 +25,21 @@
     }
   },
   "preview": {
-    "tag": "test-afa4a96",
-    "title": "测试包 afa4a96",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.7.1-zh.5（afa4a96）\n文件名带 -test.afa4a96，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "afa4a9646123ff6e7544be75535486209e8fd916",
+    "tag": "test-2551a2d",
+    "title": "测试包 2551a2d",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.7.1-zh.5（2551a2d）\n文件名带 -test.2551a2d，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "2551a2d8ab6079cab27fdc66749dac4eb98a51a3",
     "pr": 0,
     "version": "0.7.1-zh.5",
     "versionCode": 28,
-    "publishedAt": 1795320425000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-afa4a96",
+    "publishedAt": 1795324358000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-2551a2d",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.5-test.afa4a96.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-afa4a96/DroidDeck-0.7.1-zh.5-test.afa4a96.apk",
+        "name": "DroidDeck-0.7.1-zh.5-test.2551a2d.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-2551a2d/DroidDeck-0.7.1-zh.5-test.2551a2d.apk",
         "size": 138341756,
-        "sha256": "a53a9d4f35e1d23d4182157fa199a6b0c405390850aa86e34fb7646baa7a3deb",
+        "sha256": "4659a394a77724fc55101da52a86d9e1182f978b5891c804a876c3ef954b6feb",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 28,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
@@ -48,6 +48,28 @@
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-2551a2d",
+      "title": "测试包 2551a2d",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.7.1-zh.5（2551a2d）\n文件名带 -test.2551a2d，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "2551a2d8ab6079cab27fdc66749dac4eb98a51a3",
+      "pr": 0,
+      "version": "0.7.1-zh.5",
+      "versionCode": 28,
+      "publishedAt": 1795324358000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-2551a2d",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.7.1-zh.5-test.2551a2d.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-2551a2d/DroidDeck-0.7.1-zh.5-test.2551a2d.apk",
+          "size": 138341756,
+          "sha256": "4659a394a77724fc55101da52a86d9e1182f978b5891c804a876c3ef954b6feb",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 28,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-afa4a96",
       "title": "测试包 afa4a96",
@@ -66,28 +88,6 @@
           "sha256": "a53a9d4f35e1d23d4182157fa199a6b0c405390850aa86e34fb7646baa7a3deb",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 28,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-bd31924",
-      "title": "测试包 bd31924",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：sync: 合入上游 12 个提交（f29f72d5d..378175c6a），补 7 条中文\n\n版本：0.7.1-zh.4（bd31924）\n文件名带 -test.bd31924，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "bd31924944794024e153d6ca9885da4af846699c",
-      "pr": 0,
-      "version": "0.7.1-zh.4",
-      "versionCode": 27,
-      "publishedAt": 1795317982000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-bd31924",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.7.1-zh.4-test.bd31924.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-bd31924/DroidDeck-0.7.1-zh.4-test.bd31924.apk",
-          "size": 138345852,
-          "sha256": "8c49e286a49f14335ba7a7fd19811b7b6b4cabc751dc8a2b90268fc28a538bf4",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 27,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
         }
       }
