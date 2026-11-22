@@ -640,6 +640,7 @@
     <string name="drawer_prev_page">上一页</string>
     <string name="drawer_next_page">下一页</string>
     <string name="drawer_manage_pages">排列页面</string>
+    <string name="drawer_docked_menu_controller">允许实体按键操作底部屏幕</string>
     <string name="drawer_pages_done">完成</string>
     <string name="drawer_pages_reset">重置</string>
     <string name="drawer_hud">性能 HUD</string>
@@ -2241,6 +2242,7 @@
     <string name="phantom_warning">%1$s。%2$s\n\n%3$s</string>
     <string name="display_session">会话显示</string>
     <string name="display_zero_copy">零拷贝呈现</string>
+    <string name="display_resolution">分辨率</string>
     <string name="display_resolution_landscape">横屏分辨率</string>
     <string name="display_resolution_portrait">竖屏分辨率</string>
     <string name="display_follow_landscape">跟随横屏 (%1$d×%2$d)</string>
