@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.7.1-zh.5",
-    "title": "0.7.1-zh.5 (stable)",
-    "summary": "## 0.7.1-zh.5 (stable)\n\n上游同步到 378175c6a，另外修好了 epic 组件装不上的问题\n\n上游这批改动：\n- 屏幕控制按手柄类型区分，加了排列编辑器，修了旋转和平板的按键位置\n- 新增「避开刘海」开关，同时修了刘海状态下触摸、鼠标、笔的坐标映射\n- 会话菜单页可以排列和隐藏\n- gamescope 补丁打到 0139，HDR 能实时切换\n- preload 修了单线程检测和首次分配挂死\n\n上一版 zh.4 的 APK 里 epic 组件的 sha 是空串，应用内装不上，这次构建带上了修复。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）…",
-    "commit": "afa4a9646123ff6e7544be75535486209e8fd916",
+    "tag": "0.7.1-zh.6",
+    "title": "0.7.1-zh.6 (stable)",
+    "summary": "## 0.7.1-zh.6 (stable)\n\n- 合入上游 13 个提交：底部屏菜单交给手柄操作、分辨率按横竖屏分开、屏幕 D-pad 可整块拖动、CurseForge 插件安装、Steam web helper 在绑核失败时也能起\n- 补了漏译的两条中文\n- epic / ubisoft 启动器包改成可复现构建。之前每次编译 sha 都不一样，旧包会被后面的构建挤掉，装好的人点下载就 404\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proto…",
+    "commit": "0855d1c589be49561fca16ea759962b9b1001c86",
     "pr": 0,
-    "version": "0.7.1-zh.5",
-    "versionCode": 28,
-    "publishedAt": 1795321292000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.5",
+    "version": "0.7.1-zh.6",
+    "versionCode": 29,
+    "publishedAt": 1795332688000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.6",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.5.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.5/DroidDeck-0.7.1-zh.5.apk",
-        "size": 138341756,
-        "sha256": "a53a9d4f35e1d23d4182157fa199a6b0c405390850aa86e34fb7646baa7a3deb",
+        "name": "DroidDeck-0.7.1-zh.6.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.6/DroidDeck-0.7.1-zh.6.apk",
+        "size": 138390908,
+        "sha256": "43cb99b761ffd98ca7aea462158f950363e36bc6c2215d4082e4b9b69677593b",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 28,
+        "versionCode": 29,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
