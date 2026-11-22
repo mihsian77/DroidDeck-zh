@@ -104,7 +104,11 @@ jobs:
         run: |
           set -euo pipefail
           tag=packs
-          for name in proot directaudio tracking xbox comet butler powervr ubisoft epic; do
+          # proot、tracking 这些是预编译好的固定二进制，同源码构建 sha 不变，
+          # 留最新一份就够。epic 和 ubisoft 是每次编出来的 exe，以前字节会变，
+          # 只留一份会把已经发出去的 APK 钉的 sha 删掉（zh.5 就踩过一次，
+          # 钉子还在 release 上却只剩下一版的包）。这两个按创建时间多留几份。
+          for name in proot directaudio tracking xbox comet butler powervr; do
             newest=$(sha256sum "packs/$name.tar.zst" | cut -d' ' -f1 | cut -c1-16)
             mapfile -t stale < <(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
               --jq ".assets[] | select(.name | startswith(\"$name-\")) | .name" |
@@ -112,6 +116,19 @@ jobs:
             for asset in "${stale[@]}"; do
               [ -n "$asset" ] || continue
               echo "prune $asset"
+              gh release delete-asset "$tag" "$asset" -R "$GITHUB_REPOSITORY" --yes || \
+                echo "::warning::could not delete $asset"
+            done
+          done
+          for name in ubisoft epic; do
+            mapfile -t all < <(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
+              --jq ".assets[] | select(.name | startswith(\"$name-\")) | [.created_at, .name] | @tsv" |
+              sort -r | cut -f2)
+            keep=5
+            [ "${#all[@]}" -le "$keep" ] && continue
+            for asset in "${all[@]:$keep}"; do
+              [ -n "$asset" ] || continue
+              echo "prune (keeping newest $keep) $asset"
               gh release delete-asset "$tag" "$asset" -R "$GITHUB_REPOSITORY" --yes || \
                 echo "::warning::could not delete $asset"
             done
