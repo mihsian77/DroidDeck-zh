@@ -804,6 +804,8 @@
     <string name="setup_limit_adb_failed">请检查无线调试的 IP 地址和端口；若 Android 已移除此设备，请重新配对。</string>
     <string name="setup_install">安装</string>
     <string name="setup_manage">管理</string>
+    <string name="setup_page_swipe">在页面间滑动切换</string>
+    <string name="setup_page_swipe_hint">在页面上横向滑动可切换标签页。</string>
     <string name="setup_tab_overview">概览</string>
     <string name="setup_tab_controller">手柄</string>
     <string name="setup_tab_session">会话</string>
@@ -3720,6 +3722,7 @@
     <string name="addons_sort_name">按名称</string>
     <string name="addons_source_curse">CurseForge</string>
     <string name="addons_source_wowi">WoWInterface</string>
+    <string name="addons_curse_busy">请先关闭 CurseForge</string>
     <string name="addons_unreachable">无法连接 %1$s</string>
     <string name="comp_auto_install_failed">无法安装 %1$s。</string>
     <string name="ctrl_tint_gray">灰色</string>
