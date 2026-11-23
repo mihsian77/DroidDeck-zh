@@ -210,6 +210,25 @@ jobs:
             echo "| $f | 中文预设调用丢失，需补回 |" >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      # SessionFiles.kt 走 ours，上游每次加内置工具都要在这里挂一条 usr/local/bin 映射，
+      # 撞上冲突就被整文件盖掉，构建照绿但对应功能（CurseForge、headless 之类）直接坏。
+      # 合并完数一遍上游的映射，缺哪条就报出来。
+      - name: Check upstream session tools survived
+        if: steps.check.outputs.has_updates == 'true'
+        run: |
+          set -euo pipefail
+          f=app/src/main/java/com/droiddeck/launcher/session/SessionFiles.kt
+          missing=""
+          for tool in $(git show upstream/main:"$f" | grep -o '"usr/local/bin/droiddeck-[a-z0-9-]*"' | tr -d '"' | sort -u); do
+            grep -qF "\"$tool\"" "$f" || missing="$missing $tool"
+          done
+          if [ -n "$missing" ]; then
+            echo "::warning::$f 缺少上游的映射：$missing"
+            echo "| $f | 缺上游映射，对应功能会坏：$missing |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "SessionFiles.kt 里上游的 usr/local/bin 映射都在"
+          fi
+
       - name: Pick up upstream's new string keys
         if: steps.check.outputs.has_updates == 'true'
         run: |
