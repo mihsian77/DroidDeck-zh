@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.7.1-zh.6",
-    "title": "0.7.1-zh.6 (stable)",
-    "summary": "## 0.7.1-zh.6 (stable)\n\n- 合入上游 13 个提交：底部屏菜单交给手柄操作、分辨率按横竖屏分开、屏幕 D-pad 可整块拖动、CurseForge 插件安装、Steam web helper 在绑核失败时也能起\n- 补了漏译的两条中文\n- epic / ubisoft 启动器包改成可复现构建。之前每次编译 sha 都不一样，旧包会被后面的构建挤掉，装好的人点下载就 404\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proto…",
-    "commit": "0855d1c589be49561fca16ea759962b9b1001c86",
+    "tag": "0.7.1-zh.7",
+    "title": "0.7.1-zh.7 (stable)",
+    "summary": "## 0.7.1-zh.7 (stable)\n\n合入上游 20 个提交。FEX 修了三个状态恢复相关的问题，preload 补了 fd reopen 被拒和 NETLINK_ROUTE 订阅。addon 浏览器加了 CurseForge 源。Linux 侧默认改成不用 proot 跑，设置里能切回去。补了三条漏掉的中文。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/…",
+    "commit": "c7fff2a6d12cca6d630411e5b5f17c289beaa884",
     "pr": 0,
-    "version": "0.7.1-zh.6",
-    "versionCode": 29,
-    "publishedAt": 1795332688000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.6",
+    "version": "0.7.1-zh.7",
+    "versionCode": 30,
+    "publishedAt": 1795404316000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.7",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.6.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.6/DroidDeck-0.7.1-zh.6.apk",
-        "size": 138390908,
-        "sha256": "43cb99b761ffd98ca7aea462158f950363e36bc6c2215d4082e4b9b69677593b",
+        "name": "DroidDeck-0.7.1-zh.7.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.7/DroidDeck-0.7.1-zh.7.apk",
+        "size": 138440248,
+        "sha256": "abb1344ce438e24396ff97ba534addd86b41538c32a2500bdfdf490491308bbb",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 29,
+        "versionCode": 30,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
