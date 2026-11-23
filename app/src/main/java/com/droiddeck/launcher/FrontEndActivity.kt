@@ -17,8 +17,11 @@ import android.os.Looper
 import android.util.Log
 import android.view.Display
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import android.view.WindowManager
+import android.widget.EditText
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -184,7 +187,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     private var gpuClockPin by mutableStateOf(false)
     private var prootNoSeccomp by mutableStateOf(false)
     private var prootFastPath by mutableStateOf(true)
-    private var nativeUserland by mutableStateOf(false)
+    private var nativeUserland by mutableStateOf(true)
     private var cursorComposite by mutableStateOf(false)
     private var guestHostname by mutableStateOf(SessionPrefs.DEFAULT_GUEST_HOSTNAME)
     private var phantomWarning by mutableStateOf<String?>(null)
@@ -2102,6 +2105,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus) triggerKeys.cancel()
         if (hasFocus) {
             com.droiddeck.launcher.ui.DualScreenPanel.yieldTo(taskId, false)
             applyLauncherFullscreen()
@@ -2131,6 +2135,36 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         }
     }
 
+    private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var touchDragged = false
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                com.droiddeck.launcher.ui.ScreenTaps.count++
+                touchDownX = event.rawX
+                touchDownY = event.rawY
+                touchDragged = false
+            }
+            // A drag that wanders back to where it began is still a drag, not a tap.
+            MotionEvent.ACTION_MOVE -> if (!touchDragged &&
+                kotlin.math.hypot(event.rawX - touchDownX, event.rawY - touchDownY) > ViewConfiguration.get(this).scaledTouchSlop
+            ) touchDragged = true
+            MotionEvent.ACTION_CANCEL -> touchDragged = true
+        }
+        val handled = super.dispatchTouchEvent(event)
+        if (event.actionMasked == MotionEvent.ACTION_UP) leaveTextFieldOnOutsideTap(event)
+        return handled
+    }
+
+    private fun leaveTextFieldOnOutsideTap(event: MotionEvent) {
+        val field = currentFocus as? EditText ?: return
+        val slop = ViewConfiguration.get(this).scaledTouchSlop
+        if (touchDragged || kotlin.math.hypot(event.rawX - touchDownX, event.rawY - touchDownY) > slop) return
+        com.droiddeck.launcher.ui.releaseTextField(field, IntArray(2).also(field::getLocationOnScreen), event.rawX, event.rawY)
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (com.droiddeck.launcher.ui.AgentPet.handleBack(this, event)) return true
         if (compatLaunch != null) {
@@ -2140,6 +2174,14 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
             }
             if (!compatLaunch!!.loading.ended && event.keyCode !in listOf(
                     KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN, KeyEvent.KEYCODE_VOLUME_MUTE)) return true
+        }
+        if (!triggerKeys.synthesizing && triggerKeys.nativeKey(event)) return true
+        val tabStep = com.droiddeck.launcher.ui.dualPageStep(event)
+        val tabs = com.droiddeck.launcher.ui.MainTabSteps.handler
+        if (tabStep != null && tabs != null) {
+            if (controllerHaptics) com.droiddeck.launcher.ui.ControllerHaptics.onKey(this, event)
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) tabs(tabStep)
+            return true
         }
         if (controllerHaptics) com.droiddeck.launcher.ui.ControllerHaptics.onKey(this, event)
         if (event.keyCode == KeyEvent.KEYCODE_BUTTON_A) com.droiddeck.launcher.ui.HeldKeys.confirm = event.action == KeyEvent.ACTION_DOWN
@@ -2158,9 +2200,12 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         }
     }
 
+    private val triggerKeys = com.droiddeck.launcher.input.TriggerKeys { dispatchKeyEvent(it) }
+
     override fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean {
         if (compatLaunch != null && !compatLaunch!!.loading.ended &&
             com.droiddeck.launcher.input.PadBridge.isControllerMotionEvent(event)) return true
+        triggerKeys.onMotion(event)
         return super.dispatchGenericMotionEvent(event)
     }
 
@@ -2290,6 +2335,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     }
 
     override fun onDestroy() {
+        triggerKeys.cancel()
         gameLaunchRequest.incrementAndGet()
         cancelCompatLaunch()
         updates.unregister()
