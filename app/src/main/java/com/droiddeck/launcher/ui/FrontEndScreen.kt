@@ -515,7 +515,7 @@ private fun FrontEndScreenBody(s: FrontEndState, a: FrontEndActions, page: (@Com
     val colors = MaterialTheme.colorScheme
     val pal = LocalPalette.current
     val ctx = LocalContext.current
-    val phantomGateVisible = s.showPhantomGate && PhantomProcessLimit.blocksSteam(s.phantomProcessStatus)
+    val phantomGateVisible = s.showPhantomGate && PhantomProcessLimit.blocksSession(s.phantomProcessStatus)
     val processSettingsPageVisible = phantomGateVisible || showDeveloperDisplayChoice
     val requestDeveloperOptions = {
         developerChoiceGuided = false

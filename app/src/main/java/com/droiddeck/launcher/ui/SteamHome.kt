@@ -164,7 +164,7 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
             val onboardingRows = com.droiddeck.launcher.session.Onboarding.rows(onboardingActive, onboardingFailed, onboardingFacts)
             val firstRun by com.droiddeck.launcher.session.Onboarding.firstRun.collectAsState()
             val settling = firstRun && onboardingActive.isNotEmpty() && com.droiddeck.launcher.session.Onboarding.pending(onboardingRows)
-            val limitBlocks = com.droiddeck.launcher.core.PhantomProcessLimit.blocksSteam(s.phantomProcessStatus)
+            val limitBlocks = com.droiddeck.launcher.core.PhantomProcessLimit.blocksSession(s.phantomProcessStatus)
             val mark: @Composable () -> Unit = {
                 Wordmark(if (narrow) 30.dp else 40.dp)
             }
@@ -195,7 +195,7 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
             val firstRun by com.droiddeck.launcher.session.Onboarding.firstRun.collectAsState()
             val settling = firstRun && onboardingActive.isNotEmpty() && com.droiddeck.launcher.session.Onboarding.pending(onboardingRows)
             val overall = com.droiddeck.launcher.session.Onboarding.overall(onboardingRows)
-            val limitBlocks = com.droiddeck.launcher.core.PhantomProcessLimit.blocksSteam(s.phantomProcessStatus)
+            val limitBlocks = com.droiddeck.launcher.core.PhantomProcessLimit.blocksSession(s.phantomProcessStatus)
             LaunchedEffect(settling) {
                 while (settling) {
                     kotlinx.coroutines.delay(2_000)
