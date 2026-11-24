@@ -31,11 +31,11 @@ CI 上整套约 20 分钟。日常用快检，改动碰了 `tools/` 或 `app/` �
 | D 脚本 | overlay 下全部脚本语法、Steam 预设调用在不在、SessionFiles 映射齐不齐、中文字体在不在 | bash -n + grep |
 | E 单测 | tools/tests 全套 python 单测 | tools/ci/run-python-tests.sh |
 | F CI | 最近构建 conclusion、Gate conclusion、sync/release/packs 状态、开着 issue | REST |
-| G APK | 版本号、签名 v1/v2/v3、证书、assets 里的 preset 脚本与调用、中文字符串抽样命中 | androguard |
-| H 数据包 | linuxfs.tar.zst 的规模、动态链接器、proot、iconv、Vulkan ICD、gamescope layer、zh locale | zstandard 流式解包 |
+| G APK | 版本号、签名 v1/v2/v3、证书、assets 里的 preset 脚本与调用、zh_CN locale 数据、中文字符串抽样命中 | androguard |
+| H 数据包 | linuxfs.tar.zst 的规模、动态链接器、proot、iconv、Vulkan ICD、gamescope layer、zh locale（仅报告，locale 由 assets 提供） | zstandard 流式解包 |
 
 数据包是上游 Bannerlator 的基础 rootfs，**不含**我们的 overlay（droiddeck-session、
-中文字体、preset 脚本），那些在 APK assets 里由 G 段验。两边分工别搞混。
+中文字体、locale 数据、preset 脚本），那些在 APK assets 里由 G 段验。两边分工别搞混。
 
 ## 验不了的（别指望这套件）
 
@@ -52,7 +52,12 @@ CI 上整套约 20 分钟。日常用快检，改动碰了 `tools/` 或 `app/` �
 
 `pack.py` 会报 zh locale 缺失：linuxfs.tar.zst 里只有 `usr/lib/locale/C.utf8`，
 没有编译好的 `zh_CN.UTF-8`。这是基础 rootfs 的现状，不是本 fork 的回归。
-影响面：native 模式（关掉 proot）下程序的日期格式、消息目录、排序会回落到
-C/POSIX；字体不走 locale，不会因此出方块。
-`usr/share/i18n/locales` 和 `usr/lib/gconv` 都在，可以 localedef 现场生成，
-也可以把生成好的 locale 目录直接放进 overlay 随 APK 覆盖。
+
+现在 `zh_CN.UTF-8` 的数据放在 `tools/linuxfs/overlay/usr/lib/locale/zh_CN.utf8`，
+随 APK assets 在会话启动时释放到 `/usr/lib/locale`，跟 linuxfs 数据包无关，
+所以这条 WARN 不需要处理。`pack.py --strict-locale` 仍会把包内缺 locale 判失败，
+那是拿来对照上游基础包用的。
+
+`apk.py` 会查这件事：assets 里有 `LC_CTYPE` 就直接 PASS。`droiddeck-session`
+检测到目录存在才设 `LANG=zh_CN.UTF-8`，缺数据时不设，免得 glibc 每次
+`setlocale` 往 stderr 吐警告。

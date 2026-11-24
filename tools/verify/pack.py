@@ -92,13 +92,13 @@ def main():
     if zh_locale:
         check(True, "已编译的 zh locale 在", ", ".join(zh_locale[:2]))
     else:
-        # 现在的包只有 C.utf8。native 模式下 glibc 找不到 zh_CN.UTF-8 会退回 C/POSIX，
-        # 影响程序的日期格式、消息目录、排序，字体不走这里所以不会出方块。
-        msg = "包内没有已编译的 zh_CN.UTF-8，只有 C.utf8；native 模式下中文 locale 会回落"
+        # 基础 rootfs 只带 C.utf8。我们自己的 zh_CN.UTF-8 由 APK assets 在会话启动时
+        # 释放到 /usr/lib/locale，跟这个包无关，所以默认只报状态，不算失败。
+        msg = "包内没有已编译的 zh_CN.UTF-8，只有 C.utf8；我们的 locale 走 APK assets，不依赖这个包"
         if i18n_src:
             msg += "（usr/share/i18n/locales 在，能 localedef 生成）"
         if strict_locale:
-            check(False, "zh locale", msg)
+            check(False, "zh locale", msg + "；--strict-locale 用于对照上游基础包，仍按失败计")
         else:
             print(f"  WARN  zh locale: {msg}")
             warns.append("zh locale")
