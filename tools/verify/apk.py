@@ -21,6 +21,8 @@ from lxml import etree  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ZH_DIR = os.path.join(ROOT, "app/src/main/res/values-zh-rCN")
+sys.path.insert(0, ROOT)
+from tools.verify.consts import FONT, FONTCONF, SESSION, ZH_LOCALE, ZH_PRESET  # noqa: E402
 
 fails = []
 warns = []
@@ -89,8 +91,8 @@ def main():
     names = set(z.namelist())
 
     # 随包的 linuxfs 脚本：这是中文补丁的落点，丢了等于白改
-    session = "assets/linuxfs/usr/local/bin/droiddeck-session"
-    preset = "assets/linuxfs/usr/local/bin/droiddeck-zh-steam-preset"
+    session = SESSION
+    preset = ZH_PRESET
     check(preset in names, "assets 内有 steam 预设脚本")
     if session in names:
         body = z.read(session)
@@ -98,10 +100,11 @@ def main():
     else:
         check(False, "assets 内有 session 脚本")
 
-    font = "assets/linuxfs/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"
-    conf = "assets/linuxfs/etc/fonts/conf.d/99-zh-fallback.conf"
+    font = FONT
+    conf = FONTCONF
     check(font in names, "assets 内有中文字体")
     check(conf in names, "assets 内有 fontconfig 回退配置")
+    check(ZH_LOCALE in names, "assets 内有 zh_CN locale 数据")
 
     arsc = z.read("resources.arsc")
     samples = zh_samples()

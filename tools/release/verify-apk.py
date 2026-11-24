@@ -19,7 +19,9 @@ import subprocess
 import sys
 import zipfile
 
-FONT = "assets/linuxfs/usr/share/fonts/truetype/wqy/wqy-microhei.ttc"
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from tools.verify.consts import FONT  # noqa: E402  路径只维护一份
+
 STRING_RE = re.compile(r'(?s)<string\s+name="([^"]+)"(.*?)</string>')
 ANY_RE = re.compile(r'<(?:string|plurals|string-array|array)\s+name="([^"]+)"')
 PARAM_RE = re.compile(r"%(\d+)\$")
