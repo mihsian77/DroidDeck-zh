@@ -74,7 +74,39 @@ if [[ ${#python_tests[@]} -gt 0 ]]; then
     modules=()
     while IFS= read -r test; do modules+=("tools.tests.$(basename "${test}" .py)"); done \
         < <(printf '%s\n' "${python_tests[@]}" | sort -u)
-    run "${#modules[@]} Python test modules" python3 -m unittest "${modules[@]}"
+    # 这条 fork 砍掉了组件自编链，CI 里有几条结构用例必然红，豁免清单在
+    # tools/ci/pytest-known-differences.sh 里维护。这里直接问它要清单，
+    # 同一个来源，避免本地判红、CI 判绿。
+    allowed=$(bash tools/ci/pytest-known-differences.sh --list)
+    log=$(mktemp)
+    if python3 -m unittest "${modules[@]}" >"${log}" 2>&1; then
+        echo "== ${#modules[@]} Python test modules"
+        echo "ok: ${#modules[@]} Python test modules"
+    else
+        # 输出里括号内可能是 tools.tests.test_x.Cls.method（本地按模块路径跑），
+        # 也可能是 test_x.Cls.method（CI 按裸模块名跑），剥掉前缀再比。
+        actual=$(grep -oE '(FAIL|ERROR): [A-Za-z0-9_]+ \(([A-Za-z0-9_.]+)\)' "${log}" \
+            | sed -E 's/.*\(([A-Za-z0-9_.]+)\)/\1/; s/^tools\.tests\.//' | sort -u)
+        unexpected=$(comm -23 \
+            <(printf '%s\n' "${actual}" | sed '/^$/d' | sort -u) \
+            <(printf '%s\n' "${allowed}" | sed '/^$/d' | sort -u))
+        echo "== ${#modules[@]} Python test modules"
+        if [[ -z "${actual}" ]]; then
+            # 退出码非 0 却一条失败名都抽不出来，多半是用例输出格式变了。
+            # 这种情况不能当通过处理，宁可判红让人去看日志。
+            tail -40 "${log}"
+            echo "FAILED: Python tests failed but no failure names could be parsed"
+            failed+=("Python test modules")
+        elif [[ -n "${unexpected}" ]]; then
+            tail -40 "${log}"
+            echo "FAILED: Python tests outside the known-differences list:"
+            printf '  %s\n' ${unexpected}
+            failed+=("Python test modules")
+        else
+            echo "ok: ${#modules[@]} Python test modules (only the known fork differences failed)"
+        fi
+    fi
+    rm -f "${log}"
 fi
 
 if [[ ${#failed[@]} -gt 0 ]]; then

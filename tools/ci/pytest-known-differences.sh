@@ -19,6 +19,13 @@ test_esync_packs.BundleTest.test_builds_fetch_the_pinned_bundle
 test_xbox_build_source.XboxBuildSourceTest.test_main_advancing_between_jobs_does_not_change_packaged_source
 test_dircache_preload.DirCachePreloadTest.test_folders_that_differ_only_in_case_stay_cached_together'
 
+# 只打印豁免清单，给 tools/pre_pr.sh 用：本地检查要跟 CI 同一份口径，
+# 不然改了一处另一处还在按老名单判红。
+if [ "${1:-}" = "--list" ]; then
+  printf '%s\n' "$ALLOWED"
+  exit 0
+fi
+
 log=$(mktemp)
 trap 'rm -f "$log"' EXIT
 
