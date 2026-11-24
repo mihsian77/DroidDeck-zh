@@ -263,6 +263,9 @@ android {
             // Robolectric keeps a sandbox per SDK level the tests ask for; seven no longer fit in Gradle's default 512 MB.
             maxHeapSize = '2g'
             maxParallelForks = 2
+            def jvmTemp = new File(temporaryDir, 'jvm')
+            systemProperty 'java.io.tmpdir', jvmTemp.absolutePath
+            doFirst { jvmTemp.mkdirs() }
             // Robolectric 每个测试都重建一次 Application，App.onCreate 会起下载源
             // 的 HTTP 线程、开 bwrap/root 的 socket，跑一会儿就累积到卡住。卡住之后
             // timeout 发 TERM 收不动，GitHub 的 step 超时也没触发过。每 15 个测试类
