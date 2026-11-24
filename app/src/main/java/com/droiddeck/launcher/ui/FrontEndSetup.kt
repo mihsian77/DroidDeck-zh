@@ -180,7 +180,7 @@ internal fun SetupPanel(
     val gpu = remember { com.droiddeck.launcher.gpu.GpuInfo.detect() }
     val gpuOk = gpu.support == com.droiddeck.launcher.gpu.GpuInfo.Support.TESTED || s.vkBridge
     val gpuName = remember { DeviceSupport.gpuName(ctx) }
-    val limitBlocks = PhantomProcessLimit.blocksSteam(s.phantomProcessStatus)
+    val limitBlocks = PhantomProcessLimit.blocksSession(s.phantomProcessStatus)
     val signedIn = s.offlineAccount != null
     var showLimitDetails by rememberSaveable { mutableStateOf(false) }
     var editSgdbKey by remember { mutableStateOf(false) }

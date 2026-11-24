@@ -3445,7 +3445,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         refreshPhantomStatus()
         val manyProcesses = steamSession || intent.getStringExtra(SessionService.EXTRA_MODE) in
             setOf(SessionService.MODE_DESKTOP, SessionService.MODE_RUN)
-        if (manyProcesses && PhantomProcessLimit.blocksSteam(phantomProcessStatus)) {
+        if (manyProcesses && PhantomProcessLimit.blocksSession(phantomProcessStatus)) {
             showPhantomGate = true
             return false
         }
@@ -3458,7 +3458,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     private fun refreshPhantomStatus() {
         phantomProcessStatus = PhantomProcessLimit.read(this)
         adbPaired = WirelessAdbFix.hasSavedPairing(this)
-        phantomWarning = if (PhantomProcessLimit.blocksSteam(phantomProcessStatus)) {
+        phantomWarning = if (PhantomProcessLimit.blocksSession(phantomProcessStatus)) {
             getString(
                 R.string.phantom_warning, PhantomProcessLimit.title(this, phantomProcessStatus),
                 PhantomProcessLimit.instructions(this, phantomProcessStatus), PhantomProcessLimit.adbCommand(),

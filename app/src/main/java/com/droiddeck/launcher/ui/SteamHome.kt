@@ -168,13 +168,13 @@ internal fun SteamHome(s: FrontEndState, a: FrontEndActions, modifier: Modifier)
                             ok = false, fraction = overall / 100f,
                         )
                     } else RuntimeChip(s)
-                    if (com.droiddeck.launcher.core.PhantomProcessLimit.blocksSteam(s.phantomProcessStatus)) {
+                    if (com.droiddeck.launcher.core.PhantomProcessLimit.blocksSession(s.phantomProcessStatus)) {
                         SecondaryButton(stringResource(R.string.onboarding_limit_while_waiting), compact = true,
                             modifier = Modifier.testTag("setup-while-waiting"), onClick = a.onShowPhantomGate)
                     }
                 } else if (setupNeedsAttention(s)) SecondaryButton(stringResource(R.string.play_needs_you), compact = true,
                     modifier = Modifier.testTag("play-needs-you")) { SetupTabs.openSection = SettingsSection.OVERVIEW }
-                else if (s.integration.suggested && signedIn && !com.droiddeck.launcher.core.PhantomProcessLimit.blocksSteam(s.phantomProcessStatus))
+                else if (s.integration.suggested && signedIn && !com.droiddeck.launcher.core.PhantomProcessLimit.blocksSession(s.phantomProcessStatus))
                     IntegrationSuggestion(s.integration, { a.onSteamIntegration(null) }, a.onDismissIntegration)
             }
             if (narrow) Column(

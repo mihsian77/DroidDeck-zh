@@ -100,7 +100,9 @@ object PhantomProcessLimit {
 
     fun hasDeveloperToggle(sdk: Int = Build.VERSION.SDK_INT): Boolean = sdk >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 
-    fun blocksSteam(status: PhantomProcessStatus): Boolean =
+    // 覆盖所有会拉起一堆子进程的会话：Steam、桌面、直跑。这类会话在
+    // 限制开启的机器上会被系统按进程数掐掉，所以启动前要拦一下。
+    fun blocksSession(status: PhantomProcessStatus): Boolean =
         status != PhantomProcessStatus.NOT_APPLICABLE && status != PhantomProcessStatus.DISABLED
 
     fun title(context: Context, status: PhantomProcessStatus): String = context.getString(when (status) {

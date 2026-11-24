@@ -214,7 +214,7 @@ internal fun railLabelIcon(key: String): Pair<Int, ImageVector> = when (key) {
 }
 
 internal fun setupNeedsAttention(s: FrontEndState): Boolean = !s.ready || (s.available != null && s.available != s.installed) ||
-    PhantomProcessLimit.blocksSteam(s.phantomProcessStatus)
+    PhantomProcessLimit.blocksSession(s.phantomProcessStatus)
 
 internal fun railBadge(s: FrontEndState, key: String, setupNeedsAttention: Boolean = setupNeedsAttention(s)): Boolean = when (key) {
     "setup" -> setupNeedsAttention

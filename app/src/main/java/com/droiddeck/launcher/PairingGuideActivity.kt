@@ -296,7 +296,7 @@ class PairingGuideActivity : ComponentActivity() {
             fun read(context: Context) = SettingsState(
                 GlobalSettings.developerOptionsOn(context),
                 GlobalSettings.wirelessDebuggingOn(context),
-                PhantomProcessLimit.blocksSteam(PhantomProcessLimit.read(context)),
+                PhantomProcessLimit.blocksSession(PhantomProcessLimit.read(context)),
             )
         }
     }
