@@ -4477,4 +4477,65 @@
 
     <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
     <string name="addons_curse_busy">Close CurseForge first</string>
+
+    <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
+    <string name="decky_changes_next_session">Plugin changes apply the next time Steam starts.</string>
+    <string name="decky_enable">Enable</string>
+    <string name="decky_none_installed">No plugins installed. Browse the Store or install a ZIP.</string>
+    <string name="decky_release_channel">Release channel</string>
+    <string name="decky_remove">Remove</string>
+    <string name="decky_remove_confirm">Remove %1$s?</string>
+    <string name="decky_remove_confirm_body">Deletes the plugin from Decky. Its settings are kept.</string>
+    <string name="decky_status">Status</string>
+    <string name="decky_store_download_failed">Could not download %1$s</string>
+    <string name="decky_store_downloading">Downloading %1$s…</string>
+    <string name="decky_store_empty">No plugins found</string>
+    <string name="decky_store_failed">Could not reach the Decky plugin store</string>
+    <string name="decky_store_more">Show %1$d more</string>
+    <string name="decky_store_remove_failed">Could not remove the plugin</string>
+    <string name="decky_store_search">Search plugins</string>
+    <string name="decky_tab_installed">Installed · %1$d</string>
+    <string name="decky_tab_store">Store</string>
+    <string name="decky_tab_zip">From ZIP</string>
+    <string name="decky_update_to">Update to %1$s</string>
+    <string name="drawer_more_back">Back to %1$s</string>
+    <string name="drawer_more_empty">Nothing is kept here. Arrange pages and move one below the More row.</string>
+    <string name="drawer_page_more">More</string>
+    <string name="drawer_resize">Resize the menu</string>
+    <string name="fm_edit_binary">Binary</string>
+    <string name="fm_edit_discard">Discard</string>
+    <string name="fm_edit_discard_text">Changes to \"%1$s\" will be lost.</string>
+    <string name="fm_edit_discard_title">Discard changes?</string>
+    <string name="fm_edit_find">Find</string>
+    <string name="fm_edit_find_next">Find next</string>
+    <string name="fm_edit_find_previous">Find previous</string>
+    <string name="fm_edit_modified">Modified</string>
+    <string name="fm_edit_open">Open</string>
+    <string name="fm_edit_open_failed">Couldn\'t open \"%1$s\"</string>
+    <string name="fm_edit_position">Ln %1$d, Col %2$d</string>
+    <string name="fm_edit_read_only">Read only</string>
+    <string name="fm_edit_replace">Replace</string>
+    <string name="fm_edit_replace_all">All</string>
+    <string name="fm_edit_save">Save</string>
+    <string name="fm_edit_save_failed">Couldn\'t save \"%1$s\"</string>
+    <string name="fm_edit_too_large">Too large to open (%1$s)</string>
+    <string name="integration_bluetooth">Bluetooth controllers</string>
+    <string name="integration_bluetooth_hint">Lets DroidDeck connect to Steam Controllers and other Bluetooth pads</string>
+    <string name="onboarding_chip">Getting ready · %1$d%% · %2$s</string>
+    <string name="onboarding_done">Ready</string>
+    <string name="onboarding_failed">Will retry</string>
+    <string name="onboarding_limit_action">Do it for me</string>
+    <string name="onboarding_limit_reason">Android can close Steam’s helper processes. Turn that off now, while the downloads run, and Play is ready the moment they finish.</string>
+    <string name="onboarding_limit_while_waiting">Set up while you wait</string>
+    <string name="onboarding_steam_downloading">Downloading the Steam client</string>
+    <string name="onboarding_steam_downloading_mb">Downloading the Steam client (%1$d MB)</string>
+    <string name="onboarding_steam_failed">The Steam client download will retry</string>
+    <string name="onboarding_step_proton">DroidDeck Proton</string>
+    <string name="onboarding_step_runtime">Linux runtime</string>
+    <string name="onboarding_step_steam">Steam client</string>
+    <string name="onboarding_summary">%1$d%% · you can keep using the app</string>
+    <string name="onboarding_title">Getting DroidDeck ready</string>
+    <string name="onboarding_waiting">Waiting</string>
+    <string name="rail_boot_movies">Boot movies</string>
+    <string name="rail_decky">Decky</string>
 </resources>
