@@ -5,6 +5,9 @@ tools/comet/droiddeck.patch whitespace=-blank-at-eol,-blank-at-eof
 tools/gamescope/patches/0900-enhanced-frame-diagnostics.patch whitespace=-blank-at-eol,-blank-at-eof,-space-before-tab
 
 tools/linuxfs/overlay/** text eol=lf
+# 字体和 locale 是二进制，按文本走 eol 转换会把字节改掉
+tools/linuxfs/overlay/usr/share/fonts/** -text
+tools/linuxfs/overlay/usr/lib/locale/** -text
 tools/linuxfs/desktop/** text eol=lf
 tools/mangoapp/mangoapp text eol=lf
 app/src/main/assets/desktop-removal/*.json text eol=lf

@@ -127,6 +127,20 @@ object SessionFiles {
             // CJK fallback font + fontconfig, so Chinese text never renders as tofu boxes.
             "usr/share/fonts/truetype/wqy/wqy-microhei.ttc" to "usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
             "etc/fonts/conf.d/99-zh-fallback.conf" to "etc/fonts/conf.d/99-zh-fallback.conf",
+            // zh_CN.UTF-8 locale data (glibc, 12 files). Base rootfs only ships C.utf8, so
+            // every terminal tool falls back to C for dates, sorting and messages.
+            "usr/lib/locale/zh_CN.utf8/LC_ADDRESS" to "usr/lib/locale/zh_CN.utf8/LC_ADDRESS",
+            "usr/lib/locale/zh_CN.utf8/LC_COLLATE" to "usr/lib/locale/zh_CN.utf8/LC_COLLATE",
+            "usr/lib/locale/zh_CN.utf8/LC_CTYPE" to "usr/lib/locale/zh_CN.utf8/LC_CTYPE",
+            "usr/lib/locale/zh_CN.utf8/LC_IDENTIFICATION" to "usr/lib/locale/zh_CN.utf8/LC_IDENTIFICATION",
+            "usr/lib/locale/zh_CN.utf8/LC_MEASUREMENT" to "usr/lib/locale/zh_CN.utf8/LC_MEASUREMENT",
+            "usr/lib/locale/zh_CN.utf8/LC_MONETARY" to "usr/lib/locale/zh_CN.utf8/LC_MONETARY",
+            "usr/lib/locale/zh_CN.utf8/LC_NAME" to "usr/lib/locale/zh_CN.utf8/LC_NAME",
+            "usr/lib/locale/zh_CN.utf8/LC_NUMERIC" to "usr/lib/locale/zh_CN.utf8/LC_NUMERIC",
+            "usr/lib/locale/zh_CN.utf8/LC_PAPER" to "usr/lib/locale/zh_CN.utf8/LC_PAPER",
+            "usr/lib/locale/zh_CN.utf8/LC_TELEPHONE" to "usr/lib/locale/zh_CN.utf8/LC_TELEPHONE",
+            "usr/lib/locale/zh_CN.utf8/LC_TIME" to "usr/lib/locale/zh_CN.utf8/LC_TIME",
+            "usr/lib/locale/zh_CN.utf8/LC_MESSAGES/SYS_LC_MESSAGES" to "usr/lib/locale/zh_CN.utf8/LC_MESSAGES/SYS_LC_MESSAGES",
             "usr/local/bin/droiddeck-fonts" to "usr/local/bin/droiddeck-fonts",
             "usr/local/bin/droiddeck-agent" to "usr/local/bin/droiddeck-agent",
             "usr/local/bin/steam-compatibility" to "usr/local/bin/steam-compatibility",

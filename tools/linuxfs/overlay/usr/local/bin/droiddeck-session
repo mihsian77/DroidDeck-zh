@@ -11,6 +11,12 @@ if [ "${DD_RAISE_NOFILE:-0}" = 1 ] && [ -z "${DD_INSIDE:-}" ]; then
   unset dd_nofile_was
 fi
 export HOME=${HOME:-/root}
+# 中文环境。locale 数据由 SessionFiles 从 assets 释放到 /usr/lib/locale，
+# 缺了就不设：设了但找不到数据，每个 setlocale 的进程都会往 stderr 吐警告。
+# 只覆盖本会话链，GuestCommand 给别的 guest 命令的还是 C.UTF-8。
+if [ -d /usr/lib/locale/zh_CN.utf8 ]; then
+  export LANG=zh_CN.UTF-8
+fi
 mode=${1:-desktop}
 shift || true
 step() { echo "== STEP $(date -u +%H:%M:%S.%3N) $*"; }

@@ -209,6 +209,12 @@ jobs:
             echo "::warning::$f 里 droiddeck-zh-steam-preset 调用被上游改动冲掉了，需要手工补回"
             echo "| $f | 中文预设调用丢失，需补回 |" >> "$GITHUB_STEP_SUMMARY"
           fi
+          if grep -q "LANG=zh_CN.UTF-8" "$f"; then
+            echo "droiddeck-session 里的中文 locale 设置还在"
+          else
+            echo "::warning::$f 里 LANG=zh_CN.UTF-8 被上游改动冲掉了，需要手工补回"
+            echo "| $f | 中文 locale 设置丢失，需补回 |" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       # SessionFiles.kt 走 ours，上游每次加内置工具都要在这里挂一条 usr/local/bin 映射，
       # 撞上冲突就被整文件盖掉，构建照绿但对应功能（CurseForge、headless 之类）直接坏。
