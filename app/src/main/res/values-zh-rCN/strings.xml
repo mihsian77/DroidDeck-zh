@@ -4421,4 +4421,9 @@
     <string name="onboarding_waiting">等待中</string>
     <string name="rail_boot_movies">开机动画</string>
     <string name="rail_decky">Decky</string>
+    <string name="gate_notifications_toast">配对码会放在通知里。请给 DroidDeck 打开通知权限，然后重试。</string>
+    <string name="loading_first_run">首次启动还会下载 Proton Experimental（约 400 MB）并配置 Steam，之后启动会快很多。</string>
+    <string name="onboarding_button_finish">完成设置 · %1$d%%</string>
+    <string name="onboarding_button_getting_ready">准备中 · %1$d%%</string>
+    <string name="setup_dual_screen_swapped">开启，游戏在副屏</string>
 </resources>
