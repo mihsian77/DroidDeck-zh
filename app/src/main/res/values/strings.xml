@@ -4538,4 +4538,11 @@
     <string name="onboarding_waiting">Waiting</string>
     <string name="rail_boot_movies">Boot movies</string>
     <string name="rail_decky">Decky</string>
+
+    <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
+    <string name="gate_notifications_toast">The pairing code goes in a notification. Turn on notifications for DroidDeck, then try again.</string>
+    <string name="loading_first_run">First launch also downloads Proton Experimental (about 400 MB) and sets Steam up. After this it starts much faster.</string>
+    <string name="onboarding_button_finish">Finish setup · %1$d%%</string>
+    <string name="onboarding_button_getting_ready">Getting ready · %1$d%%</string>
+    <string name="setup_dual_screen_swapped">On, game on second screen</string>
 </resources>
