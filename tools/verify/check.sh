@@ -165,14 +165,22 @@ fi
 # ---------- F CI ----------
 sec "F CI 状态"
 if [ -n "$TOKEN" ]; then
-  RUN=$(gh_get "$API/actions/workflows/377208120/runs?per_page=1" | python3 -c "
+  # 主动取消的 run 不算失败：builder 排队久、重复推送、手动作废都会 cancel
+  RUN=$(gh_get "$API/actions/workflows/377208120/runs?per_page=8" | python3 -c "
 import sys, json
-r = json.load(sys.stdin)['workflow_runs'][0]
-print(r['id'], r['status'], r['conclusion'], r['head_sha'][:9])
+rs = json.load(sys.stdin)['workflow_runs']
+skipped = 0
+for r in rs:
+    if r['conclusion'] == 'cancelled':
+        skipped += 1
+        continue
+    print(r['id'], r['status'], r['conclusion'], r['head_sha'][:9], skipped)
+    break
 " 2>/dev/null)
   if [ -n "$RUN" ]; then
-    read -r RID RSTAT RCONC RSHA <<< "$RUN"
-    echo "  最近构建: $RID $RSHA $RSTAT/$RCONC"
+    read -r RID RSTAT RCONC RSHA RSKIP <<< "$RUN"
+    echo "  最近有效构建: $RID $RSHA $RSTAT/$RCONC"
+    [ "${RSKIP:-0}" -gt 0 ] && echo "  （跳过 $RSKIP 个已取消的 run）"
     if [ "$RCONC" = "success" ]; then
       pass "最近构建成功"
     elif [ "$RSTAT" != "completed" ]; then

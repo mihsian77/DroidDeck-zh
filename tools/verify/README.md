@@ -8,6 +8,9 @@
 bash tools/verify/check.sh              # 默认快检，几秒
 bash tools/verify/check.sh --full       # 加跑 tools/tests 全套 python 单测（分钟级）
 bash tools/verify/check.sh --apk 0.7.1-zh.8   # 加跑 APK 静态核验（按 tag 下载，或用本地路径）
+
+# 数据包结构校验单独跑（要下 790 MB，不适合每次）
+python3 tools/verify/pack.py linuxfs.tar.zst
 ```
 
 需要查 GitHub 的部分读 `$GITHUB_TOKEN`，没设就从 `git remote get-url origin` 里的 token 拿。
@@ -29,6 +32,10 @@ CI 上整套约 20 分钟。日常用快检，改动碰了 `tools/` 或 `app/` �
 | E 单测 | tools/tests 全套 python 单测 | tools/ci/run-python-tests.sh |
 | F CI | 最近构建 conclusion、Gate conclusion、sync/release/packs 状态、开着 issue | REST |
 | G APK | 版本号、签名 v1/v2/v3、证书、assets 里的 preset 脚本与调用、中文字符串抽样命中 | androguard |
+| H 数据包 | linuxfs.tar.zst 的规模、动态链接器、proot、iconv、Vulkan ICD、gamescope layer、zh locale | zstandard 流式解包 |
+
+数据包是上游 Bannerlator 的基础 rootfs，**不含**我们的 overlay（droiddeck-session、
+中文字体、preset 脚本），那些在 APK assets 里由 G 段验。两边分工别搞混。
 
 ## 验不了的（别指望这套件）
 
@@ -36,7 +43,16 @@ CI 上整套约 20 分钟。日常用快检，改动碰了 `tools/` 或 `app/` �
 - **界面渲染**：中文字体是否真的不出方块（能验 arsc 里字符串在，不能验渲染结果）。
 - **性能与功耗**：帧率、内存增长、温控。需要实机 profile。
 - **GPU 驱动实际行为**：Turnip/PanVK 在具体 Adreno/Mali 型号上的表现。
-- **数据包内部完整性**：能对比 sha 与上游发布值，但不能证明解包后文件都在；要验得下载 GB 级包并解包，代价高，按需再做。
+- **数据包运行时行为**：结构能验（H 段），但「装好后 Steam 能不能起」验不了。
 - **签名后的安装兼容**：能查证书与 versionCode，不能验「旧版设备升级是否被系统拒」。
 
 这几项只能靠真机或用户反馈，套件里一律按「未验证」处理，不写「通过」。
+
+## 已知的包内 WARN
+
+`pack.py` 会报 zh locale 缺失：linuxfs.tar.zst 里只有 `usr/lib/locale/C.utf8`，
+没有编译好的 `zh_CN.UTF-8`。这是基础 rootfs 的现状，不是本 fork 的回归。
+影响面：native 模式（关掉 proot）下程序的日期格式、消息目录、排序会回落到
+C/POSIX；字体不走 locale，不会因此出方块。
+`usr/share/i18n/locales` 和 `usr/lib/gconv` 都在，可以 localedef 现场生成，
+也可以把生成好的 locale 目录直接放进 overlay 随 APK 覆盖。
