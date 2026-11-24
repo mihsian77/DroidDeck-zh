@@ -648,19 +648,47 @@ jobs:
           path: app/src/main/assets/linuxfs/usr/local/lib/droiddeck-xbox
 
       # Ubisoft launcher service 是 Windows x86_64 程序，跟着 linuxfs 树打进 ubisoft pack。
+      # hosted runner 上单个 launcher 编译要二十分钟以上，源码没变就复用上次的产物；
+      # 编完立刻存，超时也不会把已经编好的丢掉。
+      - name: Restore the Ubisoft launcher build
+        id: ubisoft-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: app/src/main/assets/linuxfs/usr/local/lib/droiddeck-ubisoft
+          key: ubisoft-launcher-v1-${{ steps.rust.outputs.rustc }}-${{ hashFiles('tools/ubisoft-launcher/src/**', 'tools/ubisoft-launcher/Cargo.toml', 'tools/ubisoft-launcher/Cargo.lock', 'tools/ubisoft-launcher/build.sh') }}
       - name: Ubisoft launcher service (x86_64-pc-windows-gnu)
+        if: steps.ubisoft-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
           command -v x86_64-w64-mingw32-gcc >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq gcc-mingw-w64-x86-64; }
           bash tools/ubisoft-launcher/build.sh
+      - name: Save the Ubisoft launcher build
+        if: steps.ubisoft-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: app/src/main/assets/linuxfs/usr/local/lib/droiddeck-ubisoft
+          key: ${{ steps.ubisoft-cache.outputs.cache-primary-key }}
 
       # Epic 的父进程校验要在 EpicGamesLauncher.exe 这个替身下跑，没有它 Epic 游戏起不来。
       # 上游在 build.sh 里打了 epic pack，我们之前没编这步，packs 里一直缺 epic。
+      - name: Restore the Epic launcher build
+        id: epic-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: app/src/main/assets/linuxfs/usr/local/lib/droiddeck-epic
+          key: epic-launcher-v1-${{ steps.rust.outputs.rustc }}-${{ hashFiles('tools/epic-launcher/src/**', 'tools/epic-launcher/Cargo.toml', 'tools/epic-launcher/Cargo.lock', 'tools/epic-launcher/build.sh') }}
       - name: Epic Games Launcher stand-in (x86_64-pc-windows-gnu)
+        if: steps.epic-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
           command -v x86_64-w64-mingw32-gcc >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq gcc-mingw-w64-x86-64; }
           bash tools/epic-launcher/build.sh
+      - name: Save the Epic launcher build
+        if: steps.epic-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: app/src/main/assets/linuxfs/usr/local/lib/droiddeck-epic
+          key: ${{ steps.epic-cache.outputs.cache-primary-key }}
 
       - name: Build GOG Galaxy companion
         if: steps.preloads.outputs.cache-hit != 'true'
