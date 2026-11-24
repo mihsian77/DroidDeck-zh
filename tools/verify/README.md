@@ -9,7 +9,7 @@ bash tools/verify/check.sh              # 默认快检，几秒
 bash tools/verify/check.sh --full       # 加跑 tools/tests 全套 python 单测（分钟级）
 bash tools/verify/check.sh --apk 0.7.1-zh.8   # 加跑 APK 静态核验（按 tag 下载，或用本地路径）
 
-# 数据包结构校验单独跑（要下 790 MB，不适合每次）
+# 数据包结构校验单独跑（要下几百 MB，不适合每次）
 python3 tools/verify/pack.py linuxfs.tar.zst
 ```
 
