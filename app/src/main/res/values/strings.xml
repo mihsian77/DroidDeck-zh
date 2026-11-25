@@ -4545,4 +4545,10 @@
     <string name="onboarding_button_finish">Finish setup · %1$d%%</string>
     <string name="onboarding_button_getting_ready">Getting ready · %1$d%%</string>
     <string name="setup_dual_screen_swapped">On, game on second screen</string>
+
+    <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
+    <string name="hud_only_during_game">Show HUD only during a game</string>
+    <string name="hud_only_during_game_hint">Hide the HUD when no game frames are detected.</string>
+    <string name="main_storage_fat32">FAT32 cannot hold files over 4 GB, so some games will fail to install. Reformat as exFAT.</string>
+    <string name="stores_login_continue_in_browser">%1$s needs one more step. Finish it in the browser that opened, then try again.</string>
 </resources>
