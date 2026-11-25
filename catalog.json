@@ -25,29 +25,51 @@
     }
   },
   "preview": {
-    "tag": "test-5578d5f",
-    "title": "测试包 5578d5f",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：i18n: 补上游新词条的中文\n\n版本：0.7.1-zh.9（5578d5f）\n文件名带 -test.5578d5f，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "5578d5f66ddb005a16a9fd5d56079dd2f6b34620",
+    "tag": "test-fcf0229",
+    "title": "测试包 fcf0229",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge branch 'main' of https://github.com/mihsian77/DroidDeck-zh\n\n版本：0.7.1-zh.10（fcf0229）\n文件名带 -test.fcf0229，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "fcf02298f00aef31cc52ab4404b41cce0160c795",
     "pr": 0,
-    "version": "0.7.1-zh.9",
-    "versionCode": 32,
-    "publishedAt": 1795578198000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-5578d5f",
+    "version": "0.7.1-zh.10",
+    "versionCode": 33,
+    "publishedAt": 1795580061000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-fcf0229",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.9-test.5578d5f.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-5578d5f/DroidDeck-0.7.1-zh.9-test.5578d5f.apk",
+        "name": "DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-fcf0229/DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
         "size": 139322271,
-        "sha256": "daeba6fd8220df2dbd467df1fe4bb2367c8dc7cca508b88cc6361ebf65e32445",
+        "sha256": "072097b80d514987488cb26ea9d361eebb6ceae341521336ff694e42c3677b3e",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 32,
+        "versionCode": 33,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-fcf0229",
+      "title": "测试包 fcf0229",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge branch 'main' of https://github.com/mihsian77/DroidDeck-zh\n\n版本：0.7.1-zh.10（fcf0229）\n文件名带 -test.fcf0229，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "fcf02298f00aef31cc52ab4404b41cce0160c795",
+      "pr": 0,
+      "version": "0.7.1-zh.10",
+      "versionCode": 33,
+      "publishedAt": 1795580061000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-fcf0229",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-fcf0229/DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
+          "size": 139322271,
+          "sha256": "072097b80d514987488cb26ea9d361eebb6ceae341521336ff694e42c3677b3e",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 33,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-5578d5f",
       "title": "测试包 5578d5f",
@@ -64,28 +86,6 @@
           "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-5578d5f/DroidDeck-0.7.1-zh.9-test.5578d5f.apk",
           "size": 139322271,
           "sha256": "daeba6fd8220df2dbd467df1fe4bb2367c8dc7cca508b88cc6361ebf65e32445",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 32,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-405590c",
-      "title": "测试包 405590c",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：sync: pick up new strings from upstream\n\n版本：0.7.1-zh.9（405590c）\n文件名带 -test.405590c，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "405590cd07c2940329b3ed0b6ee0f4a0b3864047",
-      "pr": 0,
-      "version": "0.7.1-zh.9",
-      "versionCode": 32,
-      "publishedAt": 1795577991000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-405590c",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.7.1-zh.9-test.405590c.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-405590c/DroidDeck-0.7.1-zh.9-test.405590c.apk",
-          "size": 139322271,
-          "sha256": "0365f0a9a367eb9faf39b70c7d7ae7b8496127a7c828b85ed480504dcfd5acf0",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 32,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
