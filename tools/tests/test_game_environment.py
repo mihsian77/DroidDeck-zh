@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import io
 import json
@@ -1147,9 +1148,12 @@ class GameEnvironmentTest(unittest.TestCase):
     def test_install_script_run_keys_default_to_the_app_key(self):
         keys = MODULE["run_keys"](MODULE["read_vdf"](self.SCRIPT))
         self.assertEqual(keys, {
-            ("hkey_local_machine\\software\\valve\\steam\\apps\\commonredist\\vcredist\\2019", "x64 14.28.29334.0"),
-            ("hkey_local_machine\\software\\valve\\steam\\apps\\228980", "setup"),
+            ("hkey_local_machine\\software\\valve\\steam\\apps\\commonredist\\vcredist\\2019", "x64 14.28.29334.0", 1),
+            ("hkey_local_machine\\software\\valve\\steam\\apps\\228980", "setup", 1),
         })
+        with_minimum = self.SCRIPT.replace('"Setup" { "process 1"', '"Setup" { "MinimumHasRunValue" "3" "process 1"')
+        self.assertIn(("hkey_local_machine\\software\\valve\\steam\\apps\\228980", "setup", 3),
+                      MODULE["run_keys"](MODULE["read_vdf"](with_minimum)))
         with self.assertRaises(ValueError):
             MODULE["read_vdf"]('"a" { "b" }')
 
@@ -1168,11 +1172,58 @@ class GameEnvironmentTest(unittest.TestCase):
             self.assertFalse(done([str(script)], env))
             (prefix / "system.reg").write_text(self.REDIST + self.SETUP)
             self.assertTrue(done([str(script)], env))
+            # Steam rewrote the file: only marked "run process" entries, so its evaluator would run nothing either
             script.write_text(self.SCRIPT.replace("x64.cmd", "x64-update.cmd"))
+            self.assertTrue(done([str(script)], env))
+            script.write_text(self.SCRIPT.replace('"Setup"', '"Setup 2"'))
             self.assertFalse(done([str(script)], env))
             script.write_text('"InstallScript" { "Registry" { "HKEY_LOCAL_MACHINE\\\\Software\\\\Game" { "string" { "Path" "%INSTALLDIR%" } } } }')
             MODULE["record_install_scripts"](MODULE["scripts_digest"]([str(script)]), env)
             self.assertFalse(done([str(script)], env))
+
+    def test_marked_run_process_scripts_count_as_done_without_a_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "evaluatorscript_291550.vdf"
+            script.write_text(self.SCRIPT.replace('"0" { "appid" "228980"',
+                                                  '"0" { "appid" "228980" "mode" "1" "language" "english" '
+                                                  '"install_path" "/root/x" "SteamID" "7656"'))
+            prefix = Path(tmp) / "compat/pfx"
+            prefix.mkdir(parents=True)
+            env = {"STEAM_COMPAT_DATA_PATH": str(prefix.parent)}
+            done = MODULE["install_scripts_done"]
+            (prefix / "system.reg").write_text(self.REDIST)
+            self.assertFalse(done([str(script)], env))
+            (prefix / "system.reg").write_text(self.REDIST + self.SETUP)
+            self.assertTrue(done([str(script)], env))
+            (prefix / MODULE["INSTALL_STAMP"]).write_text("an older digest\n")
+            self.assertTrue(done([str(script)], env))
+            script.write_text(self.SCRIPT.replace('"run process" {',
+                                                  '"registry" { "HKEY_LOCAL_MACHINE\\\\Software\\\\Game" { "string" { "Path" "x" } } } "run process" {'))
+            self.assertFalse(done([str(script)], env))
+
+    def test_install_scripts_need_their_dword_guards_satisfied(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / "evaluatorscript_1.vdf"
+            script.write_text(self.SCRIPT)
+            prefix = Path(tmp) / "compat/pfx"
+            prefix.mkdir(parents=True)
+            env = {"STEAM_COMPAT_DATA_PATH": str(prefix.parent)}
+            done = MODULE["install_scripts_done"]
+            MODULE["record_install_scripts"](MODULE["scripts_digest"]([str(script)]), env)
+            # a guard DWORD of 0 means Steam still runs the process, recorded or not
+            (prefix / "system.reg").write_text(self.REDIST + self.SETUP.replace("dword:00000001", "dword:00000000"))
+            self.assertFalse(done([str(script)], env))
+            (prefix / MODULE["INSTALL_STAMP"]).unlink()
+            self.assertFalse(done([str(script)], env))
+            # a value that is not a DWORD does not count either
+            (prefix / "system.reg").write_text(self.REDIST + self.SETUP.replace("dword:00000001", '"1"'))
+            self.assertFalse(done([str(script)], env))
+            # MinimumHasRunValue: below it the process runs again, at or above it the scripts are done
+            script.write_text(self.SCRIPT.replace('"Setup" { "process 1"', '"Setup" { "MinimumHasRunValue" "2" "process 1"'))
+            (prefix / "system.reg").write_text(self.REDIST + self.SETUP)
+            self.assertFalse(done([str(script)], env))
+            (prefix / "system.reg").write_text(self.REDIST + self.SETUP.replace("dword:00000001", "dword:00000002"))
+            self.assertTrue(done([str(script)], env))
 
     def test_the_evaluator_is_skipped_once_it_finished_the_same_scripts(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1189,8 +1240,12 @@ class GameEnvironmentTest(unittest.TestCase):
             proton.write_text("#!/bin/sh\necho run >> %s\nexit ${EXIT_CODE:-0}\n" % shlex.quote(str(runs)))
             proton.chmod(0o755)
 
-            def evaluate(exit_code="0"):
-                script.write_text(self.SCRIPT if exit_code != "changed" else self.SCRIPT.replace("setup.exe", "setup-update.exe"))
+            # a registry action besides the marked runs: Steam's evaluator has work to do, so it runs once
+            with_registry = self.SCRIPT.replace(
+                '"run process" {', '"registry" { "HKEY_LOCAL_MACHINE\\\\Software\\\\Game" { "string" { "Path" "x" } } } "run process" {')
+
+            def evaluate(exit_code="0", text=None):
+                script.write_text(text or (with_registry if exit_code != "changed" else with_registry.replace("setup.exe", "setup-update.exe")))
                 env = dict(os.environ, HOME=tmp, STEAM_COMPAT_CLIENT_INSTALL_PATH=str(root),
                            STEAM_COMPAT_DATA_PATH=str(prefix.parent), EXIT_CODE="0" if exit_code == "changed" else exit_code)
                 result = subprocess.run([sys.executable, str(BIN / "droiddeck-game-env"), str(proton), "run",
@@ -1203,6 +1258,8 @@ class GameEnvironmentTest(unittest.TestCase):
             self.assertEqual(evaluate(), (0, 2))
             self.assertEqual(evaluate(), (0, 2))
             self.assertEqual(evaluate("changed"), (0, 3))
+            # only marked "run process" entries, all set: skipped even though the file differs from the recorded one
+            self.assertEqual(evaluate(text=self.SCRIPT.replace("x64.cmd", "x64-update.cmd")), (0, 3))
 
     def test_the_mali_bridge_caps_the_vkd3d_feature_level(self):
         bridge = {"DD_VKBRIDGE": "1", "VKD3D_FEATURE_LEVEL": "12_2"}
@@ -1392,6 +1449,61 @@ class GameEnvironmentTest(unittest.TestCase):
             self.assertFalse(leftover.exists())
             self.assertEqual(selection.read_bytes(), saved)
 
+    def test_droiddeck_bionic_takes_only_android_fex_rows(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            home = root / "home"
+            component_dir = home / ".local/share/droiddeck-components"
+            store = component_dir / "store"
+            component_dir.mkdir(parents=True)
+            unix = "files/lib/wine/aarch64-unix/libwow64fex.so"
+            other = "files/lib/wine/aarch64-unix/libarm64ecfex.so"
+            dll = "files/lib/wine/aarch64-windows/libwow64fex.dll"
+            digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+
+            def source(key, rel, text):
+                path = store / key / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text)
+                return path
+
+            def row(scope, tool, rel, path):
+                return "%s\t%s\tbuild-1\tfex\t%s\t%s\t%s\n" % (scope, tool, rel, digest(path), path)
+
+            bionic, glibc_tool = "DroidDeck-Bionic-12.8-r24", "DroidDeck-Proton-11-12.8"
+            for tool in (bionic, glibc_tool):
+                for rel in (unix, other, dll):
+                    (root / tool / rel).parent.mkdir(parents=True, exist_ok=True)
+                    (root / tool / rel).write_text("bundled " + rel)
+                (root / tool / "version").write_text("1 build-1\n")
+            glibc = source("FEXCore-2611-linux", unix, "glibc so")
+            android = source("FEXCore-2611-bionic", unix, "android so")
+            android_dll = source("FEXCore-2611-Bionic", dll, "android dll")
+            saved = source("original-%s-%s-fex" % (bionic, bionic), unix, "saved android so")
+            rows = []
+            for tool in (bionic, glibc_tool):
+                rows += [row("42", tool, unix, glibc), "42\t%s\tbuild-1\tfex\t%s\t-\t-\n" % (tool, other)]
+                rows += [row("43", tool, unix, android), row("43", tool, dll, android_dll)]
+                rows += [row("*", tool, unix, saved)]
+            (component_dir / "desired.tsv").write_text("".join(rows))
+            script = COMPAT["DD_COMPONENTS_SETUP"] + '\nverb=waitforexitandrun; dd_components "$1"\n'
+            run = lambda tool, app: subprocess.run(
+                ["bash", "-c", script, "test", str(root / tool)], check=True, capture_output=True,
+                env=dict(os.environ, HOME=str(home), STEAM_COMPAT_DATA_PATH="/steam/compatdata/" + app))
+
+            run(bionic, "42")
+            self.assertEqual((root / bionic / unix).read_text(), "bundled " + unix)
+            self.assertEqual((root / bionic / other).read_text(), "bundled " + other)
+            run(bionic, "43")
+            self.assertEqual((root / bionic / unix).read_text(), "android so")
+            self.assertEqual((root / bionic / dll).read_text(), "android dll")
+            run(bionic, "44")
+            self.assertEqual((root / bionic / unix).read_text(), "saved android so")
+
+            run(glibc_tool, "42")
+            self.assertEqual((root / glibc_tool / unix).read_text(), "glibc so")
+            self.assertFalse((root / glibc_tool / other).exists())
+
     def test_component_scope_matches_environment_scope_for_shortcut_ids(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -1548,6 +1660,65 @@ class GameEnvironmentTest(unittest.TestCase):
         self.assertEqual(MODULE["engine_fixes"](game, [], "42"), ({}, [], []))
         self.assertEqual(MODULE["engine_fixes"](game, []), ({}, [], []))
 
+    def test_dragon_quest_monsters_4_writes_full_detail_mesh_settings(self):
+        apply = MODULE["dragon_quest_monsters_4_mesh_detail"]
+        wanted = "r.SkeletalMeshLODBias=-4\nr.SkeletalMeshLODRadiusScale=0.25\n"
+        for exe, project in (("DragonQuestMonsters4Demo.exe", "DragonQuestMonsters4Demo"),
+                             ("DragonQuestMonsters4-Win64-Shipping.exe", "DragonQuestMonsters4")):
+            with self.subTest(exe=exe), tempfile.TemporaryDirectory() as tmp:
+                (Path(tmp) / "pfx").mkdir()
+                config = Path(tmp) / "pfx/drive_c/users/steamuser/AppData/Local" / project / "Saved/Config/Windows/Engine.ini"
+                with contextlib.redirect_stderr(io.StringIO()):
+                    apply("/game/" + exe, {"STEAM_COMPAT_DATA_PATH": tmp})
+                self.assertEqual(config.read_text(), "[SystemSettings]\n" + wanted)
+
+    def test_dragon_quest_monsters_4_keeps_other_engine_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "pfx").mkdir()
+            config = Path(tmp) / "pfx/drive_c/users/steamuser/AppData/Local/DragonQuestMonsters4Demo/Saved/Config/Windows/Engine.ini"
+            config.parent.mkdir(parents=True)
+            config.write_text("[Core.Log]\nLogTemp=Log\n\n[SystemSettings]\nr.Fog=0\nr.SkeletalMeshLODBias=0\n\n[Other]\nKey=1\n")
+            config.chmod(0o444)
+            with contextlib.redirect_stderr(io.StringIO()):
+                MODULE["dragon_quest_monsters_4_mesh_detail"]("/game/DragonQuestMonsters4Demo.exe", {"STEAM_COMPAT_DATA_PATH": tmp})
+            self.assertEqual(config.read_text(), "[Core.Log]\nLogTemp=Log\n\n[SystemSettings]\nr.Fog=0\n"
+                             "r.SkeletalMeshLODBias=-4\nr.SkeletalMeshLODRadiusScale=0.25\n\n[Other]\nKey=1\n")
+            self.assertEqual(config.stat().st_mode & 0o777, 0o444)
+
+    def test_dragon_quest_monsters_4_settings_use_the_game_profile_prefix(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            exe = home / "game/DragonQuestMonsters4Demo.exe"
+            exe.parent.mkdir()
+            exe.touch()
+            proton = home / "fake-proton"
+            proton.write_text("#!" + sys.executable + "\nimport json, sys\nprint(json.dumps(sys.argv[1:]))\n")
+            proton.chmod(0o755)
+            inherited, chosen = home / "compatdata/42", home / "profile/42"
+            for data in (inherited, chosen):
+                (data / "pfx").mkdir(parents=True)
+            config = home / ".config/droiddeck/game-environment.json"
+            config.parent.mkdir(parents=True)
+            config.write_text(json.dumps({"version": 1, "games": {"42": {"STEAM_COMPAT_DATA_PATH": str(chosen)}}}))
+            subprocess.run([sys.executable, str(BIN / "droiddeck-game-env"), str(proton), "waitforexitandrun", str(exe)],
+                           env=dict(os.environ, HOME=tmp, STEAM_COMPAT_DATA_PATH=str(inherited)),
+                           text=True, capture_output=True, check=True)
+            engine = "pfx/drive_c/users/steamuser/AppData/Local/DragonQuestMonsters4Demo/Saved/Config/Windows/Engine.ini"
+            self.assertIn("r.SkeletalMeshLODBias=-4", (chosen / engine).read_text())
+            self.assertFalse((inherited / engine).exists())
+
+    def test_dragon_quest_monsters_4_prefix_errors_do_not_stop_the_launch(self):
+        errors = io.StringIO()
+        with mock.patch.object(Path, "is_dir", side_effect=PermissionError("denied")), contextlib.redirect_stderr(errors):
+            MODULE["dragon_quest_monsters_4_mesh_detail"]("/game/DragonQuestMonsters4Demo.exe", {"STEAM_COMPAT_DATA_PATH": "/compatdata/42"})
+        self.assertIn("left as is", errors.getvalue())
+
+    def test_other_games_do_not_get_the_dragon_quest_monsters_4_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "pfx").mkdir()
+            MODULE["dragon_quest_monsters_4_mesh_detail"]("/game/DragonQuestMonsters3.exe", {"STEAM_COMPAT_DATA_PATH": tmp})
+            self.assertEqual(list((Path(tmp) / "pfx").iterdir()), [])
+
     def test_arkham_city_gets_full_x87_precision_over_the_preset(self):
         with tempfile.TemporaryDirectory() as tmp:
             city = Path(tmp) / "Batman Arkham City GOTY/Binaries/Win32"
@@ -1566,6 +1737,27 @@ class GameEnvironmentTest(unittest.TestCase):
             for name in ("ShippingPC-BmGame.exe", "BmLauncher.exe"):
                 (asylum / name).touch()
             self.assertEqual(MODULE["engine_fixes"](str(asylum / "BmLauncher.exe"), []), ({}, [], []))
+
+    def test_split_second_gets_x87_fip_unless_the_game_sets_jit_features(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            game = Path(tmp) / "SplitSecond"
+            game.mkdir()
+            exe = game / "SplitSecond.exe"
+            exe.touch()
+            for app_id in ("297860", ""):
+                env, extra, notes = MODULE["engine_fixes"](str(exe), [], app_id)
+                self.assertEqual((env, extra), ({"FEX_JITFEATURES": "enablex87fip"}, []))
+                self.assertTrue(notes)
+            other = Path(tmp) / "Other/Game.exe"
+            other.parent.mkdir()
+            other.touch()
+            self.assertEqual(MODULE["engine_fixes"](str(other), [], "297860")[0], {"FEX_JITFEATURES": "enablex87fip"})
+            self.assertEqual(MODULE["engine_fixes"](str(other), [], "42"), ({}, [], []))
+            config = {"version": 1, "shared": {"FEX_X87REDUCEDPRECISION": "1"}}
+            self.assertEqual(MODULE["apply_config"]({}, config, "297860", env),
+                             {"FEX_X87REDUCEDPRECISION": "1", "FEX_JITFEATURES": "enablex87fip"})
+            config["games"] = {"297860": {"FEX_JITFEATURES": "off"}}
+            self.assertEqual(MODULE["apply_config"]({}, config, "297860", env)["FEX_JITFEATURES"], "off")
 
     def test_d3dgear_capture_hook_beside_the_game_is_turned_off(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -1865,6 +2057,18 @@ class GameEnvironmentTest(unittest.TestCase):
             config = {"version": 1, "shared": {}, "games": {"1771300": {"VKD3D_FEATURE_LEVEL": "12_1"}}}
             self.assertEqual(MODULE["apply_config"]({}, config, "1771300", env), {"VKD3D_FEATURE_LEVEL": "12_1", "VKD3D_SHADER_MODEL": "6_9"})
             self.assertEqual(MODULE["engine_fixes"](str(exe), [], "42")[0], {})
+
+    def test_hades_ii_runs_at_feature_level_12_2_from_steam_and_xbox_unless_the_game_overrides_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for exe in (Path(tmp) / "Hades II/Ship/Hades2.exe", Path(tmp) / "Xbox/Hades II/Hades2.exe"):
+                exe.parent.mkdir(parents=True)
+                exe.touch()
+                env, extra, notes = MODULE["engine_fixes"](str(exe), [])
+                self.assertEqual(env, {"VKD3D_FEATURE_LEVEL": "12_2"}, str(exe))
+                self.assertTrue(notes)
+                config = {"version": 1, "shared": {}, "games": {"42": {"VKD3D_FEATURE_LEVEL": "12_1"}}}
+                self.assertEqual(MODULE["apply_config"]({}, config, "42", env), {"VKD3D_FEATURE_LEVEL": "12_1"})
+            self.assertEqual(MODULE["engine_fixes"]("/game/Hades/x64/Hades.exe", [])[0], {})
 
     def test_unity_players_keep_tso_over_the_preset(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -2234,6 +2438,46 @@ class GameEnvironmentTest(unittest.TestCase):
             out = subprocess.run(["bash", "-c", "verb=" + verb + "\n" + skip + "echo continued", "_"] + args,
                                  env=env, capture_output=True, text=True, check=True).stdout
             self.assertEqual(out, "continued\n", (verb, args, prefix))
+
+    def test_bionic_tool_starts_droiddeck_proton_when_proot_is_on(self):
+        script = COMPAT["extra_wrapper_sh"]("proton")
+        with tempfile.TemporaryDirectory() as tmp:
+            tools = Path(tmp) / "compatibilitytools.d"
+
+            def tool(name, bionic=False):
+                d = tools / name
+                (d / "bionic").mkdir(parents=True)
+                if bionic:
+                    (d / "bionic" / "launch.sh").write_text("")
+                wrapper = d / "droiddeck-proton-wrap"
+                wrapper.write_text(script if bionic else '#!/bin/sh\necho "ran ${0%/*}" "$@"\n')
+                wrapper.chmod(0o755)
+                return wrapper
+
+            bionic = tool("DroidDeck-Bionic-12.8-r37", bionic=True)
+            tool("DroidDeck-Proton 11-12.8")
+            tool("DroidDeck-Proton-11-12.10")
+            tool("DroidDeck-Proton-12.8-bionic-test", bionic=True)
+            tool("GE-Proton10-25")
+            base = {"PATH": os.defpath, "HOME": "/nonexistent"}
+
+            def launch(extra=()):
+                env = dict(base, **dict(extra))
+                return subprocess.run([str(bionic), "waitforexitandrun", "/games/A B/game.exe", "-x"], env=env,
+                                      capture_output=True, text=True, timeout=10)
+
+            result = launch()
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout, "ran %s waitforexitandrun /games/A B/game.exe -x\n"
+                             % os.path.realpath(tools / "DroidDeck-Proton-11-12.10"))
+            self.assertIn("this launch uses DroidDeck-Proton-11-12.10", result.stderr)
+
+            shutil.rmtree(tools / "DroidDeck-Proton-11-12.10")
+            self.assertIn("ran %s " % os.path.realpath(tools / "DroidDeck-Proton 11-12.8"), launch().stdout)
+
+            self.assertNotIn("ran ", launch({"DDNATV_ROOT": "/data/rootfs"}).stdout)
+            shutil.rmtree(tools / "DroidDeck-Proton 11-12.8")
+            self.assertNotIn("this launch uses", launch().stderr)
 
     def test_wrappers_preload_the_session_library_before_the_input_shim(self):
         overlay = "/root/.local/share/Steam/ubuntu12_64/gameoverlayrenderer.so"
