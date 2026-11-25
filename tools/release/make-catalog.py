@@ -130,6 +130,10 @@ def main():
     # pack-* 是附加包的内容寻址 release，不是 App 版本，别让它们混进 stable。
     releases = [r for r in api("releases?per_page=100")
                 if not r["draft"] and not r["tag_name"].startswith("pack-")]
+    # 不能依赖 API 返回的列表顺序：发版流程会回改旧 release 的说明（数据包指引
+    # repoint），列表顺序跟着 updated 走，新的正式版可能排在旧版后面。stable 要
+    # 挑最新的，先按发布时间排一遍。preview 下面本来就显式排序，同一标准。
+    releases.sort(key=lambda r: r.get("published_at") or r["created_at"], reverse=True)
     # 只看 <版本>-zhN 这种正式版 tag，别让 pack-*（内容寻址的附加包）、数据包这类
     # 非预发布 release 顶掉 stable——它们同样不是 prerelease。
     stable = next((r for r in releases if not r["prerelease"] and STABLE_TAG.fullmatch(r["tag_name"])), None)
