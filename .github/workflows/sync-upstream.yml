@@ -18,7 +18,7 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     # 白名单文件清单。改下面 case 那段时这里也要跟着改——这里只用来做丢弃检查。
     env:
       WHITELIST_FILES: |
@@ -247,6 +247,21 @@ jobs:
             git commit -q -m "sync: pick up new strings from upstream"
           fi
 
+      # 编译预检的环境，与 build.yml 同一套（temurin 17 + setup-gradle）。
+      # runner 自带 Android SDK，AGP 直接认 ANDROID_HOME，不用额外装。
+      - name: Set up JDK for compile check
+        if: steps.check.outputs.has_updates == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle for compile check
+        if: steps.check.outputs.has_updates == 'true'
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
       - name: Merge directly to main (no PR needed)
         if: steps.check.outputs.has_updates == 'true'
         run: |
@@ -290,6 +305,18 @@ jobs:
           if [ "$BAD" = "1" ]; then
             echo "停止同步：上面这些文件在上游不存在，先确认是不是合错了上游线。" >> "$GITHUB_STEP_SUMMARY"
             exit 1
+          fi
+
+          # 编译预检：合并已在本地完成但还没 push，这里把 Kotlin 先编一遍。
+          # 编不过就不进 main——以前要等 build.yml 跑完（约半小时）才知道合坏了，
+          # 中间这段时间 main 是编译不过的（11-24 的 460dbef06）。预检失败会走
+          # 下面的 Leave a note 步骤自动开 issue，main 保持合并前的状态。
+          # 只编 Kotlin 主源集，全量构建+测试仍由 push 后触发的 build.yml 负责。
+          if git diff --quiet "$PRE_MERGE" HEAD -- app/src/main; then
+            echo "这次合并没动 app 代码，跳过编译预检"
+          else
+            ./gradlew :app:compileReleaseKotlin --no-daemon --stacktrace
+            echo "编译预检通过"
           fi
 
           # Push directly to main
