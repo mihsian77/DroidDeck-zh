@@ -39,7 +39,7 @@
         "name": "DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
         "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-fcf0229/DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
         "size": 139322271,
-        "sha256": "072097b80d514987488cb26ea9d361eebb6ceae341521336ff694e42c3677b3e",
+        "sha256": "f0c4d4192986f24fbe93702b978b22a26d5691a9044e1faba886254f5116f535",
         "packageName": "com.droiddeck.launcher",
         "versionCode": 33,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
@@ -63,7 +63,7 @@
           "name": "DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
           "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-fcf0229/DroidDeck-0.7.1-zh.10-test.fcf0229.apk",
           "size": 139322271,
-          "sha256": "072097b80d514987488cb26ea9d361eebb6ceae341521336ff694e42c3677b3e",
+          "sha256": "f0c4d4192986f24fbe93702b978b22a26d5691a9044e1faba886254f5116f535",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 33,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
