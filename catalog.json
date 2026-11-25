@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.7.1-zh.9",
-    "title": "0.7.1-zh.9 (stable)",
-    "summary": "## 0.7.1-zh.9 (stable)\n\n本次没有用户可见的功能改动。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名用的是 AOSP 公共 testkey，和上游原版同一个，可以直接覆盖安装\n- GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节\n- 此为稳定版，安装前…",
-    "commit": "1051bf2223b2d971b8e51410e60caa6f8d1e3a8e",
+    "tag": "0.7.1-zh.10",
+    "title": "0.7.1-zh.10 (stable)",
+    "summary": "## 0.7.1-zh.10 (stable)\n\n本次没有用户可见的功能改动。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名用的是 AOSP 公共 testkey，和上游原版同一个，可以直接覆盖安装\n- GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节\n- 此为稳定版，安装…",
+    "commit": "fcf02298f00aef31cc52ab4404b41cce0160c795",
     "pr": 0,
-    "version": "0.7.1-zh.9",
-    "versionCode": 32,
-    "publishedAt": 1795574666000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.9",
+    "version": "0.7.1-zh.10",
+    "versionCode": 33,
+    "publishedAt": 1795581294000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.10",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.9.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.9/DroidDeck-0.7.1-zh.9.apk",
-        "size": 139272921,
-        "sha256": "c9ce891157133bee018fa3471d361cff0daa11e949e58256b4feff7ea2082c30",
+        "name": "DroidDeck-0.7.1-zh.10.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.10/DroidDeck-0.7.1-zh.10.apk",
+        "size": 139322271,
+        "sha256": "f0c4d4192986f24fbe93702b978b22a26d5691a9044e1faba886254f5116f535",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 32,
+        "versionCode": 33,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
