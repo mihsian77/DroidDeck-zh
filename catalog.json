@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.7.1-zh.8",
-    "title": "0.7.1-zh.8 (stable)",
-    "summary": "## 0.7.1-zh.8 (stable)\n\n合入上游 34 个提交：native 模式修复（locale/iconv、路径、socket、GL）、Decky 插件商店、文件管理器文本编辑器、首次下载转后台、蓝牙手柄授权、CurseForge 改进。补回 Steam 下载区域预设调用（11-18 同步时丢失）。新增界面词条全部中文。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Lin…",
-    "commit": "93517f550650cd7e1d643f88ba6bd4808b2e2953",
+    "tag": "0.7.1-zh.9",
+    "title": "0.7.1-zh.9 (stable)",
+    "summary": "## 0.7.1-zh.9 (stable)\n\n本次没有用户可见的功能改动。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名用的是 AOSP 公共 testkey，和上游原版同一个，可以直接覆盖安装\n- GPU 兼容层与 add-on pack 未逐机型真机验证，详见 README「中文优化版」一节\n- 此为稳定版，安装前…",
+    "commit": "1051bf2223b2d971b8e51410e60caa6f8d1e3a8e",
     "pr": 0,
-    "version": "0.7.1-zh.8",
-    "versionCode": 31,
-    "publishedAt": 1795494017000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.8",
+    "version": "0.7.1-zh.9",
+    "versionCode": 32,
+    "publishedAt": 1795574666000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.1-zh.9",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.8.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.8/DroidDeck-0.7.1-zh.8.apk",
-        "size": 138567224,
-        "sha256": "9b0c198ef0f958444d18bb4000ecdba6d7f348fc1a180420470822cbcb5bd2df",
+        "name": "DroidDeck-0.7.1-zh.9.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.1-zh.9/DroidDeck-0.7.1-zh.9.apk",
+        "size": 139272921,
+        "sha256": "c9ce891157133bee018fa3471d361cff0daa11e949e58256b4feff7ea2082c30",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 31,
+        "versionCode": 32,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
