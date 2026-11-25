@@ -52,6 +52,8 @@
     <string name="hud_fg_failed">%1$s：引擎失败</string>
     <string name="hud_fg_needs_lossless">%1$s：需要 Lossless Scaling</string>
     <string name="hud_fg_starting">%1$s  %2$s · 启动中</string>
+    <string name="hud_only_during_game">仅在游戏运行时显示 HUD</string>
+    <string name="hud_only_during_game_hint">检测不到游戏画面时自动隐藏 HUD。</string>
     <string name="second_library_import_hint">添加一个 Steam 库并扫描其中的 Windows 游戏。已拥有的游戏使用其 Steam 条目；其余变成非 Steam 快捷方式。</string>
     <string name="game_env_title">游戏环境</string>
     <string name="game_env_hint">Proton 游戏的环境变量。</string>
@@ -1495,6 +1497,7 @@
     <string name="main_pick_game_storage">选择游戏存储文件夹</string>
     <string name="main_pick_decky_zip">选择 Decky 插件 ZIP 包</string>
     <string name="main_storage_not_usable">无法使用：%1$s</string>
+    <string name="main_storage_fat32">FAT32 装不下超过 4 GB 的文件，部分游戏会安装失败。请重新格式化为 exFAT。</string>
     <string name="main_running_program">程序</string>
     <string name="main_removing_runtime">正在移除 Linux 运行时</string>
     <string name="main_settings_main_screen">无法在底部屏幕上打开设置，已改为在主屏幕上打开。</string>
@@ -2518,6 +2521,7 @@
     <string name="stores_notification_failed">%1$s 下载失败</string>
     <string name="stores_notification_delete">删除</string>
     <string name="stores_notification_keep">保留</string>
+    <string name="stores_login_continue_in_browser">%1$s 还差一步。请在刚打开的浏览器里完成登录，然后再试。</string>
     <string name="stores_login_title">登录 %1$s</string>
     <string name="stores_login_provider_title">使用第三方账号登录</string>
     <string name="stores_login_reload">重新加载</string>
