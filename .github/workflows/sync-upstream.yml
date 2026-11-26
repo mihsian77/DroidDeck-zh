@@ -319,7 +319,11 @@ jobs:
             # （build.gradle:126），而 sync 这边不构建 packs，首跑就被误拦（run
             # 45566386967）。预检是编译验证不是出包，传 false 走本地无 packs 的
             # pinned 包兜底路径，Kotlin 照常编译。
-            GITHUB_ACTIONS=false ./gradlew :app:compileReleaseKotlin --no-daemon --stacktrace
+            # 另外传 skipRust=true：preBuild 挂着 buildRustStores 要 rustup+
+            # cargo-ndk 交叉编译 libdroiddeckstores.so，sync runner 没有这套
+            # 环境（run 45749483023）。skipRust 是 build.gradle 自带的官方开关
+            # （onlyIf），全量构建仍由 build.yml 负责，预检只验证 Kotlin。
+            GITHUB_ACTIONS=false ./gradlew :app:compileReleaseKotlin -PskipRust=true --no-daemon --stacktrace
             echo "编译预检通过"
           fi
 
