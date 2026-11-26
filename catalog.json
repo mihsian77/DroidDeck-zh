@@ -25,29 +25,51 @@
     }
   },
   "preview": {
-    "tag": "test-741d02f",
-    "title": "测试包 741d02f",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：sync: pick up new strings from upstream\n\n版本：0.7.1-zh.10（741d02f）\n文件名带 -test.741d02f，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "741d02fa9e25a77cbbe7beed1bffb6a9f7a586db",
+    "tag": "test-cc72b5b",
+    "title": "测试包 cc72b5b",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：0.7.11-zh.11：跟随上游 0.7.11 基线，补 Valve Proton 按需开关的中文\n\n版本：0.7.11-zh.11（cc72b5b）\n文件名带 -test.cc72b5b，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "cc72b5b03f9d323ddc4754e3095e81a2cf690397",
     "pr": 0,
-    "version": "0.7.1-zh.10",
-    "versionCode": 33,
-    "publishedAt": 1795666855000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-741d02f",
+    "version": "0.7.11-zh.11",
+    "versionCode": 34,
+    "publishedAt": 1795666930000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-cc72b5b",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.1-zh.10-test.741d02f.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-741d02f/DroidDeck-0.7.1-zh.10-test.741d02f.apk",
+        "name": "DroidDeck-0.7.11-zh.11-test.cc72b5b.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-cc72b5b/DroidDeck-0.7.11-zh.11-test.cc72b5b.apk",
         "size": 139326461,
-        "sha256": "0d1a4af0fff1164e57579150fa59d64d80c4bb98a6787aaedafe1221d87acd20",
+        "sha256": "11219c7455c1437cc0758c827eac7ef2a7c8ca7d4dd5d2d14e9ca4795e0049e7",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 33,
+        "versionCode": 34,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-cc72b5b",
+      "title": "测试包 cc72b5b",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：0.7.11-zh.11：跟随上游 0.7.11 基线，补 Valve Proton 按需开关的中文\n\n版本：0.7.11-zh.11（cc72b5b）\n文件名带 -test.cc72b5b，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "cc72b5b03f9d323ddc4754e3095e81a2cf690397",
+      "pr": 0,
+      "version": "0.7.11-zh.11",
+      "versionCode": 34,
+      "publishedAt": 1795666930000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-cc72b5b",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.7.11-zh.11-test.cc72b5b.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-cc72b5b/DroidDeck-0.7.11-zh.11-test.cc72b5b.apk",
+          "size": 139326461,
+          "sha256": "11219c7455c1437cc0758c827eac7ef2a7c8ca7d4dd5d2d14e9ca4795e0049e7",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 34,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-741d02f",
       "title": "测试包 741d02f",
@@ -64,28 +86,6 @@
           "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-741d02f/DroidDeck-0.7.1-zh.10-test.741d02f.apk",
           "size": 139326461,
           "sha256": "0d1a4af0fff1164e57579150fa59d64d80c4bb98a6787aaedafe1221d87acd20",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 33,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-199d719",
-      "title": "测试包 199d719",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：sync 预检传 -PskipRust=true，跳过 rust 交叉编译\n\n版本：0.7.1-zh.10（199d719）\n文件名带 -test.199d719，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "199d7191688d73e546302842149aa5e39824d648",
-      "pr": 0,
-      "version": "0.7.1-zh.10",
-      "versionCode": 33,
-      "publishedAt": 1795666303000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-199d719",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.7.1-zh.10-test.199d719.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-199d719/DroidDeck-0.7.1-zh.10-test.199d719.apk",
-          "size": 139318175,
-          "sha256": "2cb208161f34e96697baf3537288bdf60583edd33c4e78ef03368715567642c1",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 33,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
