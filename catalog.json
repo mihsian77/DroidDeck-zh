@@ -69,28 +69,6 @@
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
         }
       }
-    },
-    {
-      "tag": "test-741d02f",
-      "title": "测试包 741d02f",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：sync: pick up new strings from upstream\n\n版本：0.7.1-zh.10（741d02f）\n文件名带 -test.741d02f，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "741d02fa9e25a77cbbe7beed1bffb6a9f7a586db",
-      "pr": 0,
-      "version": "0.7.1-zh.10",
-      "versionCode": 33,
-      "publishedAt": 1795666855000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-741d02f",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.7.1-zh.10-test.741d02f.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-741d02f/DroidDeck-0.7.1-zh.10-test.741d02f.apk",
-          "size": 139326461,
-          "sha256": "0d1a4af0fff1164e57579150fa59d64d80c4bb98a6787aaedafe1221d87acd20",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 33,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
     }
   ]
 }
