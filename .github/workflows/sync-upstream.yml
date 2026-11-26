@@ -315,7 +315,11 @@ jobs:
           if git diff --quiet "$PRE_MERGE" HEAD -- app/src/main; then
             echo "这次合并没动 app 代码，跳过编译预检"
           else
-            ./gradlew :app:compileReleaseKotlin --no-daemon --stacktrace
+            # build.gradle 只在 GITHUB_ACTIONS=true 时要求 add-on pack 本地存在
+            # （build.gradle:126），而 sync 这边不构建 packs，首跑就被误拦（run
+            # 45566386967）。预检是编译验证不是出包，传 false 走本地无 packs 的
+            # pinned 包兜底路径，Kotlin 照常编译。
+            GITHUB_ACTIONS=false ./gradlew :app:compileReleaseKotlin --no-daemon --stacktrace
             echo "编译预检通过"
           fi
 
