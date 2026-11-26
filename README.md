@@ -7,10 +7,10 @@
 
 DroidDeck brings the SteamOS experience to Android: Steam Gaming Mode, full Linux desktop, integration with GOG, Epic Games, Xbox, and other storefronts, Steam VR, and more!
 
-<p align="center"><b>100% open source. No ads. No telemetry. No proprietary components. No source withheld.</b></p>
+<p align="center"><b>100% open source. No ads. No Subscriptions. No telemetry. No proprietary components. No source withheld.</b></p>
 
 <p align="center">
-  <a href="https://github.com/Droid-Deck/DroidDeck/releases/download/0.7.1/DroidDeck-0.7.1.apk"><img src="https://img.shields.io/badge/Download-DroidDeck%200.7.1%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Download DroidDeck 0.7.1"></a>
+  <a href="https://github.com/Droid-Deck/DroidDeck/releases/download/0.7.11/DroidDeck-0.7.11.apk"><img src="https://img.shields.io/badge/Download-DroidDeck%200.7.11%20APK-3DDC84?style=for-the-badge&logo=android&logoColor=white" alt="Download DroidDeck 0.7.11"></a>
   <a href="https://discord.gg/JRGAvawjsm"><img src="https://img.shields.io/badge/Discord-Join%20us-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Join the DroidDeck Discord"></a>
 </p>
 
@@ -23,7 +23,7 @@ DroidDeck brings the SteamOS experience to Android: Steam Gaming Mode, full Linu
   <a href="https://trendshift.io/repositories/267852"><img src="https://trendshift.io/api/badge/trendshift/repositories/267852/daily?language=Kotlin" alt="Droid-Deck%2FDroidDeck | Trendshift" width="250" height="55"></a>
 </p>
 
-<p align="center"><img src="docs/media/steam-to-desktop.gif" width="100%" alt="On a Retroid Pocket Duo: Play Steam from the DroidDeck launcher, open Pac-Man in Steam Big Picture and play it, exit the game, then Switch to Desktop from the Power menu"></p>
+<p align="center"><a href="https://www.youtube.com/watch?v=ruaTSm_7a2c"><img src="docs/media/droiddeck-showcase.gif" width="60%" alt="A table of handhelds and phones all running DroidDeck, one waking to the Steam menu, the AYN Thor's bottom screen used as a touchpad, and scrolling around Steam on a phone before swiping to the home screen. Footage from Cyber Dopamine's video, linked."></a></p>
 
 > The official website is [droid-deck.dev](https://droid-deck.dev). Only download DroidDeck from this repository's [Releases](https://github.com/Droid-Deck/DroidDeck/releases).
 
@@ -55,7 +55,7 @@ DroidDeck brings the SteamOS experience to Android: Steam Gaming Mode, full Linu
 
 1. Android 9 or newer on Adreno 730 or newer, or any 8xx. Adreno 6xx, Mali, Xclipse and PowerVR are experimental. Adreno 710 is currently unsupported. No root needed.
 2. About 3 GB free for the runtime, plus 1.1 GB for the desktop and emulators.
-3. Install the [APK](https://github.com/Droid-Deck/DroidDeck/releases/download/0.7.1/DroidDeck-0.7.1.apk), install the Linux runtime, press **Play** and sign in to Steam.
+3. Install the [APK](https://github.com/Droid-Deck/DroidDeck/releases/download/0.7.11/DroidDeck-0.7.11.apk), install the Linux runtime, press **Play** and sign in to Steam.
 4. On Android 14 and newer, turn on **Disable child process restrictions** in Developer options. On Android 12 and 13, Steam's first launch shows a **Fix it for me** button that walks you through it.
 
 Smart glasses setup is in the [support matrix](docs/smart-glasses-support.md). Release notes are in [docs/releases](docs/releases).
@@ -74,9 +74,6 @@ The APK lands in `app/build/outputs/apk/release/`. Install it with `tools/deploy
 
 On Windows, see `tools/run_windows.ps1` and `tools/prepare_windows_runtime.py`.
 
-## Limits
-
-Compatibility and performance vary by device. Desktop compositing is software rendered, and Firefox sandboxing is reduced under proot.
 
 ## Credits and licence
 
