@@ -155,8 +155,8 @@ android {
         applicationId "com.droiddeck.launcher"
         minSdkVersion 26
         targetSdkVersion 28
-        versionCode 33
-        versionName "0.7.1-zh.10"
+        versionCode 34
+        versionName "0.7.11-zh.11"
         buildConfigField "String", "BUILD_LABEL", "\"${escapedBuildLabel}\""
         buildConfigField "String", "SOURCE_COMMIT", "\"${sourceCommit}\""
         buildConfigField "int", "PR_NUMBER", "${prNumber}"
