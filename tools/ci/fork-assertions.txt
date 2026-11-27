@@ -1,0 +1,37 @@
+# fork 关键特性的断言清单，同步上游后自动跑一遍。
+#
+# 为什么要有这个：白名单是"冲突时整文件保留我们的版本"，上游改动会被丢掉；
+# 不在白名单的文件走正常合并，上游删代码也能静默把我们依赖的东西删掉。
+# 这两种情况都可能编译通过——只删了 UI 入口或一个字段，Kotlin 照样编过，
+# 功能就没了。以前只有 droiddeck-session 的两条字符串检查，覆盖面太窄。
+#
+# 格式：文件路径|必须出现的字符串|说明
+#   - 字符串留空表示只检查文件是否存在
+#   - 命中失败只打 warning 并写进 run 摘要，不阻断同步（阻断会挡住正常的版本跟进）
+#   - 加新条目时先确认这个字符串是稳定标识，别拿会随文案变的中文句子
+#
+# 这些断言只覆盖"入口还在不在"，不保证功能逻辑正确；逻辑本身靠单测和真机。
+
+# 运行时：本地文件导入 / 快速安装目录（上游没有这两个功能）
+app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt|pickRuntimeImport|运行时本地文件导入入口
+app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt|pickInstallDir|运行时快速安装入口
+
+# 下载加速
+app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java|class MirrorHub|MirrorHub 加速实现
+app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt|MirrorHub|下载源接入加速
+
+# 退出登录（上游没有）
+app/src/main/java/com/droiddeck/launcher/session/SessionService.kt|SteamLogout|会话启动时处理退出登录
+app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt||退出登录实现文件
+
+# 中文化：locale / 中文预设 / 回退字体
+tools/linuxfs/overlay/usr/local/bin/droiddeck-session|LANG=zh_CN.UTF-8|中文 locale
+tools/linuxfs/overlay/usr/local/bin/droiddeck-session|droiddeck-zh-steam-preset|中文预设调用
+tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf||中文回退 fontconfig
+tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc||中文字体文件
+
+# 版本号带自己的后缀，别被上游版本号盖掉
+app/build.gradle|-zh.|fork 版本号后缀
+
+# 简体中文资源本身
+app/src/main/res/values-zh-rCN/strings.xml||简体中文资源

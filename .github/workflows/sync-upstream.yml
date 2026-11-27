@@ -186,24 +186,36 @@ jobs:
             echo "::warning::$f 的上游改动（$stat）被白名单覆盖，需人工确认"
           done < /tmp/whitelist-drift.txt
 
-      # droiddeck-session 已摘出白名单，改由 git 正常合并；我们在里面只留两行调用。
-      # 上游动了那段附近代码时可能把这两行冲掉，这里检查一下，冲掉了就报警。
-      - name: Check zh patches survived
+      # fork 关键特性的断言。上游把我们依赖的入口/字段改掉时，Kotlin 往往照样能
+      # 编过，但功能静默消失（11-14 那次 Soundtracks 整套就是这样躺进树里的）。
+      # 清单在 tools/ci/fork-assertions.txt，加新特性时在那边加一行。
+      - name: Check fork features survived
         if: steps.check.outputs.has_updates == 'true'
         run: |
           set -euo pipefail
-          f=tools/linuxfs/overlay/usr/local/bin/droiddeck-session
-          if grep -q "droiddeck-zh-steam-preset" "$f"; then
-            echo "droiddeck-session 里的中文预设调用还在"
+          : > /tmp/fork-missing.txt
+          while IFS='|' read -r f needle desc; do
+            case "$f" in ''|'#'*) continue ;; esac
+            if [ ! -e "$f" ]; then
+              echo "$f|文件不存在（$desc）" >> /tmp/fork-missing.txt
+              continue
+            fi
+            if [ -n "$needle" ] && ! grep -qF -- "$needle" "$f"; then
+              echo "$f|缺少标记 \`$needle\`（$desc）" >> /tmp/fork-missing.txt
+            fi
+          done < tools/ci/fork-assertions.txt
+          if [ -s /tmp/fork-missing.txt ]; then
+            echo "::warning::有 fork 特性断言没过，编译可能仍通过但功能会消失"
+            {
+              echo "### fork 特性断言失败"
+              echo ""
+              echo "| 文件 | 问题 |"
+              echo "|---|---|"
+              while IFS='|' read -r f what; do echo "| \`$f\` | $what |"; done < /tmp/fork-missing.txt
+            } >> "$GITHUB_STEP_SUMMARY"
+            while IFS='|' read -r f what; do echo "::warning::$f $what"; done < /tmp/fork-missing.txt
           else
-            echo "::warning::$f 里 droiddeck-zh-steam-preset 调用被上游改动冲掉了，需要手工补回"
-            echo "| $f | 中文预设调用丢失，需补回 |" >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if grep -q "LANG=zh_CN.UTF-8" "$f"; then
-            echo "droiddeck-session 里的中文 locale 设置还在"
-          else
-            echo "::warning::$f 里 LANG=zh_CN.UTF-8 被上游改动冲掉了，需要手工补回"
-            echo "| $f | 中文 locale 设置丢失，需补回 |" >> "$GITHUB_STEP_SUMMARY"
+            echo "fork 特性断言全部通过"
           fi
 
       # SessionFiles.kt 走 ours，上游每次加内置工具都要在这里挂一条 usr/local/bin 映射，
