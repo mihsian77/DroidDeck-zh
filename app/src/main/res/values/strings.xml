@@ -4554,4 +4554,10 @@
 
     <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
     <string name="mode_valve_proton_on_demand">Valve Proton only when needed</string>
+
+    <!-- 同步时自动补入的上游新 key，未翻译，翻译后请挪进正文 -->
+    <string name="setup_offline_auto">Auto offline mode</string>
+    <string name="steam_store_close_steam">Close Steam first</string>
+    <string name="steam_store_linux_build">This game installs its Linux build. Install it from Steam.</string>
+    <string name="steam_store_session_wait">Pause the Steam download first</string>
 </resources>

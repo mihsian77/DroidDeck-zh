@@ -1161,9 +1161,20 @@ class LaunchTest(FexTestCase):
         self.assertTrue(guest["FEX_APP_CONFIG_LOCATION"].endswith("/config/"))
         self.assertEqual((guest["FEX_SILENTLOG"], guest["FEX_OUTPUTLOG"]), ("0", "stderr"))
         self.assertEqual(guest["GC_DISABLE_INCREMENTAL"], "1")
+        self.assertEqual(guest["DOTNET_INTERNAL_ThreadSuspendInjection"], "0")
+        self.assertEqual(guest["COMPlus_INTERNAL_ThreadSuspendInjection"], "0")
+        legacy = FEX["guest_environment"]({"portable": False}, {"COMPlus_INTERNAL_ThreadSuspendInjection": "1"})
+        self.assertEqual(legacy["COMPlus_INTERNAL_ThreadSuspendInjection"], "1")
+        self.assertNotIn("DOTNET_INTERNAL_ThreadSuspendInjection", legacy)
+        blank = FEX["guest_environment"]({"portable": False}, {"COMPlus_INTERNAL_ThreadSuspendInjection": "",
+                                                               "DOTNET_INTERNAL_ThreadSuspendInjection": ""})
+        self.assertEqual(blank["DOTNET_INTERNAL_ThreadSuspendInjection"], "0")
+        self.assertEqual(blank["COMPlus_INTERNAL_ThreadSuspendInjection"], "0")
         guest = FEX["guest_environment"]({"portable": False}, {"LD_PRELOAD": str(arm), "FEX_PORTABLE": "1", "FEX_OUTPUTLOG": "/tmp/fex.log",
-                                                               "GC_DISABLE_INCREMENTAL": "0"})
+                                                               "GC_DISABLE_INCREMENTAL": "0", "DOTNET_INTERNAL_ThreadSuspendInjection": "1"})
         self.assertEqual((guest["FEX_OUTPUTLOG"], guest["GC_DISABLE_INCREMENTAL"]), ("/tmp/fex.log", "0"))
+        self.assertEqual(guest["DOTNET_INTERNAL_ThreadSuspendInjection"], "1")
+        self.assertEqual(guest["COMPlus_INTERNAL_ThreadSuspendInjection"], "1")
         self.assertNotIn("LD_PRELOAD", guest)
         self.assertNotIn("FEX_PORTABLE", guest)
 
@@ -1187,6 +1198,22 @@ class LaunchTest(FexTestCase):
         FEX["write_config"](fex, "/rt/files")
         thunks = json.loads((self.home / ".local/share/droiddeck-fex/config/ThunksConfig.json").read_text())
         self.assertEqual(thunks, {"ThunksDB": {"GL": 1, "Vulkan": 1}})
+
+    def test_wayland_and_egl_thunks_turn_on_only_when_the_build_ships_all_of_them(self):
+        guest = self.tmp / "guest-thunks"
+        guest.mkdir()
+        fex = {"host_thunks": "/h", "guest_thunks": str(guest), "thunks_db": "/db"}
+        thunks_file = self.home / ".local/share/droiddeck-fex/config/ThunksConfig.json"
+        for name in ("libwayland-client-guest.so", "libEGL-guest.so"):
+            (guest / name).write_bytes(b"")
+        FEX["write_config"](fex, "/root")
+        self.assertEqual({"GL": 1, "Vulkan": 1}, json.loads(thunks_file.read_text())["ThunksDB"])
+        (guest / "libwayland-egl-guest.so").write_bytes(b"")
+        FEX["write_config"](fex, "/root")
+        expected = {"GL": 1, "Vulkan": 1, "WaylandClient": 1, "EGL": 1, "WaylandEGL": 1}
+        self.assertEqual(expected, json.loads(thunks_file.read_text())["ThunksDB"])
+        config = json.loads((self.home / ".local/share/droiddeck-fex/config/Config.json").read_text())
+        self.assertEqual(expected, config["ThunksDB"])
 
     def test_host_libc_tunables_stay_on_the_host(self):
         guest = FEX["guest_environment"]({"portable": True}, {"GLIBC_TUNABLES": "glibc.pthread.rseq=0"})

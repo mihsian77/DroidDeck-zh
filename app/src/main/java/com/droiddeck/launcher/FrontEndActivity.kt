@@ -169,6 +169,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     private var battleNetInstalled by mutableStateOf(false)
     private var offlineAccount by mutableStateOf<String?>(null)
     private var offline by mutableStateOf(false)
+    private var offlineAuto by mutableStateOf(true)
     private var showPerformance by mutableStateOf(false)
     private var clientOverride by mutableStateOf(false)
     private var clientCores by mutableStateOf<Set<Int>>(emptySet())
@@ -1324,6 +1325,10 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     }
 
     private fun startAfterSession(next: Intent) {
+        if (com.droiddeck.launcher.stores.steam.SteamStore.blocksSession(next)) {
+            android.widget.Toast.makeText(this, R.string.steam_store_session_wait, android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
         SessionService.stop(this)
         awaitSessionEnd(next, android.os.SystemClock.uptimeMillis() + SESSION_SWITCH_WAIT_MS)
     }
@@ -1410,6 +1415,9 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         val shortcutsFilter = android.content.IntentFilter(SteamIntegration.SHORTCUTS_STATUS)
         if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(shortcutsInstallStatus, shortcutsFilter, RECEIVER_NOT_EXPORTED)
         else registerReceiver(shortcutsInstallStatus, shortcutsFilter)
+        if (GameLaunchIntent.accepts(intent.action) &&
+            GameLaunchIntent.replayed(intent, savedInstanceState != null, savedInstanceState?.getString(STATE_PROCESS), PROCESS))
+            clearGameLinkIntent(intent)
         readGameIntent(intent)
         // A Lab build is usually the agent's work, so the app comes back where the agent is.
         if (savedInstanceState == null && navRequest == null && com.droiddeck.launcher.lab.LabOverlay.promoted && com.droiddeck.launcher.agent.AgentTab.visible) navRequest = "agent"
@@ -1482,7 +1490,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
                         gameSyncFolder = gameSyncFolder,
                         busy = busy, stage = stage, percent = percent,
                         desktopInstalled = desktopInstalled, desktopPresent = desktopPresent,
-                        offlineAccount = offlineAccount, offline = offline,
+                        offlineAccount = offlineAccount, offline = offline, offlineAuto = offlineAuto,
                         frameGenLabel = frameGenLabel, romsDir = romsDir, logsEnabled = logsEnabled,
                         enhancedDiagnosticsArmed = enhancedDiagnosticsArmed,
                         gameDebugLogsEnabled = gameDebugLogsEnabled, gameDebugLogsNeedsRestart = gameDebugLogsNeedsRestart,
@@ -1818,6 +1826,11 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
                         },
                         onOffline = {
                             OfflineMode.setEnabled(this, !OfflineMode.enabled(this))
+                            offline = OfflineMode.enabled(this)
+                        },
+                        onOfflineAuto = {
+                            OfflineMode.setAuto(this, !OfflineMode.auto(this))
+                            offlineAuto = OfflineMode.auto(this)
                             offline = OfflineMode.enabled(this)
                         },
                         onPageBack = { showPerformance = false; showComponents = false; showMapping = false },
@@ -2391,6 +2404,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     }
 
     private fun saveLauncherState(outState: Bundle) {
+        outState.putString(STATE_PROCESS, PROCESS)
         outState.putBoolean(STATE_HOME_CHOICE_OPEN, homeChoiceOpen)
         outState.putBoolean(STATE_GAME_SPACE_OFFERED, gameSpaceOffered)
         pendingSessionLogExport?.let { outState.putString(KEY_PENDING_SESSION_LOG_EXPORT, it.absolutePath) }
@@ -3179,6 +3193,10 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
                     return
                 }
                 val target = com.droiddeck.launcher.frontend.GameRemoval.steamFiles(g) ?: return
+                if (Library.fromSteamClient(g)) {
+                    com.droiddeck.launcher.stores.steam.SteamStore.uninstall(this, g.appId, target.manifest, fallback = { com.droiddeck.launcher.frontend.GameRemoval.delete(target) }) { refreshAddedGames(); refresh() }
+                    return
+                }
                 Thread({
                     com.droiddeck.launcher.frontend.GameRemoval.delete(target)
                     ui.post { refreshAddedGames(); refresh() }
@@ -3408,6 +3426,7 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         battleNetInstalled = com.droiddeck.launcher.runtime.BattleNet.installed(this)
         offlineAccount = OfflineMode.account(this)
         offline = OfflineMode.enabled(this)
+        offlineAuto = OfflineMode.auto(this)
         installed = LinuxRuntimeInstaller.installedVersion(this)
         ready = LinuxRuntime.isInstalled(this)
         vkBridge = SessionPrefs.vkBridge(this)
@@ -3553,6 +3572,10 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
             android.widget.Toast.makeText(this, R.string.storage_cleanup_busy, android.widget.Toast.LENGTH_SHORT).show()
             return false
         }
+        if (!SessionState.running && com.droiddeck.launcher.stores.steam.SteamStore.blocksSession(intent)) {
+            android.widget.Toast.makeText(this, R.string.steam_store_session_wait, android.widget.Toast.LENGTH_SHORT).show()
+            return false
+        }
         refreshPhantomStatus()
         val manyProcesses = steamSession || intent.getStringExtra(SessionService.EXTRA_MODE) in
             setOf(SessionService.MODE_DESKTOP, SessionService.MODE_RUN)
@@ -3618,9 +3641,10 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
         retryMs = GATE_LAUNCH_RETRY_MS,
     )
 
-    /** The conditions under which a Steam start waits instead of being refused: setup, a runtime or desktop install, or a storage cleanup. */
+    /** The conditions under which a Steam start waits instead of being refused: setup, a runtime or desktop install, a storage cleanup, or a Steam store download. */
     private fun steamStartBusy(): Boolean = busy || LinuxRuntimeInstaller.isBusy() || com.droiddeck.launcher.session.Onboarding.settling() ||
-        (SessionState.installing != null && !SessionState.running) || com.droiddeck.launcher.storage.StorageState.cleaning
+        (SessionState.installing != null && !SessionState.running) || com.droiddeck.launcher.storage.StorageState.cleaning ||
+        (!SessionState.running && com.droiddeck.launcher.stores.steam.SteamStore.downloading())
 
     private fun refreshPhantomStatus() {
         phantomProcessStatus = PhantomProcessLimit.read(this)
@@ -3756,6 +3780,8 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
     }
 
     companion object {
+        private val PROCESS = java.util.UUID.randomUUID().toString()
+        private const val STATE_PROCESS = "process"
         private const val REQUEST_NOTIFICATIONS = 7103
         private const val EXTRA_RESTARTED = "com.droiddeck.launcher.extra.RESTARTED"
         private const val STATE_HOME_CHOICE_OPEN = "home_choice_open"
