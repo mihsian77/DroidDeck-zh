@@ -14,9 +14,12 @@ on:
 permissions:
   contents: write
 
+# 和 sync-upstream、publish-packs 共用 main-write 组，避免同时往 main 提交。
+# 这里不能开 cancel-in-progress：共用组时取消会把正在跑的同步一起杀掉。
+# catalog 本身是幂等的（整份重生成），排队晚跑一次没影响。
 concurrency:
-  group: catalog-zh
-  cancel-in-progress: true
+  group: main-write
+  cancel-in-progress: false
 
 jobs:
   catalog:

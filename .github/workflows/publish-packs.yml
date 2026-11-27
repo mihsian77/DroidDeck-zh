@@ -24,8 +24,10 @@ jobs:
     name: publish add-on packs
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    # 和 sync-upstream、catalog-zh 共用 main-write 组：这个 job 会改 proot pin
+    # 并提交到 main，串起来避免和 catalog bot 抢推送。
     concurrency:
-      group: publish-packs
+      group: main-write
       cancel-in-progress: false
     steps:
       - name: Check out the repo (only to keep the proot pin current)
@@ -154,7 +156,21 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "$env_file"
           git commit -q -m "chore: 跟上上游 proot 构建（${sha:0:16}，$size 字节）"
+          # 推不上去时拉远端合一次再推。以前这里用 --rebase --autostash：
+          # 这个仓库的约定是禁止 rebase origin/main（catalog bot 提交频繁，
+          # rebase 重写本地提交容易和别人的改动纠缠），统一用 merge。
           for i in 1 2 3; do
-            git pull --rebase --autostash -q && git push -q && break || sleep 5
+            if git push -q; then break; fi
+            if [ "$i" = 3 ]; then
+              echo "::error::proot pin 推不上 main，重试 3 次都失败"
+              exit 1
+            fi
+            sleep 3
+            git fetch -q origin main
+            git merge -q --no-edit origin/main || {
+              git merge --abort
+              echo "::error::proot pin 与远端 main 合并冲突"
+              exit 1
+            }
           done
           echo "pin was ${current:0:16}, now ${sha:0:16}"

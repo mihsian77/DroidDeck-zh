@@ -1,0 +1,36 @@
+# 同步上游时"冲突一律保留我们的版本"的文件清单。
+#
+# 以前这份名单在 sync-upstream.yml 里写了两遍（env 变量一份、case 分支一份），
+# 改一处忘一处就会出现"漂移检查按旧名单算、冲突处理按新名单走"的错位。
+# 现在只在这里维护，workflow 直接读这个文件。
+#
+# 加进来的判据：我们在这里有长期改动，上游的改动宁可丢掉也不能盖掉我们的。
+# 不在这里的文件走正常合并，冲突时取上游版本。
+#
+# 每行一个仓库相对路径，# 开头是注释，空行忽略。
+
+# 版本号、CI 开关
+app/build.gradle
+
+# 下载源 / MirrorHub 加速
+app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt
+app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java
+
+# 中文化入口与设置项
+app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt
+app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt
+
+# 会话层：中文预设、退出登录、内置工具映射
+app/src/main/java/com/droiddeck/launcher/session/SessionFiles.kt
+app/src/main/java/com/droiddeck/launcher/session/SessionService.kt
+app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt
+
+# 中文回退字体与 fontconfig
+tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf
+tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc
+
+# Proton 种子
+proton-seed.json
+
+# 英文词条基线（上游新增 key 由 pick-up-new-strings.py 单独补进来）
+app/src/main/res/values/strings.xml

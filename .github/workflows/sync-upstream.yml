@@ -11,29 +11,19 @@ permissions:
   issues: write
   actions: write
 
+# 和 catalog-zh、publish-packs 共用同一个组。这三个都会往 main 提交，串行化之后
+# push 竞态从根上不会发生（下面 push 那段的重试只是兜底）。cancel-in-progress
+# 必须 false，否则新一轮 catalog 触发会把正在跑的同步干掉。
 concurrency:
-  group: sync-upstream
+  group: main-write
   cancel-in-progress: false
 
 jobs:
   sync:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    # 白名单文件清单。改下面 case 那段时这里也要跟着改——这里只用来做丢弃检查。
-    env:
-      WHITELIST_FILES: |
-        app/build.gradle
-        app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt
-        app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt
-        app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java
-        app/src/main/java/com/droiddeck/launcher/session/SessionFiles.kt
-        app/src/main/java/com/droiddeck/launcher/session/SessionService.kt
-        app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt
-        app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt
-        tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf
-        tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc
-        proton-seed.json
-        app/src/main/res/values/strings.xml
+    # 白名单文件清单只有一份，在 tools/ci/fork-whitelist.txt。冲突处理和漂移检查
+    # 都读它，不再各维护一份。
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,12 +68,20 @@ jobs:
           set -euo pipefail
           BASE=$(git merge-base HEAD upstream/main)
           : > /tmp/whitelist-drift.txt
+          # 二进制文件（字体 ttc）在 --numstat 里输出 "-\t-"，awk 求和会当成 0，
+          # 老版本会把它算成 "+0 -0" 等于没漂移。这里单独处理。
           while IFS= read -r f; do
-            [ -n "$f" ] || continue
+            case "$f" in ''|'#'*) continue ;; esac
             stat=$(git diff --numstat "$BASE" upstream/main -- "$f" || true)
             [ -n "$stat" ] || continue
-            echo "$f|$(echo "$stat" | awk '{a+=$1; d+=$2} END {printf "+%d -%d", a, d}')" >> /tmp/whitelist-drift.txt
-          done <<< "$WHITELIST_FILES"
+            add=$(echo "$stat" | awk '{print $1}')
+            del=$(echo "$stat" | awk '{print $2}')
+            if [ "$add" = "-" ]; then
+              echo "$f|二进制文件（无法按行统计）" >> /tmp/whitelist-drift.txt
+            else
+              echo "$f|+${add} -${del}" >> /tmp/whitelist-drift.txt
+            fi
+          done < tools/ci/fork-whitelist.txt
           if [ -s /tmp/whitelist-drift.txt ]; then
             echo "上游这批提交动了白名单里的文件："
             cat /tmp/whitelist-drift.txt
@@ -121,22 +119,14 @@ jobs:
             # - Translation files: keep ours (we have more complete Chinese)
             # - Other files: take upstream version
             while IFS= read -r file; do
-              # Files we intentionally modified - always keep our version
+              # 白名单里的整文件保留我们的版本。名单只有 tools/ci/fork-whitelist.txt 一份。
+              if grep -qxF "$file" tools/ci/fork-whitelist.txt 2>/dev/null; then
+                git checkout --ours "$file"
+                echo "RESOLVED (ours - whitelist): $file"
+                git add "$file"
+                continue
+              fi
               case "$file" in
-                app/build.gradle|\
-                app/src/main/java/com/droiddeck/launcher/FrontEndActivity.kt|\
-                app/src/main/java/com/droiddeck/launcher/core/DownloadSource.kt|\
-                app/src/main/java/com/droiddeck/launcher/core/MirrorHub.java|\
-                app/src/main/java/com/droiddeck/launcher/session/SessionFiles.kt|\
-                app/src/main/java/com/droiddeck/launcher/session/SessionService.kt|\
-                app/src/main/java/com/droiddeck/launcher/session/SteamLogout.kt|\
-                app/src/main/java/com/droiddeck/launcher/ui/FrontEndSetup.kt|\
-                tools/linuxfs/overlay/etc/fonts/conf.d/99-zh-fallback.conf|\
-                tools/linuxfs/overlay/usr/share/fonts/truetype/wqy/wqy-microhei.ttc|\
-                proton-seed.json)
-                  git checkout --ours "$file"
-                  echo "RESOLVED (ours - feature): $file"
-                  ;;
                 *values-zh-rCN/strings.xml*|*values/strings.xml*)
                   git checkout --ours "$file"
                   echo "RESOLVED (ours - translation): $file"
@@ -327,8 +317,40 @@ jobs:
             echo "编译预检通过"
           fi
 
-          # Push directly to main
-          git push origin main
+          # Push directly to main。
+          # main-write 并发组已经把三个写 main 的 workflow 串起来了，正常不会撞。
+          # 这里的重试是兜底：万一有别的写入方插队、或者以后新增了 workflow 忘了
+          # 加组，push 被拒后重新拉远端合一次再推，别让整个 run 白跑（预检那三分钟）。
+          for attempt in 1 2 3; do
+            if git push origin main; then
+              echo "pushed to main (attempt $attempt)"
+              break
+            fi
+            if [ "$attempt" = "3" ]; then
+              echo "::error::push 被拒 3 次，放弃"
+              exit 1
+            fi
+            echo "::warning::push 被拒（第 $attempt 次），拉远端重新合一次"
+            BEFORE=$(git rev-parse HEAD)
+            git fetch origin main
+            git merge origin/main --no-edit || {
+              git merge --abort
+              echo "::error::与远端 main 合并不进去，需要人工处理"
+              exit 1
+            }
+            # 远端带进来的通常只是 catalog.json / data-packages.json 这类 bot 提交。
+            # 真碰到 app 代码就得重跑预检，不能把没验过的代码直接推上去。
+            if ! git diff --quiet "$BEFORE" HEAD -- app/src/main; then
+              echo "这次的合并带进了 app 代码，重跑编译预检"
+              GITHUB_ACTIONS=false ./gradlew :app:compileReleaseKotlin -PskipRust=true --no-daemon --stacktrace
+            fi
+            # 合并也可能带来 workflow 变更（理论上 bot 不会，但不靠假设）
+            for f in $(git ls-tree --name-only "$MERGE_BASE" .github/workflows/ | sed 's|^\.github/workflows/||'); do
+              git checkout "$MERGE_BASE" -- ".github/workflows/$f"
+            done
+            git add -A .github/workflows
+            git commit --no-edit -m "sync: keep fork-owned workflows" || true
+          done
           # Delete the sync branch
           git push origin --delete "$BRANCH" || true
           echo "Merged upstream and pushed to main."
@@ -366,6 +388,49 @@ jobs:
           # "<上游 tag>-zh1"，我们用自主语义序列之后，它每天都会把 0.8.0 之类
           # 覆盖回上游的旧版本号。
           echo " | 上游发了 \`${UPSTREAM_TAG}\`，版本号不在这里改，发版时手动递增 |" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check fork drift after merge
+        if: steps.check.outputs.has_updates == 'true'
+        run: |
+          set -euo pipefail
+          # 上游 workflow 的改动。以前注释里写着"靠 fork-drift.yml 每周提醒"，
+          # 但那个文件从来没建过，等于这块一直没人看。这里每天同步时顺手查一遍。
+          drift=""
+          while IFS= read -r f; do
+            [ -n "$f" ] || continue
+            if git diff --quiet "$MERGE_BASE" upstream/main -- ".github/workflows/$f"; then
+              continue
+            fi
+            if git cat-file -e "$MERGE_BASE:.github/workflows/$f" 2>/dev/null; then
+              drift="$drift $f(改动)"
+            else
+              drift="$drift $f(上游新增)"
+            fi
+          done < <(git ls-tree --name-only upstream/main .github/workflows/ | sed 's|^\.github/workflows/||')
+          if [ -n "$drift" ]; then
+            echo "::warning::上游 workflow 有变动（我们保留 fork 版）：$drift"
+            {
+              echo "### 上游 workflow 变动（fork 保留自家版本，需判断是否移植）"
+              echo ""
+              for d in $drift; do echo "- \`$d\`"; done
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "上游 workflow 没动"
+          fi
+
+          # 编译预检只编 Kotlin。nativeguest / fex / proot 这类 C 代码编不到，
+          # 合进来之后只能等 build.yml 全量构建。这里列出来，让风险可见。
+          natives=$(git diff --name-only "$MERGE_BASE" HEAD \
+            -- tools/nativeguest tools/fex tools/proot tools/hybris external 2>/dev/null \
+            | grep -Ei '\.(c|h|cc|cpp|rs)$' || true)
+          if [ -n "$natives" ]; then
+            echo "::warning::这批合并动了原生代码，Kotlin 预检覆盖不到，看 build.yml 结果"
+            {
+              echo "### 原生代码改动（预检覆盖不到）"
+              echo ""
+              while IFS= read -r f; do echo "- \`$f\`"; done <<< "$natives"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Build the merged tree
         if: steps.check.outputs.has_updates == 'true'
