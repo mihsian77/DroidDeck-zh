@@ -194,8 +194,8 @@ object DownloadSource {
         if (target.startsWith("https://api.github.com/")) return listOf(target)
         val prefs = prefs() ?: return listOf(target)
         if (!isGithub(target)) return listOf(target)
-        val api = target.startsWith("https://api.github.com/")
-        val proxies = MIRRORS.filter { !api || it.api }.map { it.proxy(target) }
+        // api.github.com 在上面就直接返回了，走到这里的都是普通资源，所有镜像都能代理。
+        val proxies = MIRRORS.map { it.proxy(target) }
         // MirrorHub 节点：只用测速验证过能读到真内容的，SPA 站点一律不进候选
         val mirrorHubNodes: List<String> = try {
             goodNodes().take(2).map { "https://$it/$target" }
@@ -204,7 +204,7 @@ object DownloadSource {
         }
         val ordered = when (prefs.getString(KEY_MODE, MODE_AUTO) ?: MODE_AUTO) {
             MODE_DIRECT -> listOf(target)
-            MODE_MIRROR -> listOfNotNull(picked(prefs, api)?.proxy(target)) + mirrorHubNodes + listOf(target) + quickest(proxies)
+            MODE_MIRROR -> listOfNotNull(picked(prefs)?.proxy(target)) + mirrorHubNodes + listOf(target) + quickest(proxies)
             MODE_CUSTOM -> listOfNotNull(customProxy(prefs, target)) + listOf(target) + quickest(proxies)
             else -> {
                 // AUTO 模式：按测速结果把最快的源排第一
@@ -251,8 +251,14 @@ object DownloadSource {
         return ordered.distinct()
     }
 
-    private fun quickest(sources: List<String>): List<String> =
-        sources.sortedBy { if (host(it) == lastGood) 0 else 1 }
+    // lastGood 是主机名或 "mirrorhub:<domain>"；直接按前缀比，排序时不再反复读偏好。
+    private fun quickest(sources: List<String>): List<String> {
+        val good = lastGood ?: return sources
+        val domain = good.removePrefix("mirrorhub:")
+        if (domain.isEmpty()) return sources
+        val prefix = "https://$domain/"
+        return sources.sortedBy { if (it.startsWith(prefix)) 0 else 1 }
+    }
 
     fun succeeded(source: String) {
         lastGood = host(source)
@@ -317,10 +323,8 @@ object DownloadSource {
         return if (node != null) "mirrorhub:$node" else ""
     }
 
-    private fun picked(prefs: SharedPreferences, api: Boolean): Mirror? {
-        val chosen = MIRRORS.firstOrNull { it.host == (prefs.getString(KEY_MIRROR, "") ?: "") } ?: MIRRORS.firstOrNull()
-        return if (api && chosen != null && !chosen.api) MIRRORS.firstOrNull { it.api } else chosen
-    }
+    private fun picked(prefs: SharedPreferences): Mirror? =
+        MIRRORS.firstOrNull { it.host == (prefs.getString(KEY_MIRROR, "") ?: "") } ?: MIRRORS.firstOrNull()
 
     private fun custom(prefs: SharedPreferences): String = prefs.getString(KEY_CUSTOM, "") ?: ""
 
