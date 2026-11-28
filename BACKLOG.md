@@ -15,7 +15,6 @@
 ## 待决策
 
 - [ ] cron `0 0 * * *` 是否挪到非整点（实际延迟约 7 小时才执行）
-- [ ] 游戏内中文输入（`winlator-input-kit` 已定位：字符转 X11 keysym，宿主实现 ServerPort/XServerBridge；未开工）
 - [ ] GPU 兼容层真机验证（设备枚举/帧率/Ubisoft 启动均未测，无真机，靠社区日志）
 
 ## 已完成（2026-11-28）
@@ -34,6 +33,21 @@
 - MirrorHub（`889ef0a9c`）：非 2xx 分支补 `disconnect`、`getResponseCode` 只调一次；缓存判定改成「差值 >= 0 才认」，时钟回拨不再永久命中；删掉全仓没调用的 `selectFastestSource`/`ProbeTask`（那条路径内部是串行 `get`，最坏 40 秒）。
 - DownloadSource（`e7bcdfa9e`）：去掉 `api.github.com` 已提前返回后恒假的 `api` 判断与镜像过滤；`quickest` 不再在排序比较器里读 SharedPreferences。
 - 一键安装（`839d85549`）：目录扫描同时认 `desktop` 包，bundle 解出的两个包都会装。
+
+## 中文输入：现状与路线（2026-11-28 核查）
+
+- 现状（实锤）：字符走 evdev 键码。`KeyboardHost.type()` 用 `CharKeyEvent` 把 codepoint 挂在
+  `getUnicodeChar()` 上，交给 `GuestKeys.send()` 去映射 `EvdevKeys.fromKeyCode`；汉字没有 evdev
+  键码，`evdev <= 0 && scanCode <= 0` 直接 `return false`，字符被丢掉。键盘里的中文进不去 guest。
+- 底座已存在（实锤）：`SessionClipboard.kt` 写 `filesDir/session/android-clipboard`；
+  `droiddeck-session:636` 用 `DD_ANDROID_CLIPBOARD` 拉起 `droiddeck-clipboard`，后者（`tools/linuxfs/clipboard/clipboard.c`）
+  inotify 监听该文件并把它发布成 X11 clipboard。剪贴板这条链是通的。
+- 不走 `winlator-input-kit` 的 keysym 方案：它的前提是有 X 协议注入点（`0x01000000 | codepoint` 当 keysym 发给
+  xserver），本仓库输入是写 evdev 环（`heldKeys.set` → fakeinput ring），没有 X 注入通道。接过来要先补一层
+  X 协议客户端，比剪贴板路线重得多。
+- 路线（待实施）：IME `commitText` 里出现非 ASCII 时，写剪贴板文件并按需发一次粘贴键（wine 下 `Ctrl+V`，
+  纯 X 程序 `Shift+Insert`，做成设置项）。风险点：wine 的 X clipboard 是否取 UTF8_STRING 需要实测。
+- 未验证：wine/Proton 下 UTF-8 粘贴是否完整、粘贴键在各游戏里是否被拦截——需真机。
 
 ## 已修
 
