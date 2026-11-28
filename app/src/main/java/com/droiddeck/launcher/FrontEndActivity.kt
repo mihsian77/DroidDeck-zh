@@ -375,7 +375,9 @@ class FrontEndActivity : ComponentActivity(), com.droiddeck.launcher.ui.AgentPet
             var skipped = 0
             dir.listFiles()?.forEach { f ->
                 val name = f.name.lowercase()
-                if (!name.contains("linuxfs") || !(name.endsWith(".tar.zst") || name.endsWith(".tar.gz"))) {
+                // 运行时和桌面是分开的两个包，都解到同一个 rootfs 的不同路径，装完才算全套。
+                val isPack = name.contains("linuxfs") || name.contains("desktop")
+                if (!isPack || !(name.endsWith(".tar.zst") || name.endsWith(".tar.gz"))) {
                     return@forEach
                 }
                 try {
