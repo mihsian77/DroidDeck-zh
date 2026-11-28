@@ -2002,6 +2002,18 @@
     <string name="bottom_telemetry_elite">Elite Dangerous</string>
     <string name="bottom_telemetry_unknown_format">端口 %1$d 正在接收数据（%2$d 个 %3$d 字节的数据包），但其格式本页面暂时无法读取。</string>
     <string name="bottom_telemetry_port_busy">端口 %1$s 已被其他程序占用，因此该游戏无法在此显示。</string>
+    <string name="bottom_idle_details">%1$s · %2$s</string>
+    <string name="bottom_guides_protondb">ProtonDB</string>
+    <string name="bottom_guides_link_strategywiki">StrategyWiki</string>
+    <string name="bottom_guides_link_gamefaqs">GameFAQs</string>
+    <string name="bottom_guides_link_ign">IGN</string>
+    <string name="bottom_guides_link_hltb">HowLongToBeat</string>
+    <string name="bottom_guides_search_mapgenie">Map Genie</string>
+    <string name="bottom_guides_tier_platinum">白金</string>
+    <string name="bottom_guides_tier_gold">金</string>
+    <string name="bottom_guides_tier_silver">银</string>
+    <string name="bottom_guides_tier_bronze">铜</string>
+    <string name="bottom_guides_tier_borked">不可用</string>
 
     <string name="rtinst_removing">正在移除 Linux 运行时</string>
     <plurals name="rtinst_removing_entries">
