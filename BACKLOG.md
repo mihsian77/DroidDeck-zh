@@ -28,6 +28,13 @@
 - [x] 删 `0.7.11-zh.13`、`0.7.11-zh.11` 两个残缺 stable 与对应 tag；删后仅剩 zh.14 一个正式版
 - [x] proton 中文资源验证（P1）：`proton.tar.zst` 内 `winecfg.exe`/`regedit.exe`/`notepad.exe` 均自带 LANGID 2052（zh-CN）完整 STRINGTABLE，`LANG=zh_CN.UTF-8` 即可驱动中文界面，不需要重编 Wine
 
+## 已修（2026-11-28 审查后）
+
+- 退出登录竞态（`13255f3fb`）：`SteamLogout.apply` 原来排在 `killStragglers()` 前面，旧 Steam 退出时回写 `config.vdf` 会盖掉刚清好的版本。现在先杀残留进程、等它们真的消失（上限 2 秒），再清凭证；补了 `SteamLogoutTest` 四个用例。
+- MirrorHub（`889ef0a9c`）：非 2xx 分支补 `disconnect`、`getResponseCode` 只调一次；缓存判定改成「差值 >= 0 才认」，时钟回拨不再永久命中；删掉全仓没调用的 `selectFastestSource`/`ProbeTask`（那条路径内部是串行 `get`，最坏 40 秒）。
+- DownloadSource（`e7bcdfa9e`）：去掉 `api.github.com` 已提前返回后恒假的 `api` 判断与镜像过滤；`quickest` 不再在排序比较器里读 SharedPreferences。
+- 一键安装（`839d85549`）：目录扫描同时认 `desktop` 包，bundle 解出的两个包都会装。
+
 ## 已修
 
 - `tools/i18n/check-strings.py`（新增）：合并后自检重复定义、一行多条、en/zh 缺失、占位符不一致、XML 可解析。`build.yml` 与 `sync-upstream.yml` 各接一步，本地也能直接跑。
