@@ -1005,7 +1005,12 @@ class SessionService : Service() {
         guest.add("USER=root")
         guest.add("PATH=" + LinuxRuntime.GUEST_PATH)
         guest.add("TERM=xterm-256color")
-        if (SessionState.mode == MODE_DESKTOP) {
+        // 桌面和 Steam 都按应用语言设 locale。Wine 自带工具（winecfg、regedit）的界面文字
+        // 取自 PE 资源的 LANGID，由 Unix locale 映射过来；压成 C.UTF-8 时它们一律显示英文，
+        // 我们打进包的 zh_CN locale 数据也白搭。游戏会话仍保持 C.UTF-8：那一路不经过这些界面，
+        // 还可能撞老游戏对 codepage 的假设。Steam 里启动的游戏会继承 Steam 会话的 locale，
+        // 这是已知取舍——两者编码都是 UTF-8，差异只在消息语言和 ANSI codepage。
+        if (SessionState.mode == MODE_DESKTOP || SessionState.mode == MODE_STEAM) {
             val appLocale = com.droiddeck.launcher.core.AppLanguage.effective(this)
             guest.add("LANG=" + DesktopLocale.lang(appLocale))
             DesktopLocale.language(appLocale)?.let { guest.add("LANGUAGE=$it") }
