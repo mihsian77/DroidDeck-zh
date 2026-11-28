@@ -23,10 +23,15 @@
 - [x] zh.12 废弃，直接发 zh.13（含上游 13 提交）
 - [x] issue #1 关闭
 - [x] 6 个孤儿 tag + 2 个单资产 release 清理
+- [x] zh.14 发布：Steam 会话按应用语言设 locale（`0c836e2a4`），CI `46129261811` 全绿，release 7 资产，catalog stable 指向 zh.14
+- [x] zh.15 合入上游 20 个 Vulkan/framegen 提交（`db12b8a1a` #3355 为首，Vulkan 设备丢失后恢复合成器），版本 vc38，推 `744fff2cc`
+- [x] 删 `0.7.11-zh.13`、`0.7.11-zh.11` 两个残缺 stable 与对应 tag；删后仅剩 zh.14 一个正式版
+- [x] proton 中文资源验证（P1）：`proton.tar.zst` 内 `winecfg.exe`/`regedit.exe`/`notepad.exe` 均自带 LANGID 2052（zh-CN）完整 STRINGTABLE，`LANG=zh_CN.UTF-8` 即可驱动中文界面，不需要重编 Wine
 
 ## 已修
 
 - `tools/i18n/check-strings.py`（新增）：合并后自检重复定义、一行多条、en/zh 缺失、占位符不一致、XML 可解析。`build.yml` 与 `sync-upstream.yml` 各接一步，本地也能直接跑。
+- [已废]「`sync-data-packages` 搬走旧版数据包 = 缺陷」：核过 `sync-data-packages.yml:257-265` 与 `tools/release/repoint-packages.py`，删旧版同名资产是为避免每版堆 2.7 GB 重复文件，且脚本会把旧 release 的数据包说明段重写成「已迁到最新版」并指向最新 tag，不是死链。数据包与 App 版本无关，旧 APK 配最新包可用。之前判为 P1 缺陷是误判，不改。
 - [已废]「`pick-up-new-strings.py` 压行、不查重」：核过代码，脚本逐条 `render_entry` 追加，且拿 `local_keys` 做过本地去重，本身没有压行逻辑。这次重复的真实来源是手工 merge 时先跑补词再 merge，两段并存；至于那一行 78 条挤在一起是谁造成的，未定位，记疑点。
 
 
