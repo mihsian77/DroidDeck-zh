@@ -3,23 +3,23 @@
   "sourceRepo": "mihsian77/DroidDeck-zh",
   "ciRepo": "mihsian77/DroidDeck-zh",
   "stable": {
-    "tag": "0.7.11-zh.11",
-    "title": "0.7.11-zh.11 (stable)",
-    "summary": "## 0.7.11-zh.11 (stable)\n\n跟随上游 0.7.11：DroidDeck-Proton 改为默认 Proton、Valve Proton 按需启用（#3217），另有 Switch to Desktop 重启修复、fastfetch 设备信息、xbox legacy Store 安装器等一批上游修复。\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时…",
-    "commit": "cc72b5b03f9d323ddc4754e3095e81a2cf690397",
+    "tag": "0.7.11-zh.13",
+    "title": "0.7.11-zh.13 (stable)",
+    "summary": "## 0.7.11-zh.13 (stable)\n\n同步上游至 ab99c1a3b，on-screen 布局回归随上游修复，补 bottom 面板中文\n\n基于上游 DroidDeck 源码编译的中文优化版，CI 全流程通过。\n\n### 独家功能\n- 全量中文精翻（Linux/Wine/Steam 术语）\n- 竖屏适配（管理界面跟随系统旋转，游戏会话保持横屏）\n- 中文字体注入（文泉驿微米黑兜底，Steam 中文不乱码）\n- 退出 Steam 登录按钮（主页设置旁，只清凭证保留设置）\n- MirrorHub 智能加速（Linux 运行时/Proton 下载自动选最快节点）\n- 数据包本地导入（离线安装 Linux 运行时/桌面/Proton）\n\n### 注意\n- 签名用的是 AOSP 公共 testkey，和上游原版同一个，可以直接覆盖安装\n- GPU 兼容层与 add-on pack 未逐…",
+    "commit": "b755f00a02c98697514e974d6ea13a60b9d4bc7b",
     "pr": 0,
-    "version": "0.7.11-zh.11",
-    "versionCode": 34,
-    "publishedAt": 1795667307000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.11-zh.11",
+    "version": "0.7.11-zh.13",
+    "versionCode": 36,
+    "publishedAt": 1795850418000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/0.7.11-zh.13",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.11-zh.11.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.11-zh.11/DroidDeck-0.7.11-zh.11.apk",
-        "size": 139326461,
-        "sha256": "11219c7455c1437cc0758c827eac7ef2a7c8ca7d4dd5d2d14e9ca4795e0049e7",
+        "name": "DroidDeck-0.7.11-zh.13.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/0.7.11-zh.13/DroidDeck-0.7.11-zh.13.apk",
+        "size": 140031161,
+        "sha256": "9d97d0c35b8e1923d881827387912885847b550a4fbbf85f65ddd27e83ef73bc",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 34,
+        "versionCode": 36,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
