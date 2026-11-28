@@ -7,15 +7,22 @@
 - 2026-11-27 定时 sync 自行跑通（run 45955178883 schedule success），上游再进 9 个提交（#3203/#3237/#3176/#3239/#3251/#3285/#3051/#3311 等），远端 main 已到 `dba4dd57a`，本地需 merge。
 - 2026-11-28 合上游 13 提交（`ab99c1a3b`，merge `f253f058d`），其中 `#3322` 正是修 on-screen 布局的提交，11-27 那 3 条 `OnScreenLayoutTest` 红应随之中止；另有 `#3290` bottom 研究/指南面板、`#3021` Steam 启动 EA 游戏、`#3340`/`#3341` 性能。上游版本仍是 `0.7.11`/vc20，基线不用动。
 - 2026-11-28 merge 后 aapt 报 `Found item String/theme_custom more than one time`：英文 14 条 `theme_custom*` 重复，中文 14 条 `stats_hud_*` 重复且被压成一整行（78 条挤在 L3715）。已修（`d60cd676d`），并补 `#3290` 12 条中文（`1e34442ed`）。沙箱 `compileReleaseKotlin` 24m21s 通过，产出 6098 个 class。
+- 2026-11-28 zh.13（`0.7.11-zh.13` / vc36）已发布，7 个资产（APK、desktop、linuxfs、proton、bundle、两个 json），catalog `stable` 指向它。CI 46104172288 与 46110671248 全绿，`Gate the test results` 转 success，那 3 条 `OnScreenLayoutTest` 确认是上游 `#3322` 修掉的。
+- 2026-11-28 Steam 会话改按应用语言设 `LANG`（`0c836e2a4`）：原先只有桌面会话设 locale，Steam/游戏压成 `C.UTF-8`，导致 winecfg、regedit 一直是英文。查 Wine 源码确认界面走 PE 资源 LANGID，只有 `LANG` 能驱动，`LANGUAGE` 无效。游戏会话仍保持 `C.UTF-8`。随 zh.14 发布。
+- 2026-11-28 清理：删 `0.7.1-zh.9`、`0.7.1-zh.10` 两个单资产 release 与 8 个孤儿 tag（`0.2.0`/`0.3.0`/`0.3.1`/`0.4.0-zh1`/`0.8.0`/`0.8.1`/`0.7.1-zh.9`/`0.7.1-zh.10`），删前核过 catalog 与代码零引用；issue #1 结案。
 - 2026-11-27 沙箱验证方式确定：`-Xmx2560m` + `kotlin.compiler.execution.strategy=in-process` + `--max-workers=1`，跑前清 `~/.gradle/caches/journal-1` 与 `*.lock`；收尾报 `Could not stop all services` / 缓存锁释放失败属环境噪音，看 `kotlin-classes/release` 产物与 `^e: ` 计数判定。
 
 ## 待决策
 
-- [ ] zh.12 是否直接废弃，发 `0.7.11-zh.13`（内含上游 13 提交，一次发完）
-- [ ] issue #1 关闭时机（11-27 sync 已成功，根因修复有真实运行证据）
-- [ ] 6 个孤儿 tag（`0.2.0`/`0.3.0`/`0.3.1`/`0.4.0-zh1`/`0.8.0`/`0.8.1`）清不清
-- [ ] cron `0 0 * * *` 是否挪到非整点（今天实际延迟约 7 小时才执行）
-- [ ] `0.7.1-zh.9` / `0.7.1-zh.10` 两个只有单 APK 的 release 清不清
+- [ ] cron `0 0 * * *` 是否挪到非整点（实际延迟约 7 小时才执行）
+- [ ] 游戏内中文输入（`winlator-input-kit` 已定位：字符转 X11 keysym，宿主实现 ServerPort/XServerBridge；未开工）
+- [ ] GPU 兼容层真机验证（设备枚举/帧率/Ubisoft 启动均未测，无真机，靠社区日志）
+
+## 已完成（2026-11-28）
+
+- [x] zh.12 废弃，直接发 zh.13（含上游 13 提交）
+- [x] issue #1 关闭
+- [x] 6 个孤儿 tag + 2 个单资产 release 清理
 
 ## 已修
 
