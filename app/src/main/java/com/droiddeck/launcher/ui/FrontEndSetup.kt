@@ -648,6 +648,18 @@ internal fun SetupPanel(
                                         },
                                     )
                                 }
+                                // MirrorHub 要求在使用其节点的地方展示署名。文案优先用节点表
+                                // 里给的，拿不到就回落到本地字符串。
+                                val creditText = remember { com.droiddeck.launcher.core.MirrorHub.getAttributionText(ctx) }
+                                val creditUrl = remember { com.droiddeck.launcher.core.MirrorHub.getAttributionUrl(ctx) }
+                                Text(
+                                    creditText,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .padding(top = 6.dp)
+                                        .clickable { runCatching { openUrl(ctx, creditUrl) } },
+                                )
                             }
                         }
                         BoxWithConstraints(Modifier.fillMaxWidth()) {
