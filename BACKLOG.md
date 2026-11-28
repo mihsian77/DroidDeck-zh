@@ -17,9 +17,10 @@
 - [ ] cron `0 0 * * *` 是否挪到非整点（今天实际延迟约 7 小时才执行）
 - [ ] `0.7.1-zh.9` / `0.7.1-zh.10` 两个只有单 APK 的 release 清不清
 
-## 缺陷（待修）
+## 已修
 
-- `tools/i18n/pick-up-new-strings.py` 补新 key 时把一批条目压成一行、且不查重。合上游后 aapt 直接报重复条目，是这次构建红的结构性原因。要改成逐行写入，并在写入前对照目标文件已有 key 去重。
+- `tools/i18n/check-strings.py`（新增）：合并后自检重复定义、一行多条、en/zh 缺失、占位符不一致、XML 可解析。`build.yml` 与 `sync-upstream.yml` 各接一步，本地也能直接跑。
+- [已废]「`pick-up-new-strings.py` 压行、不查重」：核过代码，脚本逐条 `render_entry` 追加，且拿 `local_keys` 做过本地去重，本身没有压行逻辑。这次重复的真实来源是手工 merge 时先跑补词再 merge，两段并存；至于那一行 78 条挤在一起是谁造成的，未定位，记疑点。
 
 
 ## 规则

@@ -249,6 +249,12 @@ jobs:
             git commit -q -m "sync: pick up new strings from upstream"
           fi
 
+      # 补完 key 立刻自检：重复定义在 aapt 阶段才报，一行挤多条则 aapt 不报、
+      # 后面每次 diff 都是噪音。这里先拦住，别等构建红了再回头找。
+      - name: Check string resources
+        if: steps.check.outputs.has_updates == 'true'
+        run: python3 tools/i18n/check-strings.py
+
       # 编译预检的环境，与 build.yml 同一套（temurin 17 + setup-gradle）。
       # runner 自带 Android SDK，AGP 直接认 ANDROID_HOME，不用额外装。
       - name: Set up JDK for compile check

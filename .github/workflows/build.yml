@@ -128,6 +128,9 @@ jobs:
         id: variants
         run: echo "list=$(awk '!/^#/ && NF { print $1 }' tools/release/variants.txt | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
 
+      - name: Check string resources
+        run: python3 tools/i18n/check-strings.py
+
       - name: No private key in the tree
         continue-on-error: true
         run: |
