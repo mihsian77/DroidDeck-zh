@@ -25,29 +25,51 @@
     }
   },
   "preview": {
-    "tag": "test-6c29487",
-    "title": "测试包 6c29487",
-    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.7.11-zh.14（6c29487）\n文件名带 -test.6c29487，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-    "commit": "6c294875374db1b2dd1c84273d30ff277892a331",
+    "tag": "test-744fff2",
+    "title": "测试包 744fff2",
+    "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.7.11-zh.15（744fff2）\n文件名带 -test.744fff2，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+    "commit": "744fff2ccd6e42f8b91a493b2c5692b63fe85b02",
     "pr": 0,
-    "version": "0.7.11-zh.14",
-    "versionCode": 37,
-    "publishedAt": 1795858617000,
-    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-6c29487",
+    "version": "0.7.11-zh.15",
+    "versionCode": 38,
+    "publishedAt": 1795865168000,
+    "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-744fff2",
     "apks": {
       "com.droiddeck.launcher": {
-        "name": "DroidDeck-0.7.11-zh.14-test.6c29487.apk",
-        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-6c29487/DroidDeck-0.7.11-zh.14-test.6c29487.apk",
+        "name": "DroidDeck-0.7.11-zh.15-test.744fff2.apk",
+        "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-744fff2/DroidDeck-0.7.11-zh.15-test.744fff2.apk",
         "size": 140031161,
-        "sha256": "58444aa74133bd43b050cd02365b9993bc8f477de58a7acfae91d1db4a64e736",
+        "sha256": "447e111e11c7405283a9f027efd591c0faab108ef8bb245d6dc999775663961b",
         "packageName": "com.droiddeck.launcher",
-        "versionCode": 37,
+        "versionCode": 38,
         "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
       }
     }
   },
   "tests": [],
   "recentPreviews": [
+    {
+      "tag": "test-744fff2",
+      "title": "测试包 744fff2",
+      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.7.11-zh.15（744fff2）\n文件名带 -test.744fff2，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
+      "commit": "744fff2ccd6e42f8b91a493b2c5692b63fe85b02",
+      "pr": 0,
+      "version": "0.7.11-zh.15",
+      "versionCode": 38,
+      "publishedAt": 1795865168000,
+      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-744fff2",
+      "apks": {
+        "com.droiddeck.launcher": {
+          "name": "DroidDeck-0.7.11-zh.15-test.744fff2.apk",
+          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-744fff2/DroidDeck-0.7.11-zh.15-test.744fff2.apk",
+          "size": 140031161,
+          "sha256": "447e111e11c7405283a9f027efd591c0faab108ef8bb245d6dc999775663961b",
+          "packageName": "com.droiddeck.launcher",
+          "versionCode": 38,
+          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
+        }
+      }
+    },
     {
       "tag": "test-6c29487",
       "title": "测试包 6c29487",
@@ -66,28 +88,6 @@
           "sha256": "58444aa74133bd43b050cd02365b9993bc8f477de58a7acfae91d1db4a64e736",
           "packageName": "com.droiddeck.launcher",
           "versionCode": 37,
-          "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
-        }
-      }
-    },
-    {
-      "tag": "test-2cd1274",
-      "title": "测试包 2cd1274",
-      "summary": "自动构建的测试包，没经过完整验证，装了可能有问题。\n\n改动：Merge remote-tracking branch 'origin/main'\n\n版本：0.7.11-zh.13（2cd1274）\n文件名带 -test.2cd1274，versionName 和稳定版一致，看文件名或应用内构建标签区分。\n每个包都能覆盖稳定版安装，数据保留，用同一个签名。",
-      "commit": "2cd1274c23151351844aafc156f92688b33b4fb3",
-      "pr": 0,
-      "version": "0.7.11-zh.13",
-      "versionCode": 36,
-      "publishedAt": 1795853537000,
-      "url": "https://github.com/mihsian77/DroidDeck-zh/releases/tag/test-2cd1274",
-      "apks": {
-        "com.droiddeck.launcher": {
-          "name": "DroidDeck-0.7.11-zh.13-test.2cd1274.apk",
-          "url": "https://github.com/mihsian77/DroidDeck-zh/releases/download/test-2cd1274/DroidDeck-0.7.11-zh.13-test.2cd1274.apk",
-          "size": 140031161,
-          "sha256": "4752ea41489575aa9057be90ef7b7b97784a4e30e6458ca7a1a0ea697142d019",
-          "packageName": "com.droiddeck.launcher",
-          "versionCode": 36,
           "signerSha256": "d3d2eceb0daf85cbaafd90df34048ed5f63bc6ff17bc492847d56c59b12470ec"
         }
       }
