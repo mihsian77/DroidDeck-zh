@@ -517,16 +517,19 @@ class SessionService : Service() {
         }
 
         val root = LinuxRuntime.rootDir(this)
+        val sessionRoot = LinuxRuntime.sessionRoot(this).apply { mkdirs() }
+        val runtimeDir = File(filesDir, ".wayland-rt").apply { mkdirs() }
+        killStragglers()
         // The Steam home writes this flag when the user asks to sign out. Without it the
-        // credentials stay, so a normal start keeps the account signed in.
+        // credentials stay, so a normal start keeps the account signed in. This has to run
+        // after killStragglers(): a Steam that is still shutting down flushes config.vdf on
+        // exit, which would land on top of ours and the sign-out would not stick.
         if (SteamLogout.requested(this)) {
+            awaitStragglersGone()
             runCatching { SteamLogout.apply(this, root) }
                 .onSuccess { Log.i(TAG, it) }
                 .onFailure { Log.w(TAG, "SteamLogout failed", it) }
         }
-        val sessionRoot = LinuxRuntime.sessionRoot(this).apply { mkdirs() }
-        val runtimeDir = File(filesDir, ".wayland-rt").apply { mkdirs() }
-        killStragglers()
         val stillStarting = { gen == sessionGen && SessionState.running }
         val prootPack = LinuxRuntime.patchedProot(this) || AddonPack.PROOT.await(this, stillStarting)
         val directAudioPack = AddonPack.DIRECTAUDIO.await(this, stillStarting)
@@ -1935,6 +1938,36 @@ class SessionService : Service() {
             killed++
         }
         if (killed > 0) Log.w(TAG, "killed $killed leftover process(es) of a previous session")
+    }
+
+    // killProcess is a signal, not a join: the process may need a moment to actually exit,
+    // and Steam flushes its config on the way out. Waiting here keeps the credential wipe
+    // from racing that last write.
+    private fun awaitStragglersGone(timeoutMs: Long = 2000L) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (!anyStragglerAlive()) return
+            try {
+                Thread.sleep(100L)
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                return
+            }
+        }
+        Log.w(TAG, "a previous session process is still around after ${timeoutMs}ms")
+    }
+
+    private fun anyStragglerAlive(): Boolean {
+        val procs = File("/proc").listFiles { f -> f.name.all { it.isDigit() } } ?: return false
+        for (proc in procs) {
+            val cmdline = try {
+                File(proc, "cmdline").readBytes().toString(Charsets.UTF_8).replace('\u0000', ' ')
+            } catch (e: Exception) {
+                continue
+            }
+            if (STRAGGLERS.any { cmdline.contains(it) }) return true
+        }
+        return false
     }
 
     private var launchWatcher: android.os.FileObserver? = null

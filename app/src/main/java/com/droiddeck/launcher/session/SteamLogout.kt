@@ -20,7 +20,7 @@ import java.io.File
  */
 object SteamLogout {
     private const val TAG = "SteamLogout"
-    private const val FLAG = ".droiddeck-steam-logout"
+    internal const val FLAG = ".droiddeck-steam-logout"
     private val AUTOLOGIN = Regex("""^\s*"AutoLoginUser"\s*"([^"]*)"\s*$""")
 
     private fun loginUsers(root: File) = File(root, "root/.local/share/Steam/config/loginusers.vdf")
