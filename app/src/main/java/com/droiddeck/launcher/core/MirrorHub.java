@@ -13,13 +13,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * MirrorHub GitHub acceleration node client.
@@ -28,8 +21,9 @@ import java.util.concurrent.TimeoutException;
  * support release asset downloads, and probes the fastest source between direct GitHub and the
  * top nodes before a large download. Falls back to direct connection when probing fails.
  *
- * Attribution: MirrorHub requires displaying "节点由 MirrorHub 提供" in user-visible UI.
- * See {@link #getAttributionText()} and {@link #getAttributionUrl()}.
+ * Attribution: the node list carries a required "节点由 MirrorHub 提供" credit. The UI has
+ * not been wired to it yet; {@link #getAttributionText()} and {@link #getAttributionUrl()}
+ * return it for that. Tracking: BACKLOG.md.
  */
 public final class MirrorHub {
     private static final String TAG = "MirrorHub";
@@ -67,16 +61,6 @@ public final class MirrorHub {
         }
     }
 
-    /** Result of a speed probe. */
-    private static final class ProbeResult {
-        final String url;
-        final long latencyMs;
-        ProbeResult(String url, long latencyMs) {
-            this.url = url;
-            this.latencyMs = latencyMs;
-        }
-    }
-
     /**
      * Refresh the node list from MirrorHub. Safe to call often - cached for 6 hours.
      * Returns true if nodes are available (from cache or fresh fetch).
@@ -86,7 +70,10 @@ public final class MirrorHub {
         long lastFetch = prefs.getLong(KEY_LAST_FETCH, 0);
         String cached = prefs.getString(KEY_NODES_JSON, null);
 
-        if (System.currentTimeMillis() - lastFetch < CACHE_TTL_MS && cached != null) {
+        // A clock that jumped backwards leaves lastFetch in the future; treat that as stale
+        // instead of trusting the cache forever.
+        long age = System.currentTimeMillis() - lastFetch;
+        if (age >= 0 && age < CACHE_TTL_MS && cached != null) {
             return parseNodeCount(cached) > 0;
         }
 
@@ -101,8 +88,10 @@ public final class MirrorHub {
                 conn.setConnectTimeout(PROBE_TIMEOUT_MS);
                 conn.setReadTimeout(PROBE_TIMEOUT_MS);
                 conn.setRequestProperty("User-Agent", "DroidDeck-Android");
-                if (conn.getResponseCode() / 100 != 2) {
-                    Log.w(TAG, "fetch nodes HTTP " + conn.getResponseCode() + " from " + url);
+                int code = conn.getResponseCode();
+                if (code / 100 != 2) {
+                    Log.w(TAG, "fetch nodes HTTP " + code + " from " + url);
+                    conn.disconnect();
                     continue;
                 }
                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
@@ -179,84 +168,11 @@ public final class MirrorHub {
         return "https://github.com/mihsian77/MirrorHub";
     }
 
-    /**
-     * Select the fastest download source for a GitHub URL.
-     * Probes direct connection and the top N universal_proxy nodes concurrently with a
-     * 1-byte Range request, returns the fastest. Falls back to the original URL if all fail.
-     */
-    public static String selectFastestSource(Context context, String githubUrl) {
-        List<Node> nodes = getNodes(context);
-        List<String> candidates = new ArrayList<>();
-        candidates.add(githubUrl); // direct first
-        int limit = Math.min(MAX_NODES_TO_PROBE, nodes.size());
-        for (int i = 0; i < limit; i++) {
-            candidates.add("https://" + nodes.get(i).domain + "/" + githubUrl);
-        }
-
-        ExecutorService executor = Executors.newFixedThreadPool(candidates.size());
-        List<Future<ProbeResult>> futures = new ArrayList<>();
-        for (String url : candidates) {
-            futures.add(executor.submit(new ProbeTask(url)));
-        }
-
-        List<ProbeResult> results = new ArrayList<>();
-        for (Future<ProbeResult> f : futures) {
-            try {
-                ProbeResult r = f.get(PROBE_TIMEOUT_MS + 2000, TimeUnit.MILLISECONDS);
-                if (r != null && r.latencyMs > 0) results.add(r);
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                // skip this source
-            }
-        }
-        executor.shutdownNow();
-
-        if (results.isEmpty()) {
-            Log.w(TAG, "all probes failed, using direct");
-            return githubUrl;
-        }
-        results.sort(Comparator.comparingLong(r -> r.latencyMs));
-        ProbeResult best = results.get(0);
-        Log.i(TAG, "fastest source: " + best.url.substring(0, Math.min(60, best.url.length()))
-                + " (" + best.latencyMs + "ms) out of " + results.size() + " candidates");
-        return best.url;
-    }
-
     private static int parseNodeCount(String json) {
         try {
             return new JSONObject(json).getJSONArray("nodes").length();
         } catch (Exception e) {
             return 0;
-        }
-    }
-
-    /** Probes a single URL with a 1-byte Range GET, returns latency in ms or -1 on failure. */
-    private static final class ProbeTask implements Callable<ProbeResult> {
-        private final String url;
-        ProbeTask(String url) { this.url = url; }
-
-        @Override
-        public ProbeResult call() {
-            long start = System.currentTimeMillis();
-            HttpURLConnection conn = null;
-            try {
-                conn = (HttpURLConnection) new URL(url).openConnection();
-                conn.setConnectTimeout(PROBE_TIMEOUT_MS);
-                conn.setReadTimeout(PROBE_TIMEOUT_MS);
-                conn.setRequestProperty("User-Agent", "DroidDeck-Android");
-                conn.setRequestProperty("Range", "bytes=0-0");
-                conn.setInstanceFollowRedirects(true);
-                int code = conn.getResponseCode();
-                // 200 = full file (no range support), 206 = partial content (range supported)
-                if (code / 100 == 2) {
-                    long latency = System.currentTimeMillis() - start;
-                    return new ProbeResult(url, latency);
-                }
-                return new ProbeResult(url, -1);
-            } catch (Exception e) {
-                return new ProbeResult(url, -1);
-            } finally {
-                if (conn != null) conn.disconnect();
-            }
         }
     }
 }
